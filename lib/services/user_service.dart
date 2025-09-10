@@ -1,12 +1,15 @@
 // lib/services/user_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/friend_request_model.dart';
+import 'dart:io';
 
 class UserService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Get current user ID
   static String? get currentUserId => _auth.currentUser?.uid;
@@ -49,10 +52,101 @@ class UserService {
       }
 
       final doc = querySnapshot.docs.first;
-      return UserModel.fromMap(doc.data());
+      return UserModel.fromMap({...doc.data(), 'id': doc.id});
     } catch (e) {
       print('Error finding user by username: $e');
       return null;
+    }
+  }
+
+  // Upload profile picture
+  Future<String?> uploadProfilePicture(File imageFile, String userId) async {
+    try {
+      final storageRef = _storage
+          .ref()
+          .child('profile_pictures')
+          .child('$userId.jpg');
+
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading profile picture: $e');
+      return null;
+    }
+  }
+
+  // Delete profile picture
+  Future<void> deleteProfilePicture(String userId) async {
+    try {
+      final storageRef = _storage
+          .ref()
+          .child('profile_pictures')
+          .child('$userId.jpg');
+
+      await storageRef.delete();
+    } catch (e) {
+      print('Error deleting profile picture: $e');
+    }
+  }
+
+  // Update user profile (for profile completion and updates)
+  Future<void> updateUserProfile({
+    String? displayName,
+    String? username,
+    DateTime? birthDate,
+    bool? showBirthDate,
+    bool? showOnlineStatus,
+    String? photoUrl,
+    bool? profileCompleted,
+  }) async {
+    if (currentUserId == null) throw Exception('User not authenticated');
+
+    try {
+      Map<String, dynamic> updates = {};
+
+      if (displayName != null) updates['displayName'] = displayName;
+      if (username != null) {
+        final normalizedUsername = username.toLowerCase().trim();
+        final isAvailable = await isUsernameAvailable(normalizedUsername);
+        if (!isAvailable) throw Exception('Username is not available');
+        updates['username'] = normalizedUsername;
+      }
+      if (birthDate != null)
+        updates['birthDate'] = Timestamp.fromDate(birthDate);
+      if (showBirthDate != null) updates['showBirthDate'] = showBirthDate;
+      if (showOnlineStatus != null)
+        updates['showOnlineStatus'] = showOnlineStatus;
+      if (photoUrl != null) updates['photoUrl'] = photoUrl;
+      if (profileCompleted != null)
+        updates['profileCompleted'] = profileCompleted;
+
+      updates['lastSeen'] = FieldValue.serverTimestamp();
+
+      await _firestore.collection('users').doc(currentUserId).update(updates);
+    } catch (e) {
+      print('Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  // Check if user profile is completed
+  Future<bool> isProfileCompleted() async {
+    if (currentUserId == null) return false;
+
+    try {
+      final doc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!doc.exists) return false;
+
+      final userData = UserModel.fromMap({...doc.data()!, 'id': doc.id});
+      return userData.profileCompleted &&
+          userData.birthDate != null &&
+          userData.meetsAgeRequirement;
+    } catch (e) {
+      print('Error checking profile completion: $e');
+      return false;
     }
   }
 
@@ -157,9 +251,10 @@ class UserService {
     }
   }
 
-  // Get incoming friend requests
   Stream<List<Map<String, dynamic>>> getIncomingFriendRequestsStream() {
     if (currentUserId == null) return Stream.value([]);
+
+    print('DEBUG: Getting incoming requests for user: $currentUserId');
 
     return _firestore
         .collection('friendRequests')
@@ -168,33 +263,61 @@ class UserService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
+          print('DEBUG: Found ${snapshot.docs.length} incoming requests');
+
           List<Map<String, dynamic>> requestsWithUserData = [];
 
           for (var doc in snapshot.docs) {
-            final request = FriendRequestModel.fromMap(doc.data());
+            try {
+              print('DEBUG: Processing request doc: ${doc.id}');
+              print('DEBUG: Request data: ${doc.data()}');
 
-            // Get sender's user data
-            final senderDoc = await _firestore
-                .collection('users')
-                .doc(request.senderId)
-                .get();
+              final request = FriendRequestModel.fromMap(
+                doc.data(),
+                docId: doc.id,
+              );
+              print('DEBUG: Created request model: ${request.toString()}');
 
-            if (senderDoc.exists) {
-              final senderUser = UserModel.fromMap(senderDoc.data()!);
-              requestsWithUserData.add({
-                'request': request,
-                'sender': senderUser,
-              });
+              // Get sender's user data
+              final senderDoc = await _firestore
+                  .collection('users')
+                  .doc(request.senderId)
+                  .get();
+
+              if (senderDoc.exists) {
+                final senderData = senderDoc.data()!;
+                senderData['id'] = senderDoc.id;
+
+                final senderUser = UserModel.fromMap(senderData);
+                print(
+                  'DEBUG: Found sender: ${senderUser.displayName} (@${senderUser.username})',
+                );
+
+                requestsWithUserData.add({
+                  'request': request,
+                  'sender': senderUser,
+                });
+              } else {
+                print(
+                  'DEBUG: Sender document not found for ID: ${request.senderId}',
+                );
+              }
+            } catch (e) {
+              print('ERROR: Error processing incoming request ${doc.id}: $e');
             }
           }
 
+          print(
+            'DEBUG: Returning ${requestsWithUserData.length} processed incoming requests',
+          );
           return requestsWithUserData;
         });
   }
 
-  // Get outgoing friend requests
   Stream<List<Map<String, dynamic>>> getOutgoingFriendRequestsStream() {
     if (currentUserId == null) return Stream.value([]);
+
+    print('DEBUG: Getting outgoing requests for user: $currentUserId');
 
     return _firestore
         .collection('friendRequests')
@@ -203,26 +326,53 @@ class UserService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
+          print('DEBUG: Found ${snapshot.docs.length} outgoing requests');
+
           List<Map<String, dynamic>> requestsWithUserData = [];
 
           for (var doc in snapshot.docs) {
-            final request = FriendRequestModel.fromMap(doc.data());
+            try {
+              print('DEBUG: Processing outgoing request doc: ${doc.id}');
+              print('DEBUG: Request data: ${doc.data()}');
 
-            // Get receiver's user data
-            final receiverDoc = await _firestore
-                .collection('users')
-                .doc(request.receiverId)
-                .get();
+              final request = FriendRequestModel.fromMap(
+                doc.data(),
+                docId: doc.id,
+              );
+              print('DEBUG: Created request model: ${request.toString()}');
 
-            if (receiverDoc.exists) {
-              final receiverUser = UserModel.fromMap(receiverDoc.data()!);
-              requestsWithUserData.add({
-                'request': request,
-                'receiver': receiverUser,
-              });
+              // Get receiver's user data
+              final receiverDoc = await _firestore
+                  .collection('users')
+                  .doc(request.receiverId)
+                  .get();
+
+              if (receiverDoc.exists) {
+                final receiverData = receiverDoc.data()!;
+                receiverData['id'] = receiverDoc.id;
+
+                final receiverUser = UserModel.fromMap(receiverData);
+                print(
+                  'DEBUG: Found receiver: ${receiverUser.displayName} (@${receiverUser.username})',
+                );
+
+                requestsWithUserData.add({
+                  'request': request,
+                  'receiver': receiverUser,
+                });
+              } else {
+                print(
+                  'DEBUG: Receiver document not found for ID: ${request.receiverId}',
+                );
+              }
+            } catch (e) {
+              print('ERROR: Error processing outgoing request ${doc.id}: $e');
             }
           }
 
+          print(
+            'DEBUG: Returning ${requestsWithUserData.length} processed outgoing requests',
+          );
           return requestsWithUserData;
         });
   }
@@ -278,13 +428,14 @@ class UserService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Updated createUserProfile method to include username
+  // Updated createUserProfile method to include username and birth date validation
   Future<void> createUserProfile({
     required String userId,
     required String email,
     required String displayName,
     required String username,
     String? photoUrl,
+    DateTime? birthDate,
   }) async {
     try {
       final normalizedUsername = username.toLowerCase().trim();
@@ -293,6 +444,16 @@ class UserService {
       final isAvailable = await isUsernameAvailable(normalizedUsername);
       if (!isAvailable) {
         throw Exception('Username is not available');
+      }
+
+      // Validate age if birth date is provided
+      bool profileCompleted = false;
+      if (birthDate != null) {
+        final age = _calculateAge(birthDate);
+        if (age < 16) {
+          throw Exception('You must be at least 16 years old to use this app');
+        }
+        profileCompleted = true;
       }
 
       final userModel = UserModel(
@@ -304,6 +465,10 @@ class UserService {
         lastSeen: DateTime.now(),
         isOnline: true,
         friends: [],
+        birthDate: birthDate,
+        showBirthDate: false,
+        showOnlineStatus: true,
+        profileCompleted: profileCompleted,
       );
 
       await _firestore.collection('users').doc(userId).set(userModel.toMap());
@@ -317,7 +482,18 @@ class UserService {
     }
   }
 
-  // Update user's online status
+  // Helper method to calculate age
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  // Update user's online status (respects privacy settings)
   Future<void> updateOnlineStatus(bool isOnline) async {
     if (currentUserId == null) return;
 
@@ -335,19 +511,18 @@ class UserService {
       doc,
     ) {
       if (doc.exists) {
-        return UserModel.fromMap(doc.data()!);
+        return UserModel.fromMap({...doc.data()!, 'id': doc.id});
       }
       return null;
     });
   }
 
-  // Get current user data (one-time fetch)
   Future<UserModel?> getCurrentUser() async {
     if (currentUserId == null) return null;
 
     final doc = await _firestore.collection('users').doc(currentUserId).get();
     if (doc.exists) {
-      return UserModel.fromMap(doc.data()!);
+      return UserModel.fromMap({...doc.data()!, 'id': doc.id});
     }
     return null;
   }
@@ -361,7 +536,8 @@ class UserService {
         .get();
 
     if (query.docs.isNotEmpty) {
-      return UserModel.fromMap(query.docs.first.data());
+      final doc = query.docs.first;
+      return UserModel.fromMap({...doc.data(), 'id': doc.id});
     }
     return null;
   }
@@ -384,7 +560,7 @@ class UserService {
     });
   }
 
-  // Get friends stream
+  // Get friends stream with privacy-aware online status
   Stream<List<UserModel>> getFriendsStream(List<String> friendIds) {
     if (friendIds.isEmpty) {
       return Stream.value([]);
@@ -395,9 +571,14 @@ class UserService {
         .where(FieldPath.documentId, whereIn: friendIds)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => UserModel.fromMap(doc.data()))
-              .toList(),
+          (snapshot) => snapshot.docs.map((doc) {
+            final userData = UserModel.fromMap({...doc.data(), 'id': doc.id});
+            // If user has disabled showing online status, show them as offline
+            if (!userData.showOnlineStatus) {
+              return userData.copyWith(isOnline: false);
+            }
+            return userData;
+          }).toList(),
         );
   }
 

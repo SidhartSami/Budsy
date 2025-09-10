@@ -33,13 +33,16 @@ class FriendRequestModel {
     };
   }
 
-  factory FriendRequestModel.fromMap(Map<String, dynamic> map) {
+  factory FriendRequestModel.fromMap(
+    Map<String, dynamic> map, {
+    String? docId,
+  }) {
     return FriendRequestModel(
-      id: map['id'] ?? '',
+      id: docId ?? map['id'] ?? '',
       senderId: map['senderId'] ?? '',
       receiverId: map['receiverId'] ?? '',
       status: FriendRequestStatus.values.firstWhere(
-        (e) => e.name == map['status'],
+        (status) => status.name == map['status'],
         orElse: () => FriendRequestStatus.pending,
       ),
       createdAt: _parseDateTime(map['createdAt']),
@@ -89,6 +92,6 @@ class FriendRequestModel {
 
   @override
   String toString() {
-    return 'FriendRequestModel(id: $id, senderId: $senderId, receiverId: $receiverId, status: $status)';
+    return 'FriendRequestModel(id: $id, senderId: $senderId, receiverId: $receiverId, status: ${status.name}, createdAt: $createdAt)';
   }
 }

@@ -5,11 +5,15 @@ class UserModel {
   final String id;
   final String email;
   final String displayName;
-  final String username; // New field for unique username
+  final String username;
   final String? photoUrl;
   final DateTime lastSeen;
   final bool isOnline;
   final List<String> friends;
+  final DateTime? birthDate; // New field for birthdate
+  final bool showBirthDate; // Privacy setting for birthdate
+  final bool showOnlineStatus; // Privacy setting for online status
+  final bool profileCompleted; // Track if profile setup is complete
 
   UserModel({
     required this.id,
@@ -20,18 +24,43 @@ class UserModel {
     required this.lastSeen,
     required this.isOnline,
     required this.friends,
+    this.birthDate,
+    this.showBirthDate = false,
+    this.showOnlineStatus = true,
+    this.profileCompleted = false,
   });
+
+  // Calculate age from birthdate
+  int? get age {
+    if (birthDate == null) return null;
+    final now = DateTime.now();
+    int age = now.year - birthDate!.year;
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  // Check if user meets minimum age requirement (16)
+  bool get meetsAgeRequirement {
+    return age != null && age! >= 16;
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'email': email,
       'displayName': displayName,
-      'username': username, // Include username in map
+      'username': username,
       'photoUrl': photoUrl,
       'lastSeen': Timestamp.fromDate(lastSeen),
       'isOnline': isOnline,
       'friends': friends,
+      'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
+      'showBirthDate': showBirthDate,
+      'showOnlineStatus': showOnlineStatus,
+      'profileCompleted': profileCompleted,
     };
   }
 
@@ -40,11 +69,17 @@ class UserModel {
       id: map['id'] ?? '',
       email: map['email'] ?? '',
       displayName: map['displayName'] ?? '',
-      username: map['username'] ?? '', // Handle username from map
+      username: map['username'] ?? '',
       photoUrl: map['photoUrl'],
       lastSeen: _parseDateTime(map['lastSeen']),
       isOnline: map['isOnline'] ?? false,
       friends: List<String>.from(map['friends'] ?? []),
+      birthDate: map['birthDate'] != null
+          ? _parseDateTime(map['birthDate'])
+          : null,
+      showBirthDate: map['showBirthDate'] ?? false,
+      showOnlineStatus: map['showOnlineStatus'] ?? true,
+      profileCompleted: map['profileCompleted'] ?? false,
     );
   }
 
@@ -55,21 +90,17 @@ class UserModel {
     }
 
     if (timestamp is Timestamp) {
-      // Firestore Timestamp object
       return timestamp.toDate();
     }
 
     if (timestamp is int) {
-      // Milliseconds since epoch
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     }
 
     if (timestamp is String) {
-      // ISO string format
       return DateTime.parse(timestamp);
     }
 
-    // Fallback to current time
     return DateTime.now();
   }
 
@@ -82,6 +113,10 @@ class UserModel {
     DateTime? lastSeen,
     bool? isOnline,
     List<String>? friends,
+    DateTime? birthDate,
+    bool? showBirthDate,
+    bool? showOnlineStatus,
+    bool? profileCompleted,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -92,11 +127,15 @@ class UserModel {
       lastSeen: lastSeen ?? this.lastSeen,
       isOnline: isOnline ?? this.isOnline,
       friends: friends ?? this.friends,
+      birthDate: birthDate ?? this.birthDate,
+      showBirthDate: showBirthDate ?? this.showBirthDate,
+      showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
     );
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, displayName: $displayName, username: $username, isOnline: $isOnline)';
+    return 'UserModel(id: $id, email: $email, displayName: $displayName, username: $username, isOnline: $isOnline, age: $age)';
   }
 }

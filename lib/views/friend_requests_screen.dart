@@ -65,8 +65,34 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _userService.getIncomingFriendRequestsStream(),
       builder: (context, snapshot) {
+        print(
+          'DEBUG: Incoming requests stream state: ${snapshot.connectionState}',
+        );
+        print('DEBUG: Incoming requests hasData: ${snapshot.hasData}');
+        print(
+          'DEBUG: Incoming requests data length: ${snapshot.data?.length ?? 0}',
+        );
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          print('ERROR: Incoming requests stream error: ${snapshot.error}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 80, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Error loading requests: ${snapshot.error}'),
+                ElevatedButton(
+                  onPressed: () => setState(() {}),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -74,6 +100,8 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         }
 
         final requests = snapshot.data!;
+        print('DEBUG: Displaying ${requests.length} incoming requests');
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: requests.length,
@@ -93,8 +121,34 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _userService.getOutgoingFriendRequestsStream(),
       builder: (context, snapshot) {
+        print(
+          'DEBUG: Outgoing requests stream state: ${snapshot.connectionState}',
+        );
+        print('DEBUG: Outgoing requests hasData: ${snapshot.hasData}');
+        print(
+          'DEBUG: Outgoing requests data length: ${snapshot.data?.length ?? 0}',
+        );
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          print('ERROR: Outgoing requests stream error: ${snapshot.error}');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 80, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Error loading requests: ${snapshot.error}'),
+                ElevatedButton(
+                  onPressed: () => setState(() {}),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -102,6 +156,8 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         }
 
         final requests = snapshot.data!;
+        print('DEBUG: Displaying ${requests.length} outgoing requests');
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: requests.length,

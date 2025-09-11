@@ -7,7 +7,7 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
-import 'package:tutortyper_app/views/chat_screen.dart';
+import 'package:tutortyper_app/views/enhanced_chat_screen.dart';
 import 'package:tutortyper_app/views/friend_requests_screen.dart';
 
 class FriendsListScreen extends StatefulWidget {
@@ -562,7 +562,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatScreen(chatId: chatId, otherUser: friend),
+            builder: (context) =>
+                EnhancedChatScreen(chatId: chatId, otherUser: friend),
           ),
         );
       }

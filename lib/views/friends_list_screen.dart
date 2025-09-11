@@ -238,102 +238,304 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundImage: friend.photoUrl != null
-                  ? CachedNetworkImageProvider(friend.photoUrl!)
-                  : null,
-              backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-              child: friend.photoUrl == null
-                  ? Text(
-                      friend.displayName.isNotEmpty
-                          ? friend.displayName[0].toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    )
-                  : null,
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: friend.isOnline ? Colors.green : Colors.grey[400],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        title: Text(
-          friend.displayName,
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '@${friend.username}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              friend.isOnline
-                  ? 'Online'
-                  : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
-              style: TextStyle(
-                color: friend.isOnline ? Colors.green : Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chat_bubble_outline),
-              color: const Color.fromARGB(255, 104, 234, 243),
-              onPressed: () => _startChat(friend),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'remove') {
-                  _confirmRemoveFriend(friend);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'remove',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_remove, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Remove Friend'),
-                    ],
+      child: InkWell(
+        onTap: () => _startChat(friend), // Main tap opens chat
+        onLongPress: () =>
+            _showFriendOptions(friend), // Long press shows options
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Profile Picture with Online Status
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundImage: friend.photoUrl != null
+                        ? CachedNetworkImageProvider(friend.photoUrl!)
+                        : null,
+                    backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                    child: friend.photoUrl == null
+                        ? Text(
+                            friend.displayName.isNotEmpty
+                                ? friend.displayName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          )
+                        : null,
                   ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: friend.isOnline
+                            ? Colors.green
+                            : Colors.grey[400],
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(width: 12),
+
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      friend.displayName,
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${friend.username}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      friend.isOnline
+                          ? 'Online'
+                          : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
+                      style: TextStyle(
+                        color: friend.isOnline
+                            ? Colors.green
+                            : Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-              child: Icon(Icons.more_vert, color: Colors.grey[600]),
+              ),
+
+              // Quick Chat Indicator
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(
+                    255,
+                    104,
+                    234,
+                    243,
+                  ).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Color.fromARGB(255, 104, 234, 243),
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFriendOptions(UserModel friend) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Friend Info Header
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundImage: friend.photoUrl != null
+                        ? CachedNetworkImageProvider(friend.photoUrl!)
+                        : null,
+                    backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                    child: friend.photoUrl == null
+                        ? Text(
+                            friend.displayName.isNotEmpty
+                                ? friend.displayName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          friend.displayName,
+                          style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '@${friend.username}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 10),
+
+              // Options
+              _buildOptionTile(
+                icon: Icons.chat,
+                title: 'Start Chat',
+                onTap: () {
+                  Navigator.pop(context);
+                  _startChat(friend);
+                },
+              ),
+
+              _buildOptionTile(
+                icon: Icons.notifications_off,
+                title: 'Mute Notifications',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showMuteOptions(friend);
+                },
+              ),
+
+              _buildOptionTile(
+                icon: Icons.delete_outline,
+                title: 'Delete Chat',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteChat(friend);
+                },
+              ),
+
+              _buildOptionTile(
+                icon: Icons.person_remove,
+                title: 'Remove Friend',
+                color: Colors.red,
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmRemoveFriend(friend);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final optionColor = color ?? Colors.grey[700];
+
+    return ListTile(
+      leading: Icon(icon, color: optionColor),
+      title: Text(
+        title,
+        style: GoogleFonts.nunito(
+          color: optionColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  void _showMuteOptions(UserModel friend) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.noHeader,
+      animType: AnimType.scale,
+      width: MediaQuery.of(context).size.width * 0.8,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.notifications_off, size: 50, color: Colors.orange),
+            const SizedBox(height: 16),
+            Text(
+              'Mute ${friend.displayName}',
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...[
+              ('15 minutes', '15m'),
+              ('1 hour', '1h'),
+              ('8 hours', '8h'),
+              ('24 hours', '24h'),
+              ('Until I turn it back on', 'forever'),
+            ].map(
+              (option) => ListTile(
+                title: Text(option.$1),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _muteChat(friend, option.$2);
+                },
+              ),
             ),
           ],
         ),
       ),
-    );
+    ).show();
+  }
+
+  void _confirmDeleteChat(UserModel friend) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Delete Chat',
+      desc:
+          'Are you sure you want to delete your chat history with ${friend.displayName}? This action cannot be undone.',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () => _deleteChat(friend),
+      btnOkColor: Colors.orange,
+      btnOkText: 'Delete',
+      btnCancelText: 'Cancel',
+    ).show();
   }
 
   String _formatLastSeen(DateTime lastSeen) {
@@ -366,6 +568,31 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       }
     } catch (e) {
       _showErrorDialog('Failed to start chat: $e');
+    }
+  }
+
+  void _muteChat(UserModel friend, String duration) {
+    // TODO: Implement mute functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Muted ${friend.displayName} for $duration'),
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+      ),
+    );
+  }
+
+  void _deleteChat(UserModel friend) async {
+    try {
+      final chatId = await _userService.createOrGetPrivateChat(friend.id);
+      // TODO: Implement delete chat functionality
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat history deleted'),
+          backgroundColor: Color.fromARGB(255, 104, 234, 243),
+        ),
+      );
+    } catch (e) {
+      _showErrorDialog('Failed to delete chat: $e');
     }
   }
 

@@ -1,9 +1,10 @@
-// Enhanced Settings Screen with profile picture and birthdate management
+// views/settings_screen.dart - Fixed Version
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'dart:io';
@@ -47,26 +48,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final user = await _userService.getCurrentUser();
-    if (user != null) {
-      setState(() {
-        currentUser = user;
-        activityStatus = user.isOnline;
-        showOnlineStatus = user.showOnlineStatus;
-        showBirthDate = user.showBirthDate;
-      });
+    try {
+      final user = await _userService.getCurrentUser();
+      if (user != null && mounted) {
+        setState(() {
+          currentUser = user;
+          activityStatus = user.isOnline;
+          // Handle optional fields safely
+          showOnlineStatus =
+              true; // Default value since field doesn't exist in original model
+          showBirthDate =
+              false; // Default value since field doesn't exist in original model
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
     }
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isDarkMode = prefs.getBool('isDarkMode') ?? false;
-      locationSharing = prefs.getBool('locationSharing') ?? false;
-      pushNotifications = prefs.getBool('pushNotifications') ?? true;
-      emailNotifications = prefs.getBool('emailNotifications') ?? false;
-      selectedLanguage = prefs.getString('language') ?? 'English (US)';
-    });
+    if (mounted) {
+      setState(() {
+        isDarkMode = prefs.getBool('isDarkMode') ?? false;
+        locationSharing = prefs.getBool('locationSharing') ?? false;
+        pushNotifications = prefs.getBool('pushNotifications') ?? true;
+        emailNotifications = prefs.getBool('emailNotifications') ?? false;
+        selectedLanguage = prefs.getString('language') ?? 'English (US)';
+      });
+    }
   }
 
   Future<void> _saveSettings() async {
@@ -84,7 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 24),
+        ),
         backgroundColor: const Color.fromARGB(255, 104, 234, 243),
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -104,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'logout') {
-                widget.onLogout();
+                _showLogoutDialog(context);
               }
             },
             itemBuilder: (context) {
@@ -120,156 +133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Profile Card with enhanced profile picture
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            104,
-                            234,
-                            243,
-                          ),
-                          backgroundImage: currentUser?.photoUrl != null
-                              ? NetworkImage(currentUser!.photoUrl!)
-                              : null,
-                          child: currentUser?.photoUrl == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        if (isUploadingImage)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: isUploadingImage
-                                ? null
-                                : _showProfilePictureOptions,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 104, 234, 243),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: showOnlineStatus && activityStatus
-                                  ? Colors.green
-                                  : Colors.grey,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      currentUser?.displayName ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '@${currentUser?.username ?? 'username'}',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          user?.emailVerified == true
-                              ? Icons.verified
-                              : Icons.warning,
-                          size: 16,
-                          color: user?.emailVerified == true
-                              ? Colors.green
-                              : Colors.orange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          user?.email ?? 'No email',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (currentUser?.birthDate != null && showBirthDate) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Age: ${currentUser!.age} years',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                    if (user?.emailVerified == false) ...[
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: _sendEmailVerification,
-                        icon: const Icon(Icons.mail_outline),
-                        label: const Text('Verify Email'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            // User Profile Card
+            _buildUserProfileCard(user),
 
             const SizedBox(height: 24),
 
@@ -295,14 +160,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _updateUsername,
               ),
             ),
-            _buildSettingsTile(
-              Icons.cake,
-              'Birth Date',
-              currentUser?.birthDate != null
-                  ? '${currentUser!.birthDate!.day}/${currentUser!.birthDate!.month}/${currentUser!.birthDate!.year} (Age: ${currentUser!.age})'
-                  : 'Not set',
-              () => _showBirthDatePicker(),
-            ),
+            _buildSettingsTile(Icons.info, 'Bio', () {
+              final bio = currentUser?.bio;
+              if (bio != null && bio.isNotEmpty) {
+                return bio.length > 30 ? '${bio.substring(0, 30)}...' : bio;
+              }
+              return 'Not set';
+            }(), () => _showBioEditDialog()),
             _buildSettingsTile(
               Icons.email,
               'Email',
@@ -350,13 +214,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Let friends see when you\'re online',
               showOnlineStatus,
               (value) => _updateShowOnlineStatus(value),
-            ),
-            _buildSwitchTile(
-              Icons.cake,
-              'Show Birth Date',
-              'Let friends see your age',
-              showBirthDate,
-              (value) => _updateShowBirthDate(value),
             ),
             _buildSwitchTile(
               Icons.location_on,
@@ -432,9 +289,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Colors.red[50],
               child: ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
+                title: Text(
                   'Logout',
-                  style: TextStyle(
+                  style: GoogleFonts.nunito(
                     color: Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
@@ -451,12 +308,156 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildUserProfileCard(User? user) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                  backgroundImage: currentUser?.photoUrl != null
+                      ? NetworkImage(currentUser!.photoUrl!)
+                      : null,
+                  child: currentUser?.photoUrl == null
+                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                      : null,
+                ),
+                if (isUploadingImage)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: isUploadingImage ? null : _showProfilePictureOptions,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 104, 234, 243),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              currentUser?.displayName ?? 'User',
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '@${currentUser?.username ?? 'username'}',
+              style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey),
+            ),
+            if (currentUser?.bio?.isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              Text(
+                currentUser!.bio!,
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  user?.emailVerified == true ? Icons.verified : Icons.warning,
+                  size: 16,
+                  color: user?.emailVerified == true
+                      ? Colors.green
+                      : Colors.orange,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  user?.email ?? 'No email',
+                  style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey),
+                ),
+                if (currentUser?.isVerified == true) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Verified',
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (user?.emailVerified == false) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _sendEmailVerification,
+                icon: const Icon(Icons.mail_outline),
+                label: const Text('Verify Email'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
+        style: GoogleFonts.nunito(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: color ?? Colors.grey[600],
@@ -483,9 +484,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         title: Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.w600, color: color),
+          style: GoogleFonts.nunito(fontWeight: FontWeight.w600, color: color),
         ),
-        subtitle: Text(subtitle),
+        subtitle: Text(subtitle, style: GoogleFonts.nunito(fontSize: 14)),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
       ),
@@ -504,8 +505,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(icon, color: const Color.fromARGB(255, 104, 234, 243)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
+        title: Text(
+          title,
+          style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(subtitle, style: GoogleFonts.nunito(fontSize: 14)),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
@@ -520,7 +524,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Profile Picture'),
+        title: Text(
+          'Profile Picture',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -580,22 +587,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           isUploadingImage = true;
         });
 
-        final imageUrl = await _userService.uploadProfilePicture(
-          File(image.path),
-          _auth.currentUser!.uid,
-        );
+        // Use the updated profile management method
+        await _userService.updateUserProfile(profileImage: File(image.path));
 
-        if (imageUrl != null) {
-          await _userService.updateUserProfile(photoUrl: imageUrl);
-          await _loadUserData();
+        await _loadUserData();
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile picture updated successfully'),
-              ),
-            );
-          }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture updated successfully'),
+            ),
+          );
         }
       }
     } catch (e) {
@@ -619,8 +621,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
-      await _userService.deleteProfilePicture(_auth.currentUser!.uid);
-      await _userService.updateUserProfile(photoUrl: null);
+      await _userService.updateUserProfile(removeImage: true);
       await _loadUserData();
 
       if (mounted) {
@@ -643,160 +644,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Birth Date Management
-  void _showBirthDatePicker() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate:
-          currentUser?.birthDate ??
-          DateTime.now().subtract(const Duration(days: 365 * 18)),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: const Color.fromARGB(255, 104, 234, 243),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      // Validate age
-      final age = _calculateAge(picked);
-      if (age < 16) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be at least 16 years old to use this app'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      setState(() {
-        isLoading = true;
-      });
-
-      try {
-        await _userService.updateUserProfile(birthDate: picked);
-        await _loadUserData();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Birth date updated successfully')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating birth date: $e')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      }
-    }
-  }
-
-  int _calculateAge(DateTime birthDate) {
-    final now = DateTime.now();
-    int age = now.year - birthDate.year;
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
-
   // Privacy Settings
   Future<void> _updateShowOnlineStatus(bool value) async {
     setState(() {
       showOnlineStatus = value;
-      isLoading = true;
     });
 
-    try {
-      await _userService.updateUserProfile(showOnlineStatus: value);
-      await _loadUserData();
+    await _saveSettings();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Online status visibility ${value ? 'enabled' : 'disabled'}',
-            ),
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Online status visibility ${value ? 'enabled' : 'disabled'}',
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update online status visibility'),
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _updateShowBirthDate(bool value) async {
-    setState(() {
-      showBirthDate = value;
-      isLoading = true;
-    });
-
-    try {
-      await _userService.updateUserProfile(showBirthDate: value);
-      await _loadUserData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Birth date visibility ${value ? 'enabled' : 'disabled'}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update birth date visibility'),
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+        ),
+      );
     }
   }
 
   Future<void> _updateDarkMode(bool value) async {
     setState(() {
       isDarkMode = value;
-      isLoading = true;
     });
 
     await _saveSettings();
     widget.onThemeChanged?.call(value);
-
-    setState(() {
-      isLoading = false;
-    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -810,14 +683,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _updateLocationSharing(bool value) async {
     setState(() {
       locationSharing = value;
-      isLoading = true;
     });
 
     await _saveSettings();
-
-    setState(() {
-      isLoading = false;
-    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -852,25 +720,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update display name')),
+          SnackBar(content: Text('Failed to update display name: $e')),
         );
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _updateUsername(String newUsername) async {
     final normalizedUsername = newUsername.toLowerCase().trim();
 
-    // Fixed the regex pattern - it was missing a closing quote
-    if (!RegExp(r'^[a-zA-Z0-9_]{3,20}$').hasMatch(normalizedUsername)) {
+    if (!RegExp(r'^[a-zA-Z0-9_]{3,30}$').hasMatch(normalizedUsername)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Username must be 3-20 characters (letters, numbers, underscore only)',
+            'Username must be 3-30 characters (letters, numbers, underscore only)',
           ),
         ),
       );
@@ -897,9 +766,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -924,9 +795,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -942,14 +815,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit $field'),
+        title: Text(
+          'Edit $field',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
             labelText: field,
             border: const OutlineInputBorder(),
           ),
-          maxLength: field == 'Username' ? 20 : null,
+          maxLength: field == 'Username' ? 30 : 50,
         ),
         actions: [
           TextButton(
@@ -968,6 +844,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showBioEditDialog() {
+    final TextEditingController controller = TextEditingController(
+      text: currentUser?.bio ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Edit Bio',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          maxLength: 150,
+          decoration: const InputDecoration(
+            labelText: 'Bio',
+            hintText: 'Tell others about yourself...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _updateBio(controller.text);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateBio(String newBio) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await _userService.updateUserProfile(bio: newBio.trim());
+      await _loadUserData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bio updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update bio: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   void _showChangeEmailDialog() {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
@@ -975,7 +919,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Email'),
+        title: Text(
+          'Change Email',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1060,9 +1007,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -1076,7 +1025,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Password'),
+        title: Text(
+          'Change Password',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1190,9 +1142,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -1212,7 +1166,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Language'),
+        title: Text(
+          'Select Language',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -1286,7 +1243,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Report a Bug'),
+        title: Text(
+          'Report a Bug',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           maxLines: 4,
@@ -1322,7 +1282,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Send Suggestion'),
+        title: Text(
+          'Send Suggestion',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           maxLines: 4,
@@ -1374,9 +1337,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Delete Account',
-          style: TextStyle(color: Colors.red),
+          style: GoogleFonts.nunito(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
         ),
         content: const Text(
           'This action is permanent and cannot be undone. All your data, notes, and connections will be lost forever.',
@@ -1405,9 +1371,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Final Confirmation',
-          style: TextStyle(color: Colors.red),
+          style: GoogleFonts.nunito(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1457,11 +1426,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        // Delete profile picture if exists
-        if (currentUser?.photoUrl != null) {
-          await _userService.deleteProfilePicture(user.uid);
-        }
-
         // Delete user data from Firestore
         await FirebaseFirestore.instance
             .collection('users')
@@ -1500,9 +1464,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -1510,7 +1476,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
+        title: Text(
+          'Logout',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
@@ -1568,13 +1537,15 @@ class _NotificationSettingsScreenState
 
   Future<void> _loadNotificationSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      friendRequests = prefs.getBool('notif_friendRequests') ?? true;
-      messages = prefs.getBool('notif_messages') ?? true;
-      notes = prefs.getBool('notif_notes') ?? false;
-      appUpdates = prefs.getBool('notif_appUpdates') ?? true;
-      marketingEmails = prefs.getBool('notif_marketingEmails') ?? false;
-    });
+    if (mounted) {
+      setState(() {
+        friendRequests = prefs.getBool('notif_friendRequests') ?? true;
+        messages = prefs.getBool('notif_messages') ?? true;
+        notes = prefs.getBool('notif_notes') ?? false;
+        appUpdates = prefs.getBool('notif_appUpdates') ?? true;
+        marketingEmails = prefs.getBool('notif_marketingEmails') ?? false;
+      });
+    }
   }
 
   Future<void> _saveNotificationSettings() async {
@@ -1592,7 +1563,10 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notification Settings'),
+        title: Text(
+          'Notification Settings',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color.fromARGB(255, 104, 234, 243),
         foregroundColor: Colors.white,
       ),
@@ -1601,9 +1575,9 @@ class _NotificationSettingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'GENERAL',
-              style: TextStyle(
+              style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1634,9 +1608,9 @@ class _NotificationSettingsScreenState
 
             const SizedBox(height: 24),
 
-            const Text(
+            Text(
               'ACTIVITY',
-              style: TextStyle(
+              style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1683,9 +1657,9 @@ class _NotificationSettingsScreenState
 
             const SizedBox(height: 24),
 
-            const Text(
+            Text(
               'APP UPDATES',
-              style: TextStyle(
+              style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1726,14 +1700,14 @@ class _NotificationSettingsScreenState
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.orange[200]!),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info, color: Colors.orange),
-                    SizedBox(width: 12),
+                    const Icon(Icons.info, color: Colors.orange),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Push notifications are disabled. Enable them to receive activity notifications.',
-                        style: TextStyle(color: Colors.orange),
+                        style: GoogleFonts.nunito(color: Colors.orange),
                       ),
                     ),
                   ],

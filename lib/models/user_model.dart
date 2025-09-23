@@ -10,10 +10,13 @@ class UserModel {
   final DateTime lastSeen;
   final bool isOnline;
   final List<String> friends;
-  final DateTime? birthDate; // New field for birthdate
-  final bool showBirthDate; // Privacy setting for birthdate
-  final bool showOnlineStatus; // Privacy setting for online status
-  final bool profileCompleted; // Track if profile setup is complete
+  final DateTime? birthDate;
+  final bool showBirthDate;
+  final bool showOnlineStatus;
+  final bool profileCompleted;
+  final String? bio;
+  final bool isVerified;
+  final DateTime? lastBioUpdate;
 
   UserModel({
     required this.id,
@@ -28,6 +31,9 @@ class UserModel {
     this.showBirthDate = false,
     this.showOnlineStatus = true,
     this.profileCompleted = false,
+    this.bio,
+    this.isVerified = false,
+    this.lastBioUpdate,
   });
 
   // Calculate age from birthdate
@@ -61,7 +67,16 @@ class UserModel {
       'showBirthDate': showBirthDate,
       'showOnlineStatus': showOnlineStatus,
       'profileCompleted': profileCompleted,
+      'bio': bio,
+      'isVerified': isVerified,
+      'lastBioUpdate': lastBioUpdate != null
+          ? Timestamp.fromDate(lastBioUpdate!)
+          : null,
     };
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return toMap();
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -80,7 +95,18 @@ class UserModel {
       showBirthDate: map['showBirthDate'] ?? false,
       showOnlineStatus: map['showOnlineStatus'] ?? true,
       profileCompleted: map['profileCompleted'] ?? false,
+      bio: map['bio'],
+      isVerified: map['isVerified'] ?? false,
+      lastBioUpdate: map['lastBioUpdate'] != null
+          ? _parseDateTime(map['lastBioUpdate'])
+          : null,
     );
+  }
+
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['id'] = doc.id;
+    return UserModel.fromMap(data);
   }
 
   // Helper method to handle different timestamp formats
@@ -117,6 +143,9 @@ class UserModel {
     bool? showBirthDate,
     bool? showOnlineStatus,
     bool? profileCompleted,
+    String? bio,
+    bool? isVerified,
+    DateTime? lastBioUpdate,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -131,11 +160,14 @@ class UserModel {
       showBirthDate: showBirthDate ?? this.showBirthDate,
       showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      bio: bio ?? this.bio,
+      isVerified: isVerified ?? this.isVerified,
+      lastBioUpdate: lastBioUpdate ?? this.lastBioUpdate,
     );
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, displayName: $displayName, username: $username, isOnline: $isOnline, age: $age)';
+    return 'UserModel(id: $id, email: $email, displayName: $displayName, username: $username, isOnline: $isOnline, age: $age, bio: ${bio?.substring(0, bio!.length < 20 ? bio!.length : 20)}...)';
   }
 }

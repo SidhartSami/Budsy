@@ -307,7 +307,7 @@ class _NotesViewState extends State<NotesView> {
   }
 }
 
-// Updated Dashboard Screen with theme support
+// Updated Dashboard Screen with theme support - FIXED VERSION
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -333,155 +333,163 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 104, 234, 243),
-                      Color.fromARGB(255, 80, 200, 210),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Card
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Welcome back!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color.fromARGB(255, 104, 234, 243),
+                          Color.fromARGB(255, 80, 200, 210),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user?.email ?? 'User',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Welcome back!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          user?.email ?? 'User',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Quick Actions
+                Text(
+                  'Quick Actions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Action Cards Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'Create Note',
+                        Icons.note_add,
+                        Colors.green,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CreateNotes(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'View Friends',
+                        Icons.people,
+                        Colors.blue,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FriendsListScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
+                // Recent Activity Section
+                Text(
+                  'Recent Activity',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // Action Cards Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    'Create Note',
-                    Icons.note_add,
-                    Colors.green,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateNotes(),
+                // Activity List - Fixed height instead of Expanded
+                Container(
+                  height: 280, // Fixed height for scrollable content
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildActivityItem(
+                            Icons.note,
+                            'Notes created',
+                            'View all your notes',
+                            Colors.orange,
+                          ),
+                          const Divider(),
+                          _buildActivityItem(
+                            Icons.people,
+                            'Friends connected',
+                            'Manage your connections',
+                            Colors.purple,
+                          ),
+                          const Divider(),
+                          _buildActivityItem(
+                            Icons.chat,
+                            'Messages sent',
+                            'Continue conversations',
+                            Colors.teal,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    'View Friends',
-                    Icons.people,
-                    Colors.blue,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const FriendsListScreen(),
-                      ),
-                    ),
-                  ),
-                ),
+
+                // Add minimal bottom spacing - consider bottom nav bar
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            // Recent Activity Section
-            Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Activity List
-            Expanded(
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildActivityItem(
-                        Icons.note,
-                        'Notes created',
-                        'View all your notes',
-                        Colors.orange,
-                      ),
-                      const Divider(),
-                      _buildActivityItem(
-                        Icons.people,
-                        'Friends connected',
-                        'Manage your connections',
-                        Colors.purple,
-                      ),
-                      const Divider(),
-                      _buildActivityItem(
-                        Icons.chat,
-                        'Messages sent',
-                        'Continue conversations',
-                        Colors.teal,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

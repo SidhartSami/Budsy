@@ -38,218 +38,236 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome! Let\'s complete your profile',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'This information helps us create a better experience for you.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Welcome! Let\'s complete your profile',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This information helps us create a better experience for you.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
 
-              const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-              // Profile Picture Section
-              Center(
-                child: Column(
-                  children: [
-                    Stack(
+                  // Profile Picture Section
+                  Center(
+                    child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            104,
-                            234,
-                            243,
-                          ),
-                          backgroundImage: selectedImage != null
-                              ? FileImage(selectedImage!)
-                              : (imageUrl != null
-                                    ? NetworkImage(imageUrl!)
-                                    : null),
-                          child: selectedImage == null && imageUrl == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        if (isUploadingImage)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(60),
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                104,
+                                234,
+                                243,
                               ),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                              backgroundImage: selectedImage != null
+                                  ? FileImage(selectedImage!)
+                                  : (imageUrl != null
+                                        ? NetworkImage(imageUrl!)
+                                        : null),
+                              child: selectedImage == null && imageUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            if (isUploadingImage)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(60),
+                                  ),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: isUploadingImage
+                                    ? null
+                                    : _showImageSourceDialog,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                      255,
+                                      104,
+                                      234,
+                                      243,
+                                    ),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: isUploadingImage
-                                ? null
-                                : _showImageSourceDialog,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 104, 234, 243),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Add Profile Picture (Optional)',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Add Profile Picture (Optional)',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Birth Date Section
-              const Text(
-                'Birth Date *',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _selectBirthDate(context),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+
+                  const SizedBox(height: 40),
+
+                  // Birth Date Section
+                  const Text(
+                    'Birth Date *',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedBirthDate != null
-                            ? '${selectedBirthDate!.day}/${selectedBirthDate!.month}/${selectedBirthDate!.year}'
-                            : 'Select your birth date',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: selectedBirthDate != null
-                              ? Colors.black
-                              : Colors.grey.shade600,
-                        ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _selectBirthDate(context),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
                       ),
-                      const Icon(Icons.calendar_today, color: Colors.grey),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (selectedBirthDate != null) ...[
-                const SizedBox(height: 8),
-                _getAgeValidationWidget(),
-              ],
-
-              const SizedBox(height: 30),
-
-              // Privacy Settings
-              const Text(
-                'Privacy Settings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              SwitchListTile(
-                title: const Text('Show Birth Date'),
-                subtitle: const Text('Let friends see your birth date'),
-                value: showBirthDate,
-                onChanged: (value) => setState(() => showBirthDate = value),
-                activeColor: const Color.fromARGB(255, 104, 234, 243),
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              SwitchListTile(
-                title: const Text('Show Online Status'),
-                subtitle: const Text('Let friends see when you\'re online'),
-                value: showOnlineStatus,
-                onChanged: (value) => setState(() => showOnlineStatus = value),
-                activeColor: const Color.fromARGB(255, 104, 234, 243),
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              const Spacer(),
-
-              // Complete Profile Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed:
-                      (selectedBirthDate != null && _isValidAge()) && !isLoading
-                      ? _completeProfile
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    disabledBackgroundColor: Colors.grey.shade300,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedBirthDate != null
+                                ? '${selectedBirthDate!.day}/${selectedBirthDate!.month}/${selectedBirthDate!.year}'
+                                : 'Select your birth date',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: selectedBirthDate != null
+                                  ? Colors.black
+                                  : Colors.grey.shade600,
                             ),
                           ),
-                        )
-                      : const Text(
-                          'Complete Profile',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
+                          const Icon(Icons.calendar_today, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              const SizedBox(height: 20),
-            ],
+                  if (selectedBirthDate != null) ...[
+                    const SizedBox(height: 8),
+                    _getAgeValidationWidget(),
+                  ],
+
+                  const SizedBox(height: 30),
+
+                  // Privacy Settings
+                  const Text(
+                    'Privacy Settings',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  SwitchListTile(
+                    title: const Text('Show Birth Date'),
+                    subtitle: const Text('Let friends see your birth date'),
+                    value: showBirthDate,
+                    onChanged: (value) => setState(() => showBirthDate = value),
+                    activeColor: const Color.fromARGB(255, 104, 234, 243),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  SwitchListTile(
+                    title: const Text('Show Online Status'),
+                    subtitle: const Text('Let friends see when you\'re online'),
+                    value: showOnlineStatus,
+                    onChanged: (value) =>
+                        setState(() => showOnlineStatus = value),
+                    activeColor: const Color.fromARGB(255, 104, 234, 243),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  // Add extra space before button instead of using Spacer
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+
+                  // Complete Profile Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed:
+                          (selectedBirthDate != null && _isValidAge()) &&
+                              !isLoading
+                          ? _completeProfile
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          104,
+                          234,
+                          243,
+                        ),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        disabledBackgroundColor: Colors.grey.shade300,
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Complete Profile',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),

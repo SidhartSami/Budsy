@@ -15,7 +15,11 @@ class EnhancedChatScreen extends StatefulWidget {
   final String chatId;
   final UserModel otherUser;
 
-  const EnhancedChatScreen({super.key, required this.chatId, required this.otherUser});
+  const EnhancedChatScreen({
+    super.key,
+    required this.chatId,
+    required this.otherUser,
+  });
 
   @override
   State<EnhancedChatScreen> createState() => _EnhancedChatScreenState();
@@ -26,7 +30,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final MessageService _messageService = MessageService();
   final ChatSettingsService _settingsService = ChatSettingsService();
-  
+
   bool _isLoading = false;
   ChatSettingsModel? _chatSettings;
   String _currentTheme = 'default';
@@ -94,7 +98,8 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
               child: widget.otherUser.photoUrl == null
                   ? Text(
                       (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                          ? (_nickname ?? widget.otherUser.displayName)[0].toUpperCase()
+                          ? (_nickname ?? widget.otherUser.displayName)[0]
+                                .toUpperCase()
                           : 'U',
                       style: TextStyle(
                         color: primaryColor,
@@ -288,7 +293,8 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             child: widget.otherUser.photoUrl == null
                 ? Text(
                     (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                        ? (_nickname ?? widget.otherUser.displayName)[0].toUpperCase()
+                        ? (_nickname ?? widget.otherUser.displayName)[0]
+                              .toUpperCase()
                         : 'U',
                     style: const TextStyle(
                       color: Colors.white,
@@ -318,11 +324,17 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(MessageModel message, bool isMe, Color primaryColor) {
+  Widget _buildMessageBubble(
+    MessageModel message,
+    bool isMe,
+    Color primaryColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
             CircleAvatar(
@@ -334,7 +346,8 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
               child: widget.otherUser.photoUrl == null
                   ? Text(
                       (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                          ? (_nickname ?? widget.otherUser.displayName)[0].toUpperCase()
+                          ? (_nickname ?? widget.otherUser.displayName)[0]
+                                .toUpperCase()
                           : 'U',
                       style: const TextStyle(
                         color: Colors.white,
@@ -479,7 +492,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
 
     try {
       await _messageService.sendMessage(chatId: widget.chatId, text: text);
-      
+
       // Update chat statistics in database
       await _settingsService.updateChatStats(
         chatId: widget.chatId,
@@ -532,12 +545,15 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
 
   void _showNicknameDialog() {
     final controller = TextEditingController(text: _nickname ?? '');
-    
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Set Nickname', style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+          title: Text(
+            'Set Nickname',
+            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -638,18 +654,33 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text('Chat Statistics', style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+            title: Text(
+              'Chat Statistics',
+              style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildStatRow('Messages sent:', '${stats?.messagesSent ?? 0}'),
-                _buildStatRow('Messages received:', '${stats?.messagesReceived ?? 0}'),
-                _buildStatRow('Total messages:', '${stats?.totalMessages ?? 0}'),
+                _buildStatRow(
+                  'Messages received:',
+                  '${stats?.messagesReceived ?? 0}',
+                ),
+                _buildStatRow(
+                  'Total messages:',
+                  '${stats?.totalMessages ?? 0}',
+                ),
                 if (stats?.firstMessageDate != null)
-                  _buildStatRow('First message:', _formatDate(stats!.firstMessageDate!)),
+                  _buildStatRow(
+                    'First message:',
+                    _formatDate(stats!.firstMessageDate!),
+                  ),
                 if (stats?.lastMessageDate != null)
-                  _buildStatRow('Last message:', _formatDate(stats!.lastMessageDate!)),
+                  _buildStatRow(
+                    'Last message:',
+                    _formatDate(stats!.lastMessageDate!),
+                  ),
               ],
             ),
             actions: [
@@ -689,9 +720,16 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text('Clear Chat', style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
-          content: const Text('Are you sure you want to clear this chat? This action cannot be undone.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Text(
+            'Clear Chat',
+            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'Are you sure you want to clear this chat? This action cannot be undone.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -728,7 +766,7 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
 
   void _showAttachmentOptions() {
     final primaryColor = Color(_getThemeColors()['primaryColor']);
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -742,24 +780,57 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             children: [
               Text(
                 'Share',
-                style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.nunito(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildAttachmentOption(Icons.camera_alt, 'Camera', Colors.pink, () => _handleAttachment('camera')),
-                  _buildAttachmentOption(Icons.photo_library, 'Gallery', Colors.purple, () => _handleAttachment('gallery')),
-                  _buildAttachmentOption(Icons.insert_drive_file, 'Document', Colors.blue, () => _handleAttachment('document')),
+                  _buildAttachmentOption(
+                    Icons.camera_alt,
+                    'Camera',
+                    Colors.pink,
+                    () => _handleAttachment('camera'),
+                  ),
+                  _buildAttachmentOption(
+                    Icons.photo_library,
+                    'Gallery',
+                    Colors.purple,
+                    () => _handleAttachment('gallery'),
+                  ),
+                  _buildAttachmentOption(
+                    Icons.insert_drive_file,
+                    'Document',
+                    Colors.blue,
+                    () => _handleAttachment('document'),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildAttachmentOption(Icons.location_on, 'Location', Colors.green, () => _handleAttachment('location')),
-                  _buildAttachmentOption(Icons.mic, 'Voice', Colors.orange, () => _handleAttachment('voice')),
-                  _buildAttachmentOption(Icons.person, 'Contact', Colors.teal, () => _handleAttachment('contact')),
+                  _buildAttachmentOption(
+                    Icons.location_on,
+                    'Location',
+                    Colors.green,
+                    () => _handleAttachment('location'),
+                  ),
+                  _buildAttachmentOption(
+                    Icons.mic,
+                    'Voice',
+                    Colors.orange,
+                    () => _handleAttachment('voice'),
+                  ),
+                  _buildAttachmentOption(
+                    Icons.person,
+                    'Contact',
+                    Colors.teal,
+                    () => _handleAttachment('contact'),
+                  ),
                 ],
               ),
             ],
@@ -769,7 +840,12 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     );
   }
 
-  Widget _buildAttachmentOption(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildAttachmentOption(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -777,7 +853,10 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 8),
@@ -800,7 +879,11 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final messageDate = DateTime(
+      timestamp.year,
+      timestamp.month,
+      timestamp.day,
+    );
 
     if (messageDate == today) {
       return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';

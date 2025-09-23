@@ -20,6 +20,7 @@ class FriendsListScreen extends StatefulWidget {
 class _FriendsListScreenState extends State<FriendsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final UserService _userService = UserService();
+  final Set<String> _pinnedFriends = {}; // Store pinned friend IDs
 
   @override
   void dispose() {
@@ -156,7 +157,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
                     List<UserModel> friends = friendsSnapshot.data!;
 
-                    // Filter friends based on search (now includes username)
+                    // Filter friends based on search
                     if (_searchController.text.isNotEmpty) {
                       friends = friends
                           .where(
@@ -174,6 +175,23 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           .toList();
                     }
 
+                    // Sort friends: pinned first, then by online status, then alphabetically
+                    friends.sort((a, b) {
+                      if (_pinnedFriends.contains(a.id) &&
+                          !_pinnedFriends.contains(b.id)) {
+                        return -1;
+                      } else if (!_pinnedFriends.contains(a.id) &&
+                          _pinnedFriends.contains(b.id)) {
+                        return 1;
+                      } else if (a.isOnline && !b.isOnline) {
+                        return -1;
+                      } else if (!a.isOnline && b.isOnline) {
+                        return 1;
+                      } else {
+                        return a.displayName.compareTo(b.displayName);
+                      }
+                    });
+
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -181,7 +199,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       ),
                       itemCount: friends.length,
                       itemBuilder: (context, index) {
-                        return _buildFriendTile(friends[index]);
+                        return _buildEnhancedFriendCard(friends[index]);
                       },
                     );
                   },
@@ -233,120 +251,512 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     );
   }
 
-  Widget _buildFriendTile(UserModel friend) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+  Widget _buildEnhancedFriendCard(UserModel friend) {
+    final bool isPinned = _pinnedFriends.contains(friend.id);
+    // Mock verification status - you can get this from friend data
+    final bool isVerified = friend.isVerified;
+    // Mock bio - you can add this to UserModel
+    final String bio = friend.bio ?? "";
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey[50]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: isPinned
+            ? Border.all(
+                color: const Color.fromARGB(255, 104, 234, 243),
+                width: 2,
+              )
+            : null,
+      ),
       child: InkWell(
-        onTap: () => _startChat(friend), // Main tap opens chat
-        onLongPress: () =>
-            _showFriendOptions(friend), // Long press shows options
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
+        onTap: () => _showFriendProfileDialog(friend),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              // Profile Picture with Online Status
-              Stack(
+              // Header Row with Pin Icon
+              Row(
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundImage: friend.photoUrl != null
-                        ? CachedNetworkImageProvider(friend.photoUrl!)
-                        : null,
-                    backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                    child: friend.photoUrl == null
-                        ? Text(
-                            friend.displayName.isNotEmpty
-                                ? friend.displayName[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          )
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: friend.isOnline
-                            ? Colors.green
-                            : Colors.grey[400],
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                  // Profile Picture with Online Status
+                  Stack(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: friend.isOnline
+                                ? Colors.green
+                                : Colors.grey[300]!,
+                            width: 3,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 28,
+                          backgroundImage: friend.photoUrl != null
+                              ? CachedNetworkImageProvider(friend.photoUrl!)
+                              : null,
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            104,
+                            234,
+                            243,
+                          ),
+                          child: friend.photoUrl == null
+                              ? Text(
+                                  friend.displayName.isNotEmpty
+                                      ? friend.displayName[0].toUpperCase()
+                                      : 'U',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24,
+                                  ),
+                                )
+                              : null,
+                        ),
                       ),
+                      if (friend.isOnline)
+                        Positioned(
+                          bottom: 2,
+                          right: 2,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // User Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                friend.displayName,
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isVerified) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.verified,
+                                color: Colors.blue,
+                                size: 20,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '@${friend.username}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              color: friend.isOnline
+                                  ? Colors.green
+                                  : Colors.grey[400],
+                              size: 8,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              friend.isOnline
+                                  ? 'Online'
+                                  : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
+                              style: TextStyle(
+                                color: friend.isOnline
+                                    ? Colors.green
+                                    : Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Pin Icon
+                  IconButton(
+                    onPressed: () => _togglePin(friend.id),
+                    icon: Icon(
+                      isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                      color: isPinned
+                          ? const Color.fromARGB(255, 104, 234, 243)
+                          : Colors.grey[400],
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(width: 12),
+              // Bio Section
+              if (bio.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    bio,
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
 
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      friend.displayName,
-                      style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '@${friend.username}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      friend.isOnline
-                          ? 'Online'
-                          : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
-                      style: TextStyle(
-                        color: friend.isOnline
-                            ? Colors.green
-                            : Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 16),
 
-              // Quick Chat Indicator
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(
-                    255,
-                    104,
-                    234,
-                    243,
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.chat_bubble_outline,
-                  color: Color.fromARGB(255, 104, 234, 243),
-                  size: 20,
-                ),
+              // Action Buttons
+              Row(
+                children: [
+                  // Chat Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _startChat(friend),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: const Text('Chat'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          104,
+                          234,
+                          243,
+                        ),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Send Note Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showSendNoteDialog(friend),
+                      icon: const Icon(Icons.note_add_outlined, size: 18),
+                      label: const Text('Note'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color.fromARGB(
+                          255,
+                          104,
+                          234,
+                          243,
+                        ),
+                        side: const BorderSide(
+                          color: Color.fromARGB(255, 104, 234, 243),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // More Options
+                  IconButton(
+                    onPressed: () => _showFriendOptions(friend),
+                    icon: const Icon(Icons.more_vert),
+                    color: Colors.grey[600],
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _togglePin(String friendId) {
+    setState(() {
+      if (_pinnedFriends.contains(friendId)) {
+        _pinnedFriends.remove(friendId);
+      } else {
+        _pinnedFriends.add(friendId);
+      }
+    });
+  }
+
+  void _showFriendProfileDialog(UserModel friend) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Profile Picture
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: friend.photoUrl != null
+                    ? CachedNetworkImageProvider(friend.photoUrl!)
+                    : null,
+                backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                child: friend.photoUrl == null
+                    ? Text(
+                        friend.displayName.isNotEmpty
+                            ? friend.displayName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 32,
+                        ),
+                      )
+                    : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Name and verification
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    friend.displayName,
+                    style: GoogleFonts.nunito(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                    ),
+                  ),
+                  if (friend.isVerified) ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.verified, color: Colors.blue, size: 24),
+                  ],
+                ],
+              ),
+
+              Text(
+                '@${friend.username}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Bio - only show if not empty
+              if (friend.bio != null && friend.bio!.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    friend.bio!,
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ] else
+                const SizedBox(height: 20),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _startChat(friend);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          104,
+                          234,
+                          243,
+                        ),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Chat'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showSendNoteDialog(friend);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color.fromARGB(
+                          255,
+                          104,
+                          234,
+                          243,
+                        ),
+                        side: const BorderSide(
+                          color: Color.fromARGB(255, 104, 234, 243),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Send Note'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSendNoteDialog(UserModel friend) {
+    final noteController = TextEditingController();
+
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.noHeader,
+      animType: AnimType.scale,
+      width: MediaQuery.of(context).size.width * 0.9,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.note_add,
+              size: 50,
+              color: Color.fromARGB(255, 104, 234, 243),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Send Note to ${friend.displayName}',
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Send a quick note that will appear in their notifications',
+              style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              maxLines: 3,
+              maxLength: 100,
+              decoration: InputDecoration(
+                labelText: 'Your Note',
+                hintText: 'Type your note here...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.message),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[300],
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (noteController.text.trim().isNotEmpty) {
+                        Navigator.of(context).pop();
+                        _sendNote(friend, noteController.text.trim());
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Send Note'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ).show();
+  }
+
+  void _sendNote(UserModel friend, String note) {
+    // TODO: Implement note sending functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Note sent to ${friend.displayName}'),
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
       ),
     );
   }
@@ -421,6 +831,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 onTap: () {
                   Navigator.pop(context);
                   _startChat(friend);
+                },
+              ),
+
+              _buildOptionTile(
+                icon: Icons.note_add,
+                title: 'Send Note',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSendNoteDialog(friend);
                 },
               ),
 

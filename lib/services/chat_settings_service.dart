@@ -141,6 +141,65 @@ class ChatSettingsService {
     await updateChatSettings(chatId: chatId, isBlocked: !isCurrentlyBlocked);
   }
 
+  Future<void> clearChatHistory(String chatId) async {
+    final currentUserId = UserService.currentUserId;
+    if (currentUserId == null) throw Exception('User not authenticated');
+
+    try {
+      // Start a batch operation for atomic updates
+      final batch = _firestore.batch();
+
+      // Get all messages in the chat
+      final messagesQuery = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .get();
+
+      print('Found ${messagesQuery.docs.length} messages to delete');
+
+      // Delete each message document
+      for (final doc in messagesQuery.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Update chat document to reflect cleared state
+      final chatRef = _firestore.collection('chats').doc(chatId);
+      batch.update(chatRef, {
+        'lastMessage': null,
+        'lastMessageTime': null,
+        'messageCount': 0,
+        'clearedAt': FieldValue.serverTimestamp(),
+        'clearedBy': currentUserId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Reset chat statistics for current user
+      final statsId = _generateSettingsId(chatId, currentUserId);
+      final statsRef = _firestore.collection('chatStats').doc(statsId);
+
+      // Check if stats document exists before updating
+      final statsDoc = await statsRef.get();
+      if (statsDoc.exists) {
+        batch.update(statsRef, {
+          'messagesSent': 0,
+          'messagesReceived': 0,
+          'firstMessageDate': null,
+          'lastMessageDate': null,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Commit all changes atomically
+      await batch.commit();
+
+      print('Chat history cleared successfully for chat: $chatId');
+    } catch (e) {
+      print('Error clearing chat history: $e');
+      rethrow;
+    }
+  }
+
   // Change chat theme
   Future<void> setChatTheme(String chatId, String theme) async {
     await updateChatSettings(chatId: chatId, chatTheme: theme);

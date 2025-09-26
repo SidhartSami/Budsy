@@ -1,5 +1,6 @@
 // views/enhanced_chat_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutortyper_app/models/user_model.dart';
@@ -10,6 +11,7 @@ import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/services/chat_settings_service.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
+import 'package:tutortyper_app/views/user_profile_screen.dart';
 
 class EnhancedChatScreen extends StatefulWidget {
   final String chatId;
@@ -82,31 +84,71 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     final backgroundColor = Color(themeColors['backgroundColor']);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1E293B),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: widget.otherUser.photoUrl != null
-                  ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
-                  : null,
-              backgroundColor: Colors.white,
-              child: widget.otherUser.photoUrl == null
-                  ? Text(
-                      (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                          ? (_nickname ?? widget.otherUser.displayName)[0]
-                                .toUpperCase()
-                          : 'U',
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.otherUser.isOnline
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFE2E8F0),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundImage: widget.otherUser.photoUrl != null
+                        ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
+                        : null,
+                    backgroundColor: const Color(0xFF68EAFF),
+                    child: widget.otherUser.photoUrl == null
+                        ? Text(
+                            (_nickname ?? widget.otherUser.displayName).isNotEmpty
+                                ? (_nickname ?? widget.otherUser.displayName)[0]
+                                      .toUpperCase()
+                                : 'U',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                if (widget.otherUser.isOnline)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                    )
-                  : null,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -115,105 +157,75 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
                 children: [
                   Text(
                     _nickname ?? widget.otherUser.displayName,
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
                       fontSize: 16,
+                      color: const Color(0xFF1E293B),
                     ),
                   ),
-                  Text(
-                    widget.otherUser.isOnline ? 'Online' : 'Offline',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      color: Colors.white70,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: widget.otherUser.isOnline
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF94A3B8),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        widget.otherUser.isOnline ? 'Online' : 'Offline',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: widget.otherUser.isOnline 
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_isMuted) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.volume_off_rounded,
+                          size: 14,
+                          color: Color(0xFF64748B),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-            if (_isMuted)
-              const Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: Icon(Icons.volume_off, size: 18),
-              ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MessageSearchScreen(
-                    chatId: widget.chatId,
-                    otherUser: widget.otherUser,
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF68EAFF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.person_outline_rounded,
+                size: 20,
+                color: Color(0xFF68EAFF),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfileScreen(
+                      user: widget.otherUser,
+                      chatId: widget.chatId,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.videocam),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Video call coming soon!')),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            onSelected: _handleMenuSelection,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'nickname',
-                child: Row(
-                  children: [
-                    const Icon(Icons.edit),
-                    const SizedBox(width: 8),
-                    Text(_nickname != null ? 'Edit Nickname' : 'Set Nickname'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'theme',
-                child: const Row(
-                  children: [
-                    Icon(Icons.color_lens),
-                    SizedBox(width: 8),
-                    Text('Change Theme'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'mute',
-                child: Row(
-                  children: [
-                    Icon(_isMuted ? Icons.volume_up : Icons.volume_off),
-                    const SizedBox(width: 8),
-                    Text(_isMuted ? 'Unmute' : 'Mute'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'stats',
-                child: Row(
-                  children: [
-                    Icon(Icons.analytics),
-                    SizedBox(width: 8),
-                    Text('Chat Stats'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'clear',
-                child: Row(
-                  children: [
-                    Icon(Icons.clear_all),
-                    SizedBox(width: 8),
-                    Text('Clear Chat'),
-                  ],
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -273,8 +285,113 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
           ),
 
           // Message Input Area
-          _buildMessageInput(primaryColor),
+          _buildMessageInput(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Attachment Button
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF68EAFF).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.add_rounded,
+                  color: Color(0xFF68EAFF),
+                  size: 24,
+                ),
+                onPressed: _showAttachmentOptions,
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Message Input Field
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  maxLines: null,
+                  textInputAction: TextInputAction.newline,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: const Color(0xFF1E293B),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: GoogleFonts.inter(
+                      color: const Color(0xFF64748B),
+                      fontSize: 16,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (text) {
+                    if (text.trim().isNotEmpty) {
+                      _sendMessage();
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Send Button
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF68EAFF),
+                    Color(0xFF4FD1C7),
+                  ],
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: () {
+                  if (_messageController.text.trim().isNotEmpty) {
+                    _sendMessage();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -361,39 +478,51 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isMe ? primaryColor : Colors.white,
+                color: isMe 
+                    ? const Color(0xFF68EAFF)
+                    : Colors.white,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isMe ? 20 : 6),
+                  bottomRight: Radius.circular(isMe ? 6 : 20),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 2,
+                    color: const Color(0xFF000000).withOpacity(0.08),
+                    offset: const Offset(0, 2),
+                    blurRadius: 12,
+                    spreadRadius: 0,
                   ),
                 ],
+                border: isMe 
+                    ? null 
+                    : Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 1,
+                      ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     message.text,
-                    style: GoogleFonts.nunito(
-                      color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 14,
+                    style: GoogleFonts.inter(
+                      color: isMe ? Colors.white : const Color(0xFF1E293B),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     _formatTime(message.timestamp),
-                    style: GoogleFonts.nunito(
-                      color: isMe ? Colors.white70 : Colors.grey[500],
+                    style: GoogleFonts.inter(
+                      color: isMe ? Colors.white.withOpacity(0.8) : const Color(0xFF64748B),
                       fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -401,82 +530,6 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             ),
           ),
           if (isMe) const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageInput(Color primaryColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: primaryColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.attach_file, color: Colors.white),
-              onPressed: _isLoading ? null : _showAttachmentOptions,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: _isMuted ? 'Chat is muted...' : 'Type a message...',
-                  hintStyle: TextStyle(color: Colors.grey[500]),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
-                enabled: !_isLoading && !_isMuted,
-                onSubmitted: (_) => _sendMessage(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: _isLoading || _isMuted ? Colors.grey : primaryColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send, color: Colors.white),
-              onPressed: _isLoading || _isMuted ? null : _sendMessage,
-            ),
-          ),
         ],
       ),
     );
@@ -523,25 +576,6 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
     }
   }
 
-  void _handleMenuSelection(String value) async {
-    switch (value) {
-      case 'nickname':
-        _showNicknameDialog();
-        break;
-      case 'theme':
-        _openThemeSelector();
-        break;
-      case 'mute':
-        await _toggleMute();
-        break;
-      case 'stats':
-        _showChatStats();
-        break;
-      case 'clear':
-        _showClearChatDialog();
-        break;
-    }
-  }
 
   void _showNicknameDialog() {
     final controller = TextEditingController(text: _nickname ?? '');

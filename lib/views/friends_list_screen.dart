@@ -8,7 +8,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/enhanced_chat_screen.dart';
-import 'package:tutortyper_app/views/friend_requests_screen.dart';
+import 'package:tutortyper_app/views/enhanced_friend_requests_screen.dart';
+import 'package:tutortyper_app/views/add_friends_screen.dart';
 
 class FriendsListScreen extends StatefulWidget {
   const FriendsListScreen({super.key});
@@ -31,15 +32,27 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           'Friends',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 24),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 24),
         ),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundColor: const Color(0xFF68EAFF),
         foregroundColor: Colors.white,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF68EAFF),
+                Color(0xFF4FD1C7),
+              ],
+            ),
+          ),
+        ),
         actions: [
           // Friend Requests Button with Badge
           StreamBuilder<int>(
@@ -52,12 +65,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   IconButton(
                     icon: const Icon(Icons.mail_outline),
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const FriendRequestsScreen(),
-                        ),
-                      );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EnhancedFriendRequestsScreen(),
+              ),
+            );
                     },
                   ),
                   if (pendingCount > 0)
@@ -91,7 +104,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.person_add),
-            onPressed: _showSendFriendRequestDialog,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddFriendsScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -99,27 +119,68 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         children: [
           // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 104, 234, 243),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF68EAFF),
+                  Color(0xFF4FD1C7),
+                ],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
               ),
             ),
             child: TextField(
               controller: _searchController,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: const Color(0xFF1E293B),
+              ),
               decoration: InputDecoration(
                 hintText: 'Search friends...',
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                hintStyle: GoogleFonts.inter(
+                  color: const Color(0xFF64748B),
+                  fontSize: 16,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF64748B),
+                  size: 22,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: Color(0xFF64748B),
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF68EAFF),
+                    width: 2,
+                  ),
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
               ),
               onChanged: (value) {
                 setState(() {}); // Trigger rebuild for search
@@ -253,264 +314,198 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildEnhancedFriendCard(UserModel friend) {
     final bool isPinned = _pinnedFriends.contains(friend.id);
-    // Mock verification status - you can get this from friend data
     final bool isVerified = friend.isVerified;
-    // Mock bio - you can add this to UserModel
     final String bio = friend.bio ?? "";
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey[50]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF000000).withOpacity(0.06),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            spreadRadius: 0,
           ),
         ],
         border: isPinned
             ? Border.all(
-                color: const Color.fromARGB(255, 104, 234, 243),
+                color: const Color(0xFF68EAFF),
                 width: 2,
               )
             : null,
       ),
       child: InkWell(
-        onTap: () => _showFriendProfileDialog(friend),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EnhancedChatScreen(
+                otherUser: friend,
+                chatId: 'chat_${friend.id}',
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          padding: const EdgeInsets.all(20),
+          child: Row(
             children: [
-              // Header Row with Pin Icon
-              Row(
+              // Profile Picture with Online Status
+              Stack(
                 children: [
-                  // Profile Picture with Online Status
-                  Stack(
-                    children: [
-                      Container(
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: friend.isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFE2E8F0),
+                        width: 3,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundImage: friend.photoUrl != null
+                          ? CachedNetworkImageProvider(friend.photoUrl!)
+                          : null,
+                      backgroundColor: const Color(0xFF68EAFF),
+                      child: friend.photoUrl == null
+                          ? Text(
+                              friend.displayName.isNotEmpty
+                                  ? friend.displayName[0].toUpperCase()
+                                  : 'U',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  if (friend.isOnline)
+                    Positioned(
+                      bottom: 2,
+                      right: 2,
+                      child: Container(
+                        width: 16,
+                        height: 16,
                         decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: friend.isOnline
-                                ? Colors.green
-                                : Colors.grey[300]!,
-                            width: 3,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 28,
-                          backgroundImage: friend.photoUrl != null
-                              ? CachedNetworkImageProvider(friend.photoUrl!)
-                              : null,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            104,
-                            234,
-                            243,
-                          ),
-                          child: friend.photoUrl == null
-                              ? Text(
-                                  friend.displayName.isNotEmpty
-                                      ? friend.displayName[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24,
-                                  ),
-                                )
-                              : null,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
-                      if (friend.isOnline)
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // User Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                friend.displayName,
-                                style: GoogleFonts.nunito(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (isVerified) ...[
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified,
-                                color: Colors.blue,
-                                size: 20,
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '@${friend.username}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              color: friend.isOnline
-                                  ? Colors.green
-                                  : Colors.grey[400],
-                              size: 8,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              friend.isOnline
-                                  ? 'Online'
-                                  : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
-                              style: TextStyle(
-                                color: friend.isOnline
-                                    ? Colors.green
-                                    : Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
-                  ),
-
-                  // Pin Icon
-                  IconButton(
-                    onPressed: () => _togglePin(friend.id),
-                    icon: Icon(
-                      isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                      color: isPinned
-                          ? const Color.fromARGB(255, 104, 234, 243)
-                          : Colors.grey[400],
-                    ),
-                  ),
                 ],
               ),
 
-              // Bio Section
-              if (bio.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    bio,
-                    style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      color: Colors.grey[700],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
+              const SizedBox(width: 16),
 
-              const SizedBox(height: 16),
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            friend.displayName,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isVerified) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFF3B82F6),
+                            size: 18,
+                          ),
+                        ],
+                        if (isPinned) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.push_pin_rounded,
+                            color: Color(0xFF68EAFF),
+                            size: 16,
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '@${friend.username}',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF64748B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: friend.isOnline
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF94A3B8),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          friend.isOnline
+                              ? 'Online'
+                              : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
+                          style: GoogleFonts.inter(
+                            color: friend.isOnline
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF64748B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (bio.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        bio,
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
 
               // Action Buttons
-              Row(
-                children: [
-                  // Chat Button
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _startChat(friend),
-                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: const Text('Chat'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(
-                          255,
-                          104,
-                          234,
-                          243,
-                        ),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // Send Note Button
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showSendNoteDialog(friend),
-                      icon: const Icon(Icons.note_add_outlined, size: 18),
-                      label: const Text('Note'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color.fromARGB(
-                          255,
-                          104,
-                          234,
-                          243,
-                        ),
-                        side: const BorderSide(
-                          color: Color.fromARGB(255, 104, 234, 243),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // More Options
-                  IconButton(
-                    onPressed: () => _showFriendOptions(friend),
-                    icon: const Icon(Icons.more_vert),
-                    color: Colors.grey[600],
-                  ),
-                ],
+              IconButton(
+                onPressed: () => _togglePin(friend.id),
+                icon: Icon(
+                  isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                  color: isPinned
+                      ? const Color(0xFF68EAFF)
+                      : const Color(0xFF94A3B8),
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -1180,3 +1175,4 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ).show();
   }
 }
+

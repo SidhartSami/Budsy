@@ -1,5 +1,6 @@
 // views/settings_screen.dart - Fixed Version
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/models/user_model.dart';
+import 'package:tutortyper_app/views/blocked_users_screen.dart';
 import 'dart:io';
 
 class SettingsScreen extends StatefulWidget {
@@ -93,14 +95,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           'Settings',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 24),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 24),
         ),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundColor: Colors.white,
         foregroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF68EAFF),
+                Color(0xFF4FD1C7),
+              ],
+            ),
+          ),
+        ),
         actions: [
           if (isLoading)
             const Padding(
@@ -115,6 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
             onSelected: (value) {
               if (value == 'logout') {
                 _showLogoutDialog(context);
@@ -141,7 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Account Section
             _buildSectionHeader('Account'),
             _buildSettingsTile(
-              Icons.person,
+              Icons.person_outline_rounded,
               'Display Name',
               currentUser?.displayName ?? 'Not set',
               () => _showEditDialog(
@@ -151,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             _buildSettingsTile(
-              Icons.alternate_email,
+              Icons.alternate_email_rounded,
               'Username',
               '@${currentUser?.username ?? 'Not set'}',
               () => _showEditDialog(
@@ -160,7 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _updateUsername,
               ),
             ),
-            _buildSettingsTile(Icons.info, 'Bio', () {
+            _buildSettingsTile(Icons.info_outline_rounded, 'Bio', () {
               final bio = currentUser?.bio;
               if (bio != null && bio.isNotEmpty) {
                 return bio.length > 30 ? '${bio.substring(0, 30)}...' : bio;
@@ -168,13 +191,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               return 'Not set';
             }(), () => _showBioEditDialog()),
             _buildSettingsTile(
-              Icons.email,
+              Icons.email_outlined,
               'Email',
               user?.email ?? 'Not set',
               () => _showChangeEmailDialog(),
             ),
             _buildSettingsTile(
-              Icons.lock,
+              Icons.lock_outline_rounded,
               'Password',
               'Change password',
               () => _showChangePasswordDialog(),
@@ -185,20 +208,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // App Preferences Section
             _buildSectionHeader('App Preferences'),
             _buildSwitchTile(
-              Icons.dark_mode,
+              Icons.dark_mode_outlined,
               'Dark Mode',
               'Toggle dark/light theme',
               isDarkMode,
               (value) => _updateDarkMode(value),
             ),
             _buildSettingsTile(
-              Icons.language,
+              Icons.language_rounded,
               'Language',
               selectedLanguage,
               () => _showLanguageSelection(),
             ),
             _buildSettingsTile(
-              Icons.notifications,
+              Icons.notifications_outlined,
               'Notifications',
               'Manage notification settings',
               () => _showNotificationSettings(),
@@ -209,27 +232,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Privacy Control Section
             _buildSectionHeader('Privacy Control'),
             _buildSwitchTile(
-              Icons.visibility,
+              Icons.visibility_outlined,
               'Show Online Status',
               'Let friends see when you\'re online',
               showOnlineStatus,
               (value) => _updateShowOnlineStatus(value),
             ),
             _buildSwitchTile(
-              Icons.location_on,
+              Icons.location_on_outlined,
               'Share Location',
               'Allow friends to see your location',
               locationSharing,
               (value) => _updateLocationSharing(value),
             ),
             _buildSettingsTile(
-              Icons.block,
+              Icons.block_rounded,
               'Blocked Users',
               'Manage blocked contacts',
               () => _showBlockedUsers(),
             ),
             _buildSettingsTile(
-              Icons.security,
+              Icons.security_rounded,
               'Two-Factor Authentication',
               'Add extra security to your account',
               () => _setup2FA(),
@@ -240,31 +263,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Support & Feedback Section
             _buildSectionHeader('Support & Feedback'),
             _buildSettingsTile(
-              Icons.bug_report,
+              Icons.bug_report_outlined,
               'Report a Bug',
               'Help us improve the app',
               () => _reportBug(),
             ),
             _buildSettingsTile(
-              Icons.lightbulb,
+              Icons.lightbulb_outline_rounded,
               'Suggestions',
               'Share your ideas with us',
               () => _sendSuggestion(),
             ),
             _buildSettingsTile(
-              Icons.help_center,
+              Icons.help_center_outlined,
               'Help Center',
               'Get help and find answers',
               () => _openHelpCenter(),
             ),
             _buildSettingsTile(
-              Icons.privacy_tip,
+              Icons.privacy_tip_outlined,
               'Privacy Policy',
               'Read our privacy policy',
               () => _openPrivacyPolicy(),
             ),
             _buildSettingsTile(
-              Icons.description,
+              Icons.description_outlined,
               'Terms of Service',
               'View terms and conditions',
               () => _openTermsOfService(),
@@ -275,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Danger Zone Section
             _buildSectionHeader('Danger Zone', color: Colors.red),
             _buildSettingsTile(
-              Icons.delete_forever,
+              Icons.delete_forever_outlined,
               'Delete Account',
               'Permanently delete your account',
               () => _showDeleteAccountDialog(),
@@ -288,15 +311,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Card(
               color: Colors.red[50],
               child: ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
+                leading: const Icon(Icons.logout_rounded, color: Colors.red),
                 title: Text(
                   'Logout',
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.inter(
                     color: Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text('Sign out of your account'),
+                subtitle: Text(
+                  'Sign out of your account',
+                  style: GoogleFonts.inter(
+                    color: Colors.red.withOpacity(0.7),
+                  ),
+                ),
                 onTap: () => _showLogoutDialog(context),
               ),
             ),
@@ -1224,8 +1252,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showBlockedUsers() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Blocked Users feature coming soon')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BlockedUsersScreen(),
+      ),
     );
   }
 
@@ -1593,7 +1624,7 @@ class _NotificationSettingsScreenState
                 setState(() => pushNotifications = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
             SwitchListTile(
               title: const Text('Email Notifications'),
@@ -1603,7 +1634,7 @@ class _NotificationSettingsScreenState
                 setState(() => emailNotifications = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
 
             const SizedBox(height: 24),
@@ -1628,7 +1659,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
             SwitchListTile(
               title: const Text('Messages'),
@@ -1640,7 +1671,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
             SwitchListTile(
               title: const Text('Notes'),
@@ -1652,7 +1683,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
 
             const SizedBox(height: 24),
@@ -1675,7 +1706,7 @@ class _NotificationSettingsScreenState
                 setState(() => appUpdates = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
             SwitchListTile(
               title: const Text('Marketing Emails'),
@@ -1687,7 +1718,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color.fromARGB(255, 104, 234, 243),
+              activeColor: const Color(0xFF68EAFF),
             ),
 
             const Spacer(),

@@ -108,46 +108,6 @@ class UserService {
     }
   }
 
-  /// Search users by display name or username
-  Future<List<UserModel>> searchUsers(String query, {int limit = 10}) async {
-    try {
-      if (query.trim().isEmpty) return [];
-
-      final searchQuery = query.toLowerCase().trim();
-
-      // Search by username
-      final usernameResults = await _firestore
-          .collection('users')
-          .where('username', isGreaterThanOrEqualTo: searchQuery)
-          .where('username', isLessThanOrEqualTo: '$searchQuery\uf8ff')
-          .limit(limit)
-          .get();
-
-      // Search by display name
-      final nameResults = await _firestore
-          .collection('users')
-          .where('displayName', isGreaterThanOrEqualTo: query)
-          .where('displayName', isLessThanOrEqualTo: '$query\uf8ff')
-          .limit(limit)
-          .get();
-
-      final Set<String> seenIds = {};
-      final List<UserModel> users = [];
-
-      // Combine results and remove duplicates
-      for (final doc in [...usernameResults.docs, ...nameResults.docs]) {
-        if (!seenIds.contains(doc.id)) {
-          seenIds.add(doc.id);
-          users.add(UserModel.fromMap({...doc.data(), 'id': doc.id}));
-        }
-      }
-
-      return users;
-    } catch (e) {
-      print('Error searching users: $e');
-      return [];
-    }
-  }
 
   // ============================================================================
   // PROFILE MANAGEMENT METHODS
@@ -621,6 +581,12 @@ class UserService {
         throw Exception('User is already in your friends list');
       }
 
+      // Check if there's mutual blocking
+      final canInteract = await canInteractWithUser(receiverUser.id);
+      if (!canInteract) {
+        throw Exception('Cannot send friend request to this user');
+      }
+
       // Check if there's already a pending request
       final existingRequest = await _firestore
           .collection('friendRequests')
@@ -717,8 +683,8 @@ class UserService {
                 );
 
                 requestsWithUserData.add({
-                  'request': request,
-                  'sender': senderUser,
+                  'id': request.id,
+                  'fromUser': senderUser.toMap(),
                 });
               } else {
                 print(
@@ -781,8 +747,8 @@ class UserService {
                 );
 
                 requestsWithUserData.add({
-                  'request': request,
-                  'receiver': receiverUser,
+                  'id': request.id,
+                  'toUser': receiverUser.toMap(),
                 });
               } else {
                 print(
@@ -849,6 +815,11 @@ class UserService {
     }
   }
 
+  /// Decline friend request (alias for rejectFriendRequest)
+  Future<void> declineFriendRequest(String requestId) async {
+    return rejectFriendRequest(requestId);
+  }
+
   /// Cancel outgoing friend request
   Future<void> cancelFriendRequest(String requestId) async {
     try {
@@ -875,7 +846,7 @@ class UserService {
   // FRIENDS MANAGEMENT METHODS
   // ============================================================================
 
-  /// Remove friend
+  /// Remove friend (complete unfriend - removes from both sides)
   Future<void> removeFriend(String friendId) async {
     if (currentUserId == null) return;
 
@@ -900,7 +871,487 @@ class UserService {
     }
   }
 
-  /// Get friends stream with privacy-aware online status
+  /// Unfriend user (complete removal - removes all chat data, settings, themes)
+  Future<void> unfriendUser(String friendId) async {
+    if (currentUserId == null) return;
+
+    try {
+      // Get chat ID for this friendship
+      final chatId = await _getChatId(currentUserId!, friendId);
+      
+      await _firestore.runTransaction((transaction) async {
+        // Remove from friends list on both sides
+        final currentUserRef = _firestore.collection('users').doc(currentUserId);
+        final friendUserRef = _firestore.collection('users').doc(friendId);
+
+        transaction.update(currentUserRef, {
+          'friends': FieldValue.arrayRemove([friendId]),
+        });
+
+        transaction.update(friendUserRef, {
+          'friends': FieldValue.arrayRemove([currentUserId]),
+        });
+
+        // Delete all chat-related data for current user
+        if (chatId != null) {
+          // Delete chat settings
+          final settingsId = '${chatId}_$currentUserId';
+          transaction.delete(_firestore.collection('chatSettings').doc(settingsId));
+          
+          // Delete chat stats
+          transaction.delete(_firestore.collection('chatStats').doc(settingsId));
+          
+          // Delete chat document (only if both users unfriend)
+          // For now, we'll keep the chat document but mark it as inactive
+          transaction.update(_firestore.collection('chats').doc(chatId), {
+            'isActive': false,
+            'unfriendedBy': currentUserId,
+            'unfriendedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      });
+    } catch (e) {
+      print('Error unfriending user: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete chat (user-side only - other user can still see chat)
+  Future<void> deleteChatForUser(String friendId) async {
+    if (currentUserId == null) return;
+
+    try {
+      final chatId = await _getChatId(currentUserId!, friendId);
+      
+      if (chatId != null) {
+        await _firestore.runTransaction((transaction) async {
+          // Delete chat settings for current user only
+          final settingsId = '${chatId}_$currentUserId';
+          transaction.delete(_firestore.collection('chatSettings').doc(settingsId));
+          
+          // Delete chat stats for current user only
+          transaction.delete(_firestore.collection('chatStats').doc(settingsId));
+          
+          // Mark chat as deleted for current user
+          transaction.update(_firestore.collection('chats').doc(chatId), {
+            'deletedBy': FieldValue.arrayUnion([currentUserId]),
+            'deletedAt': FieldValue.serverTimestamp(),
+          });
+        });
+      }
+    } catch (e) {
+      print('Error deleting chat: $e');
+      rethrow;
+    }
+  }
+
+  /// Block user (comprehensive blocking with mutual restrictions)
+  Future<void> blockUser(String userId) async {
+    if (currentUserId == null) return;
+
+    try {
+      // Get chat ID for this friendship (if it exists)
+      final chatId = await _getChatId(currentUserId!, userId);
+      
+      await _firestore.runTransaction((transaction) async {
+        final currentUserRef = _firestore.collection('users').doc(currentUserId);
+        final blockedUserRef = _firestore.collection('users').doc(userId);
+        
+        // Add to blocked users list and remove from friends
+        transaction.update(currentUserRef, {
+          'blockedUsers': FieldValue.arrayUnion([userId]),
+          'friends': FieldValue.arrayRemove([userId]),
+        });
+
+        // Remove current user from the blocked user's friends list
+        transaction.update(blockedUserRef, {
+          'friends': FieldValue.arrayRemove([currentUserId]),
+        });
+
+        // Delete all chat-related data for BOTH users
+        if (chatId != null) {
+          // Delete chat settings for both users
+          final currentUserSettingsId = '${chatId}_$currentUserId';
+          final blockedUserSettingsId = '${chatId}_$userId';
+          
+          transaction.delete(_firestore.collection('chatSettings').doc(currentUserSettingsId));
+          transaction.delete(_firestore.collection('chatSettings').doc(blockedUserSettingsId));
+          
+          // Delete chat stats for both users
+          transaction.delete(_firestore.collection('chatStats').doc(currentUserSettingsId));
+          transaction.delete(_firestore.collection('chatStats').doc(blockedUserSettingsId));
+          
+          // Mark chat as completely blocked and inactive
+          transaction.update(_firestore.collection('chats').doc(chatId), {
+            'isActive': false,
+            'blockedBy': currentUserId,
+            'blockedAt': FieldValue.serverTimestamp(),
+            'isBlocked': true,
+            'blockedUsers': FieldValue.arrayUnion([currentUserId, userId]),
+          });
+        }
+
+        // Delete any pending friend requests between these users
+        await _deleteFriendRequestsBetweenUsers(transaction, currentUserId!, userId);
+      });
+    } catch (e) {
+      print('Error blocking user: $e');
+      rethrow;
+    }
+  }
+
+  /// Unblock user (does NOT restore friendship - they need to add each other again)
+  Future<void> unblockUser(String userId) async {
+    if (currentUserId == null) return;
+
+    try {
+      final currentUserRef = _firestore.collection('users').doc(currentUserId);
+      
+      await _firestore.runTransaction((transaction) async {
+        // Only remove from blocked users list - do NOT add back to friends
+        transaction.update(currentUserRef, {
+          'blockedUsers': FieldValue.arrayRemove([userId]),
+        });
+      });
+    } catch (e) {
+      print('Error unblocking user: $e');
+      rethrow;
+    }
+  }
+
+  /// Helper method to delete friend requests between two users
+  Future<void> _deleteFriendRequestsBetweenUsers(Transaction transaction, String userId1, String userId2) async {
+    try {
+      // Delete requests from userId1 to userId2
+      final requestsFrom1To2 = await _firestore
+          .collection('friendRequests')
+          .where('fromUserId', isEqualTo: userId1)
+          .where('toUserId', isEqualTo: userId2)
+          .get();
+
+      for (final doc in requestsFrom1To2.docs) {
+        transaction.delete(doc.reference);
+      }
+
+      // Delete requests from userId2 to userId1
+      final requestsFrom2To1 = await _firestore
+          .collection('friendRequests')
+          .where('fromUserId', isEqualTo: userId2)
+          .where('toUserId', isEqualTo: userId1)
+          .get();
+
+      for (final doc in requestsFrom2To1.docs) {
+        transaction.delete(doc.reference);
+      }
+    } catch (e) {
+      print('Error deleting friend requests between users: $e');
+    }
+  }
+
+  /// Check if user is blocked
+  Future<bool> isUserBlocked(String userId) async {
+    if (currentUserId == null) return false;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (userDoc.exists) {
+        final blockedUsers = List<String>.from(userDoc.data()?['blockedUsers'] ?? []);
+        return blockedUsers.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if user is blocked: $e');
+      return false;
+    }
+  }
+
+  /// Check if there's mutual blocking between two users
+  Future<bool> isMutualBlocking(String userId) async {
+    if (currentUserId == null) return false;
+
+    try {
+      // Check if current user blocked the other user
+      final currentUserBlocked = await isUserBlocked(userId);
+      
+      // Check if the other user blocked current user
+      final otherUserDoc = await _firestore.collection('users').doc(userId).get();
+      bool otherUserBlocked = false;
+      if (otherUserDoc.exists) {
+        final otherBlockedUsers = List<String>.from(otherUserDoc.data()?['blockedUsers'] ?? []);
+        otherUserBlocked = otherBlockedUsers.contains(currentUserId);
+      }
+
+      return currentUserBlocked || otherUserBlocked;
+    } catch (e) {
+      print('Error checking mutual blocking: $e');
+      return false;
+    }
+  }
+
+  /// Check if user can interact with another user (not blocked either way)
+  Future<bool> canInteractWithUser(String userId) async {
+    if (currentUserId == null) return false;
+    return !(await isMutualBlocking(userId));
+  }
+
+  /// Get list of blocked users
+  Future<List<UserModel>> getBlockedUsers() async {
+    if (currentUserId == null) return [];
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!userDoc.exists) return [];
+
+      final blockedUserIds = List<String>.from(userDoc.data()?['blockedUsers'] ?? []);
+      if (blockedUserIds.isEmpty) return [];
+
+      final blockedUsers = <UserModel>[];
+      
+      // Get user data for each blocked user
+      for (final userId in blockedUserIds) {
+        try {
+          final blockedUserDoc = await _firestore.collection('users').doc(userId).get();
+          if (blockedUserDoc.exists) {
+            blockedUsers.add(UserModel.fromFirestore(blockedUserDoc));
+          }
+        } catch (e) {
+          print('Error getting blocked user $userId: $e');
+        }
+      }
+      
+      return blockedUsers;
+    } catch (e) {
+      print('Error getting blocked users: $e');
+      return [];
+    }
+  }
+
+  /// Get chat ID between two users
+  Future<String?> _getChatId(String userId1, String userId2) async {
+    try {
+      // Try both combinations of user IDs
+      final chatId1 = '${userId1}_$userId2';
+      final chatId2 = '${userId2}_$userId1';
+      
+      final chat1Doc = await _firestore.collection('chats').doc(chatId1).get();
+      if (chat1Doc.exists) return chatId1;
+      
+      final chat2Doc = await _firestore.collection('chats').doc(chatId2).get();
+      if (chat2Doc.exists) return chatId2;
+      
+      return null;
+    } catch (e) {
+      print('Error getting chat ID: $e');
+      return null;
+    }
+  }
+
+  /// Get recommended users (excluding friends, blocked users, and current user)
+  Future<List<UserModel>> getRecommendedUsers() async {
+    if (currentUserId == null) return [];
+
+    try {
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!currentUserDoc.exists) return [];
+
+      final currentUserData = currentUserDoc.data()!;
+      final friends = List<String>.from(currentUserData['friends'] ?? []);
+      final blockedUsers = List<String>.from(currentUserData['blockedUsers'] ?? []);
+      
+      // Get all users except current user, friends, and blocked users
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where(FieldPath.documentId, isNotEqualTo: currentUserId)
+          .limit(20)
+          .get();
+
+      final recommendations = <UserModel>[];
+      
+      for (final doc in querySnapshot.docs) {
+        final userId = doc.id;
+        
+        // Skip if user is already a friend or blocked
+        if (friends.contains(userId) || blockedUsers.contains(userId)) {
+          continue;
+        }
+        
+        // Check if there's already a pending friend request
+        final hasPendingRequest = await _hasPendingFriendRequest(userId);
+        if (hasPendingRequest) continue;
+        
+        recommendations.add(UserModel.fromFirestore(doc));
+      }
+      
+      return recommendations;
+    } catch (e) {
+      print('Error getting recommended users: $e');
+      return [];
+    }
+  }
+
+  /// Get mutual friend suggestions (users who have mutual friends with current user)
+  Future<List<UserModel>> getMutualFriendSuggestions() async {
+    if (currentUserId == null) return [];
+
+    try {
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!currentUserDoc.exists) return [];
+
+      final currentUserData = currentUserDoc.data()!;
+      final friends = List<String>.from(currentUserData['friends'] ?? []);
+      final blockedUsers = List<String>.from(currentUserData['blockedUsers'] ?? []);
+      
+      if (friends.isEmpty) {
+        // If user has no friends, return general recommendations
+        return getRecommendedUsers();
+      }
+
+      // Get friends of friends (potential mutual connections)
+      final Set<String> potentialMutualFriends = {};
+      
+      for (final friendId in friends.take(10)) { // Limit to avoid too many queries
+        try {
+          final friendDoc = await _firestore.collection('users').doc(friendId).get();
+          if (friendDoc.exists) {
+            final friendData = friendDoc.data()!;
+            final friendFriends = List<String>.from(friendData['friends'] ?? []);
+            
+            // Add friends of this friend to potential mutual friends
+            for (final friendOfFriend in friendFriends) {
+              if (friendOfFriend != currentUserId && 
+                  !friends.contains(friendOfFriend) && 
+                  !blockedUsers.contains(friendOfFriend)) {
+                potentialMutualFriends.add(friendOfFriend);
+              }
+            }
+          }
+        } catch (e) {
+          print('Error getting friend data for $friendId: $e');
+        }
+      }
+
+      // Get user data for potential mutual friends
+      final suggestions = <UserModel>[];
+      
+      for (final userId in potentialMutualFriends.take(20)) {
+        try {
+          // Check if there's already a pending friend request
+          final hasPendingRequest = await _hasPendingFriendRequest(userId);
+          if (hasPendingRequest) continue;
+          
+          // Check if there's mutual blocking
+          final canInteract = await canInteractWithUser(userId);
+          if (!canInteract) continue;
+          
+          final userDoc = await _firestore.collection('users').doc(userId).get();
+          if (userDoc.exists) {
+            suggestions.add(UserModel.fromFirestore(userDoc));
+          }
+        } catch (e) {
+          print('Error getting user data for $userId: $e');
+        }
+      }
+      
+      return suggestions;
+    } catch (e) {
+      print('Error getting mutual friend suggestions: $e');
+      return [];
+    }
+  }
+
+  /// Search users by name or username (excluding blocked users)
+  Future<List<UserModel>> searchUsers(String query) async {
+    if (currentUserId == null || query.isEmpty) return [];
+
+    try {
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!currentUserDoc.exists) return [];
+
+      final currentUserData = currentUserDoc.data()!;
+      final blockedUsers = List<String>.from(currentUserData['blockedUsers'] ?? []);
+      
+      final searchQuery = query.toLowerCase();
+      
+      // Search by display name
+      final nameQuery = await _firestore
+          .collection('users')
+          .where('displayName', isGreaterThanOrEqualTo: searchQuery)
+          .where('displayName', isLessThan: searchQuery + '\uf8ff')
+          .limit(10)
+          .get();
+
+      // Search by username
+      final usernameQuery = await _firestore
+          .collection('users')
+          .where('username', isGreaterThanOrEqualTo: searchQuery)
+          .where('username', isLessThan: searchQuery + '\uf8ff')
+          .limit(10)
+          .get();
+
+      final results = <String, UserModel>{};
+      
+      // Process name results
+      for (final doc in nameQuery.docs) {
+        final userId = doc.id;
+        if (userId != currentUserId && !blockedUsers.contains(userId)) {
+          // Check if there's mutual blocking
+          final canInteract = await canInteractWithUser(userId);
+          if (canInteract) {
+            results[userId] = UserModel.fromFirestore(doc);
+          }
+        }
+      }
+      
+      // Process username results
+      for (final doc in usernameQuery.docs) {
+        final userId = doc.id;
+        if (userId != currentUserId && !blockedUsers.contains(userId)) {
+          // Check if there's mutual blocking
+          final canInteract = await canInteractWithUser(userId);
+          if (canInteract) {
+            results[userId] = UserModel.fromFirestore(doc);
+          }
+        }
+      }
+      
+      return results.values.toList();
+    } catch (e) {
+      print('Error searching users: $e');
+      return [];
+    }
+  }
+
+  /// Check if there's a pending friend request between current user and target user
+  Future<bool> _hasPendingFriendRequest(String targetUserId) async {
+    if (currentUserId == null) return false;
+
+    try {
+      // Check outgoing requests
+      final outgoingQuery = await _firestore
+          .collection('friendRequests')
+          .where('fromUserId', isEqualTo: currentUserId)
+          .where('toUserId', isEqualTo: targetUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (outgoingQuery.docs.isNotEmpty) return true;
+
+      // Check incoming requests
+      final incomingQuery = await _firestore
+          .collection('friendRequests')
+          .where('fromUserId', isEqualTo: targetUserId)
+          .where('toUserId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      return incomingQuery.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking pending friend request: $e');
+      return false;
+    }
+  }
+
+  /// Get friends stream with privacy-aware online status (excluding blocked users)
   Stream<List<UserModel>> getFriendsStream(List<String> friendIds) {
     if (friendIds.isEmpty) {
       return Stream.value([]);
@@ -910,15 +1361,27 @@ class UserService {
         .collection('users')
         .where(FieldPath.documentId, whereIn: friendIds)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.map((doc) {
+        .asyncMap(
+          (snapshot) async {
+            final friends = <UserModel>[];
+            
+            for (final doc in snapshot.docs) {
             final userData = UserModel.fromMap({...doc.data(), 'id': doc.id});
+              
+              // Check if this user is blocked
+              final isBlocked = await isUserBlocked(userData.id);
+              if (isBlocked) continue; // Skip blocked users
+              
             // If user has disabled showing online status, show them as offline
             if (!userData.showOnlineStatus) {
-              return userData.copyWith(isOnline: false);
+                friends.add(userData.copyWith(isOnline: false));
+              } else {
+                friends.add(userData);
+              }
             }
-            return userData;
-          }).toList(),
+            
+            return friends;
+          },
         );
   }
 

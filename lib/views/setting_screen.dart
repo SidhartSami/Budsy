@@ -377,137 +377,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildUserProfileCard(User? user) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+    return Center(
+      child: GestureDetector(
+        onTap: () => _showProfilePictureView(),
+        child: Stack(
           children: [
-            GestureDetector(
-              onTap: () => _showProfilePictureView(),
-              child: Stack(
-                children: [
-                  _buildProfileAvatar(),
-                  if (isUploadingImage)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: isUploadingImage ? null : _openEditProfile,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 104, 234, 243),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+            _buildProfileAvatar(),
+            if (isUploadingImage)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.white,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              currentUser?.displayName ?? 'User',
-              style: GoogleFonts.nunito(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '@${currentUser?.username ?? 'username'}',
-              style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey),
-            ),
-            if (currentUser?.bio?.isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              Text(
-                currentUser!.bio!,
-                style: GoogleFonts.nunito(
-                  fontSize: 14,
-                  color: Colors.grey[600],
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  user?.emailVerified == true ? Icons.verified : Icons.warning,
-                  size: 16,
-                  color: user?.emailVerified == true
-                      ? Colors.green
-                      : Colors.orange,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  user?.email ?? 'No email',
-                  style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey),
-                ),
-                if (currentUser?.isVerified == true) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Verified',
-                      style: GoogleFonts.nunito(
-                        fontSize: 12,
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: isUploadingImage ? null : _openEditProfile,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 104, 234, 243),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
-                ],
-              ],
-            ),
-            if (user?.emailVerified == false) ...[
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _sendEmailVerification,
-                icon: const Icon(Icons.mail_outline),
-                label: const Text('Verify Email'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 16,
                   ),
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),

@@ -403,97 +403,11 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
           ),
         ],
 
-        const SizedBox(height: 30),
-
-        // Account Actions
-        _buildAccountActions(),
       ],
     );
   }
 
-  Widget _buildAccountActions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Account Actions',
-            style: GoogleFonts.nunito(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: Colors.grey[700],
-            ),
-          ),
 
-          const SizedBox(height: 16),
-
-          _buildActionTile(
-            icon: Icons.visibility_off,
-            title: 'Privacy Settings',
-            subtitle: 'Manage who can see your profile',
-            onTap: () => _showComingSoonDialog('Privacy Settings'),
-          ),
-
-          _buildActionTile(
-            icon: Icons.block,
-            title: 'Blocked Users',
-            subtitle: 'Manage blocked users',
-            onTap: () => _showComingSoonDialog('Blocked Users'),
-          ),
-
-          _buildActionTile(
-            icon: Icons.delete_forever,
-            title: 'Delete Account',
-            subtitle: 'Permanently delete your account',
-            color: Colors.red,
-            onTap: _showDeleteAccountDialog,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? Colors.grey[600]),
-      title: Text(
-        title,
-        style: GoogleFonts.nunito(
-          fontWeight: FontWeight.w600,
-          color: color ?? Colors.grey[700],
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey[500]),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: Colors.grey[400],
-      ),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
 
   void _showImagePickerOptions() {
     showModalBottomSheet(
@@ -674,24 +588,6 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
     ).show();
   }
 
-  void _showDeleteAccountDialog() {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.scale,
-      title: 'Delete Account',
-      desc:
-          'Are you sure you want to permanently delete your account? This action cannot be undone.',
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        // TODO: Implement account deletion
-        _showComingSoonDialog('Account Deletion');
-      },
-      btnOkColor: Colors.red,
-      btnOkText: 'Delete',
-      btnCancelText: 'Cancel',
-    ).show();
-  }
 
   void _showSuccessDialog(String message) {
     AwesomeDialog(

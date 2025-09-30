@@ -12,6 +12,7 @@ import 'package:tutortyper_app/services/chat_settings_service.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/user_profile_screen.dart';
+import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
 class EnhancedChatScreen extends StatefulWidget {
   final String chatId;
@@ -454,25 +455,10 @@ class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
             : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
+            UserAvatarWidget(
+              user: widget.otherUser,
               radius: 16,
-              backgroundImage: widget.otherUser.photoUrl != null
-                  ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
-                  : null,
               backgroundColor: primaryColor,
-              child: widget.otherUser.photoUrl == null
-                  ? Text(
-                      (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                          ? (_nickname ?? widget.otherUser.displayName)[0]
-                                .toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    )
-                  : null,
             ),
             const SizedBox(width: 8),
           ],

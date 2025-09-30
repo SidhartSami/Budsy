@@ -179,6 +179,8 @@ class UserService {
     String? bio,
     File? profileImage,
     bool? removeImage = false,
+    String? gender,
+    String? predefinedAvatar,
   }) async {
     if (currentUserId == null) throw Exception('User not authenticated');
 
@@ -243,6 +245,8 @@ class UserService {
       if (photoUrl != null) updates['photoUrl'] = photoUrl;
       if (profileCompleted != null)
         updates['profileCompleted'] = profileCompleted;
+      if (gender != null) updates['gender'] = gender;
+      if (predefinedAvatar != null) updates['predefinedAvatar'] = predefinedAvatar;
 
       // Handle profile image
       if (profileImage != null) {
@@ -360,6 +364,8 @@ class UserService {
     String? photoUrl,
     DateTime? birthDate,
     String? bio,
+    String? gender,
+    String? predefinedAvatar,
   }) async {
     try {
       final normalizedUsername = username.toLowerCase().trim();
@@ -399,6 +405,8 @@ class UserService {
         showOnlineStatus: true,
         profileCompleted: profileCompleted,
         bio: bio?.trim(),
+        gender: gender,
+        predefinedAvatar: predefinedAvatar,
       );
 
       await _firestore.collection('users').doc(userId).set(userModel.toMap());

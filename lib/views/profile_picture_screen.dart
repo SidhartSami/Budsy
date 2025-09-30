@@ -1,65 +1,54 @@
-// views/edit_profile_screen.dart
+// views/profile_picture_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
+import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 
-class EditProfileScreen extends StatefulWidget {
+class ProfilePictureScreen extends StatefulWidget {
   final UserModel currentUser;
 
-  const EditProfileScreen({super.key, required this.currentUser});
+  const ProfilePictureScreen({super.key, required this.currentUser});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  State<ProfilePictureScreen> createState() => _ProfilePictureScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   final UserService _userService = UserService();
-  final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
 
   File? _selectedImage;
   bool _isLoading = false;
   bool _hasChanges = false;
   bool _removeImage = false;
+  String? _selectedAvatar;
+  bool _useCustomPhoto = false;
 
   @override
   void initState() {
     super.initState();
-    _displayNameController.text = widget.currentUser.displayName;
-    _bioController.text = widget.currentUser.bio ?? '';
-    _usernameController.text = widget.currentUser.username;
-
-    // Listen for changes
-    _displayNameController.addListener(_onFieldChanged);
-    _bioController.addListener(_onFieldChanged);
-    _usernameController.addListener(_onFieldChanged);
+    _selectedAvatar = widget.currentUser.predefinedAvatar;
+    _useCustomPhoto = widget.currentUser.photoUrl != null && 
+                     widget.currentUser.predefinedAvatar == null;
   }
 
   void _onFieldChanged() {
-    final hasTextChanges =
-        _displayNameController.text != widget.currentUser.displayName ||
-        _bioController.text != (widget.currentUser.bio ?? '') ||
-        _usernameController.text != widget.currentUser.username;
-
     final hasImageChanges = _selectedImage != null || _removeImage;
+    final hasAvatarChanges = _selectedAvatar != widget.currentUser.predefinedAvatar;
 
     setState(() {
-      _hasChanges = hasTextChanges || hasImageChanges;
+      _hasChanges = hasImageChanges || hasAvatarChanges;
     });
   }
 
   @override
   void dispose() {
-    _displayNameController.dispose();
-    _bioController.dispose();
-    _usernameController.dispose();
     super.dispose();
   }
 
@@ -69,7 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          'Edit Profile',
+          'Profile Picture',
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         backgroundColor: const Color.fromARGB(255, 104, 234, 243),
@@ -142,23 +131,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                backgroundImage: _getProfileImage(),
-                child: _getProfileImage() == null
-                    ? Text(
-                        widget.currentUser.displayName.isNotEmpty
-                            ? widget.currentUser.displayName[0].toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 48,
-                        ),
-                      )
-                    : null,
-              ),
+              child: _buildProfileImage(),
             ),
 
             Positioned(
@@ -221,178 +194,98 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  ImageProvider? _getProfileImage() {
+  Widget _buildProfileImage() {
+    // If removing image and no new image selected
     if (_removeImage && _selectedImage == null) {
-      return null;
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        child: Text(
+          widget.currentUser.displayName.isNotEmpty
+              ? widget.currentUser.displayName[0].toUpperCase()
+              : 'U',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 48,
+          ),
+        ),
+      );
     }
 
+    // If new image selected
     if (_selectedImage != null) {
-      return FileImage(_selectedImage!);
-    } else if (widget.currentUser.photoUrl != null) {
-      return CachedNetworkImageProvider(widget.currentUser.photoUrl!);
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundImage: FileImage(_selectedImage!),
+      );
     }
-    return null;
+
+    // If using predefined avatar
+    if (_selectedAvatar != null && _selectedAvatar != 'custom' && 
+        AvatarManager.isPredefinedAvatar(_selectedAvatar)) {
+      return ClipOval(
+        child: SvgPicture.asset(
+          _selectedAvatar!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // If user has existing photo URL
+    if (widget.currentUser.photoUrl != null) {
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundImage: CachedNetworkImageProvider(widget.currentUser.photoUrl!),
+      );
+    }
+
+    // Default to initials
+    return CircleAvatar(
+      radius: 60,
+      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+      child: Text(
+        widget.currentUser.displayName.isNotEmpty
+            ? widget.currentUser.displayName[0].toUpperCase()
+            : 'U',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 48,
+        ),
+      ),
+    );
   }
 
   Widget _buildFormFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Display Name
-        _buildTextField(
-          controller: _displayNameController,
-          label: 'Display Name',
-          icon: Icons.person,
-          maxLength: 50,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Display name is required';
-            }
-            return null;
+        // Avatar Selection - Show all avatars regardless of gender
+        AvatarSelectionWidget(
+          selectedAvatar: _selectedAvatar,
+          gender: 'all', // Show both male and female avatars
+          onAvatarSelected: (avatar) {
+            setState(() {
+              _selectedAvatar = avatar;
+              _useCustomPhoto = avatar == 'custom';
+              if (_useCustomPhoto) {
+                _selectedImage = null;
+                _removeImage = false;
+              }
+            });
+            _onFieldChanged();
           },
         ),
-
-        const SizedBox(height: 20),
-
-        // Username
-        _buildTextField(
-          controller: _usernameController,
-          label: 'Username',
-          icon: Icons.alternate_email,
-          maxLength: 30,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
-          ],
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Username is required';
-            }
-            if (value.length < 3) {
-              return 'Username must be at least 3 characters';
-            }
-            return null;
-          },
-        ),
-
-        const SizedBox(height: 20),
-
-        // Bio
-        _buildTextField(
-          controller: _bioController,
-          label: 'Bio',
-          icon: Icons.info_outline,
-          maxLines: 3,
-          maxLength: 150,
-          hintText: 'Tell others about yourself...',
-        ),
-
-        const SizedBox(height: 10),
-
-        // Bio guidelines
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[200]!),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    size: 16,
-                    color: Colors.blue[600],
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Bio Tips',
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '• Keep it short and engaging\n• Mention your interests or expertise\n• Use emojis to make it fun!',
-                style: GoogleFonts.nunito(
-                  fontSize: 12,
-                  color: Colors.blue[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Profile completion indicator
-        const SizedBox(height: 20),
-        _buildProfileCompletion(),
       ],
     );
   }
 
-  Widget _buildProfileCompletion() {
-    final completionPercentage = _userService.getProfileCompletionPercentage(
-      widget.currentUser,
-    );
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.account_circle,
-                color: const Color.fromARGB(255, 104, 234, 243),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Profile Completion',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '$completionPercentage%',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 104, 234, 243),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: completionPercentage / 100,
-            backgroundColor: Colors.grey[200],
-            valueColor: const AlwaysStoppedAnimation<Color>(
-              Color.fromARGB(255, 104, 234, 243),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Complete your profile to connect with more friends',
-            style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -729,41 +622,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _resetChanges() {
     setState(() {
-      _displayNameController.text = widget.currentUser.displayName;
-      _bioController.text = widget.currentUser.bio ?? '';
-      _usernameController.text = widget.currentUser.username;
       _selectedImage = null;
       _removeImage = false;
+      _selectedAvatar = widget.currentUser.predefinedAvatar;
+      _useCustomPhoto = widget.currentUser.photoUrl != null && 
+                       widget.currentUser.predefinedAvatar == null;
       _hasChanges = false;
     });
   }
 
   Future<void> _saveChanges() async {
-    // Validate input
-    final validationErrors = _userService.validateProfileData(
-      displayName: _displayNameController.text,
-      username: _usernameController.text,
-      bio: _bioController.text,
-    );
-
-    if (validationErrors.isNotEmpty) {
-      final errorMessage = validationErrors.values.first!;
-      _showErrorDialog(errorMessage);
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Update user profile
+      // Update user profile - only avatar
       await _userService.updateUserProfile(
-        displayName: _displayNameController.text.trim(),
-        username: _usernameController.text.trim(),
-        bio: _bioController.text.trim(),
-        profileImage: _selectedImage,
+        profileImage: _useCustomPhoto ? _selectedImage : null,
         removeImage: _removeImage,
+        predefinedAvatar: _useCustomPhoto ? null : _selectedAvatar,
       );
 
       _showSuccessDialog('Profile updated successfully!');

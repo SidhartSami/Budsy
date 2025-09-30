@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/chat_settings_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/services/chat_settings_service.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
+import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -118,6 +120,46 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     } finally {
       setState(() => _isLoadingSettings = false);
     }
+  }
+
+  Widget _buildUserAvatar() {
+    // Check if user has a predefined avatar
+    if (widget.user.predefinedAvatar != null && 
+        AvatarManager.isPredefinedAvatar(widget.user.predefinedAvatar)) {
+      return ClipOval(
+        child: SvgPicture.asset(
+          widget.user.predefinedAvatar!,
+          width: 130,
+          height: 130,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    
+    // Check if user has a custom photo
+    if (widget.user.photoUrl != null) {
+      return CircleAvatar(
+        radius: 65,
+        backgroundImage: CachedNetworkImageProvider(widget.user.photoUrl!),
+        backgroundColor: const Color(0xFF68EAFF),
+      );
+    }
+    
+    // Default to initials
+    return CircleAvatar(
+      radius: 65,
+      backgroundColor: const Color(0xFF68EAFF),
+      child: Text(
+        widget.user.displayName.isNotEmpty
+            ? widget.user.displayName[0].toUpperCase()
+            : 'U',
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 48,
+        ),
+      ),
+    );
   }
 
   @override
@@ -261,25 +303,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 65,
-                backgroundImage: widget.user.photoUrl != null
-                    ? CachedNetworkImageProvider(widget.user.photoUrl!)
-                    : null,
-                backgroundColor: const Color(0xFF68EAFF),
-                child: widget.user.photoUrl == null
-                    ? Text(
-                        widget.user.displayName.isNotEmpty
-                            ? widget.user.displayName[0].toUpperCase()
-                            : 'U',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 48,
-                        ),
-                      )
-                    : null,
-              ),
+              child: _buildUserAvatar(),
             ),
           ),
           if (widget.user.isOnline)

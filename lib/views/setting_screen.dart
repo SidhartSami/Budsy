@@ -5,10 +5,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/views/blocked_users_screen.dart';
+import 'package:tutortyper_app/views/profile_picture_screen.dart';
+import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 import 'dart:io';
 
 class SettingsScreen extends StatefulWidget {
@@ -202,6 +205,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Change password',
               () => _showChangePasswordDialog(),
             ),
+            _buildSettingsTile(
+              Icons.person_outline_rounded,
+              'Gender',
+              currentUser?.gender?.toUpperCase() ?? 'Not set',
+              () => _showGenderSelectionDialog(),
+            ),
 
             const SizedBox(height: 24),
 
@@ -336,6 +345,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildProfileAvatar() {
+    // Check if user has a predefined avatar
+    if (currentUser?.predefinedAvatar != null && 
+        AvatarManager.isPredefinedAvatar(currentUser!.predefinedAvatar)) {
+      return ClipOval(
+        child: SvgPicture.asset(
+          currentUser!.predefinedAvatar!,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    
+    // Check if user has a custom photo
+    if (currentUser?.photoUrl != null) {
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundImage: NetworkImage(currentUser!.photoUrl!),
+      );
+    }
+    
+    // Default to icon
+    return CircleAvatar(
+      radius: 50,
+      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+      child: const Icon(Icons.person, size: 50, color: Colors.white),
+    );
+  }
+
   Widget _buildUserProfileCard(User? user) {
     return Card(
       elevation: 4,
@@ -344,55 +384,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                  backgroundImage: currentUser?.photoUrl != null
-                      ? NetworkImage(currentUser!.photoUrl!)
-                      : null,
-                  child: currentUser?.photoUrl == null
-                      ? const Icon(Icons.person, size: 50, color: Colors.white)
-                      : null,
-                ),
-                if (isUploadingImage)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+            GestureDetector(
+              onTap: () => _showProfilePictureView(),
+              child: Stack(
+                children: [
+                  _buildProfileAvatar(),
+                  if (isUploadingImage)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: isUploadingImage ? null : _showProfilePictureOptions,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 104, 234, 243),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 16,
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: isUploadingImage ? null : _openEditProfile,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 104, 234, 243),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -548,45 +582,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Profile Picture Management
-  void _showProfilePictureOptions() {
+  void _showProfilePictureView() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            // Full screen background
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                color: Colors.black54,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {}, // Prevent closing when tapping on image
+                    child: Container(
+                      margin: const EdgeInsets.all(20),
+                      child: ClipOval(
+                        child: _buildProfileAvatar(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Close button
+            Positioned(
+              top: 50,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openEditProfile() {
+    if (currentUser != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePictureScreen(currentUser: currentUser!),
+        ),
+      ).then((_) {
+        // Refresh user data when returning from edit profile
+        _loadUserData();
+      });
+    }
+  }
+
+
+
+  void _showGenderSelectionDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Profile Picture',
+          'Select Gender',
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take Photo'),
+              leading: const Icon(Icons.male),
+              title: const Text('Male'),
+              selected: currentUser?.gender == 'male',
               onTap: () {
                 Navigator.of(context).pop();
-                _updateProfilePicture(ImageSource.camera);
+                _updateGender('male');
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from Gallery'),
+              leading: const Icon(Icons.female),
+              title: const Text('Female'),
+              selected: currentUser?.gender == 'female',
               onTap: () {
                 Navigator.of(context).pop();
-                _updateProfilePicture(ImageSource.gallery);
+                _updateGender('female');
               },
             ),
-            if (currentUser?.photoUrl != null)
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Remove Photo',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _removeProfilePicture();
-                },
-              ),
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Prefer not to say'),
+              selected: currentUser?.gender == 'prefer_not_to_say',
+              onTap: () {
+                Navigator.of(context).pop();
+                _updateGender('prefer_not_to_say');
+              },
+            ),
           ],
         ),
         actions: [
@@ -599,68 +700,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _updateProfilePicture(ImageSource source) async {
-    if (isUploadingImage) return;
-
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        setState(() {
-          isUploadingImage = true;
-        });
-
-        // Use the updated profile management method
-        await _userService.updateUserProfile(profileImage: File(image.path));
-
-        await _loadUserData();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture updated successfully'),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile picture: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isUploadingImage = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _removeProfilePicture() async {
+  Future<void> _updateGender(String? gender) async {
     setState(() {
       isLoading = true;
     });
 
     try {
-      await _userService.updateUserProfile(removeImage: true);
+      await _userService.updateUserProfile(gender: gender);
       await _loadUserData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture removed successfully')),
+          SnackBar(
+            content: Text(
+              gender != null 
+                  ? 'Gender updated to ${gender.toUpperCase()}'
+                  : 'Gender removed'
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error removing profile picture: $e')),
+          SnackBar(content: Text('Error updating gender: $e')),
         );
       }
     } finally {
@@ -671,6 +734,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
   }
+
+
 
   // Privacy Settings
   Future<void> _updateShowOnlineStatus(bool value) async {

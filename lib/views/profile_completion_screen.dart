@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/main.dart';
+import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 import 'dart:io';
 
 class ProfileCompletionScreen extends StatefulWidget {
@@ -26,8 +28,48 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   bool showOnlineStatus = true;
   bool isLoading = false;
   bool isUploadingImage = false;
+  String? selectedGender;
+  String? selectedAvatar;
+  bool useCustomPhoto = false;
 
   final ImagePicker _picker = ImagePicker();
+
+  Widget _buildProfileAvatar() {
+    // If using predefined avatar
+    if (selectedAvatar != null && selectedAvatar != 'custom' && 
+        AvatarManager.isPredefinedAvatar(selectedAvatar)) {
+      return ClipOval(
+        child: SvgPicture.asset(
+          selectedAvatar!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // If using custom photo
+    if (selectedImage != null || imageUrl != null) {
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundImage: selectedImage != null
+            ? FileImage(selectedImage!)
+            : (imageUrl != null ? NetworkImage(imageUrl!) : null),
+      );
+    }
+
+    // Default icon
+    return CircleAvatar(
+      radius: 60,
+      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+      child: const Icon(
+        Icons.person,
+        size: 60,
+        color: Colors.white,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,27 +108,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                       children: [
                         Stack(
                           children: [
-                            CircleAvatar(
-                              radius: 60,
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                104,
-                                234,
-                                243,
-                              ),
-                              backgroundImage: selectedImage != null
-                                  ? FileImage(selectedImage!)
-                                  : (imageUrl != null
-                                        ? NetworkImage(imageUrl!)
-                                        : null),
-                              child: selectedImage == null && imageUrl == null
-                                  ? const Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.white,
-                                    )
-                                  : null,
-                            ),
+                            _buildProfileAvatar(),
                             if (isUploadingImage)
                               Positioned.fill(
                                 child: Container(
@@ -145,6 +167,65 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   ),
 
                   const SizedBox(height: 40),
+
+                  // Gender Selection Section
+                  const Text(
+                    'Gender (Optional)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedGender,
+                        hint: const Text('Select your gender'),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'male',
+                            child: Text('Male'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'female',
+                            child: Text('Female'),
+                          ),
+                        ],
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedGender = newValue;
+                            selectedAvatar = null; // Reset avatar when gender changes
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Avatar Selection Section
+                  if (selectedGender != null) ...[
+                    AvatarSelectionWidget(
+                      selectedAvatar: selectedAvatar,
+                      gender: selectedGender,
+                      onAvatarSelected: (avatar) {
+                        setState(() {
+                          selectedAvatar = avatar;
+                          useCustomPhoto = avatar == 'custom';
+                          if (useCustomPhoto) {
+                            selectedImage = null;
+                            imageUrl = null;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 30),
+                  ],
 
                   // Birth Date Section
                   const Text(
@@ -480,6 +561,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       return;
     }
 
+    // Profile picture is optional - no validation needed
+
     setState(() {
       isLoading = true;
     });
@@ -493,8 +576,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         birthDate: selectedBirthDate!,
         showBirthDate: showBirthDate,
         showOnlineStatus: showOnlineStatus,
-        photoUrl: imageUrl,
+        photoUrl: useCustomPhoto ? imageUrl : null,
         profileCompleted: true,
+        gender: selectedGender,
+        predefinedAvatar: useCustomPhoto ? null : selectedAvatar,
       );
 
       if (mounted) {

@@ -51,3 +51,4 @@ flutter:
     - assets/animations/Loading.json
     - assets/images/
     - assets/animations/spring_animation.json
+    - assets/avatars/

@@ -18,6 +18,8 @@ class UserModel {
   final String? bio;
   final bool isVerified;
   final DateTime? lastBioUpdate;
+  final String? gender;
+  final String? predefinedAvatar;
 
   UserModel({
     required this.id,
@@ -36,6 +38,8 @@ class UserModel {
     this.bio,
     this.isVerified = false,
     this.lastBioUpdate,
+    this.gender,
+    this.predefinedAvatar,
   });
 
   // Calculate age from birthdate
@@ -75,6 +79,8 @@ class UserModel {
       'lastBioUpdate': lastBioUpdate != null
           ? Timestamp.fromDate(lastBioUpdate!)
           : null,
+      'gender': gender,
+      'predefinedAvatar': predefinedAvatar,
     };
   }
 
@@ -104,6 +110,8 @@ class UserModel {
       lastBioUpdate: map['lastBioUpdate'] != null
           ? _parseDateTime(map['lastBioUpdate'])
           : null,
+      gender: map['gender'],
+      predefinedAvatar: map['predefinedAvatar'],
     );
   }
 
@@ -151,6 +159,8 @@ class UserModel {
     String? bio,
     bool? isVerified,
     DateTime? lastBioUpdate,
+    String? gender,
+    String? predefinedAvatar,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -169,6 +179,8 @@ class UserModel {
       bio: bio ?? this.bio,
       isVerified: isVerified ?? this.isVerified,
       lastBioUpdate: lastBioUpdate ?? this.lastBioUpdate,
+      gender: gender ?? this.gender,
+      predefinedAvatar: predefinedAvatar ?? this.predefinedAvatar,
     );
   }
 

@@ -25,6 +25,7 @@ class _RegisterViewState extends State<RegisterView> {
   bool _isCheckingUsername = false;
   bool _isUsernameValid = false;
   String? _usernameErrorMessage;
+  String? _selectedGender;
 
   // Add debounce timer
   Timer? _debounceTimer;
@@ -215,6 +216,42 @@ class _RegisterViewState extends State<RegisterView> {
                             autocorrect: false,
                             style: const TextStyle(color: Colors.black),
                             enabled: !_isLoading,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Gender Selection
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(200),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedGender,
+                                hint: Text(
+                                  'Select Gender (Optional)',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'male',
+                                    child: Text('Male'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'female',
+                                    child: Text('Female'),
+                                  ),
+                                ],
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedGender = newValue;
+                                  });
+                                },
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
 
@@ -531,6 +568,7 @@ class _RegisterViewState extends State<RegisterView> {
         displayName: username,
         username: username.toLowerCase(),
         photoUrl: userCredential.user!.photoURL,
+        gender: _selectedGender,
       );
 
       print('DEBUG: ✅ Firestore user profile created');

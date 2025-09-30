@@ -10,6 +10,7 @@ import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/enhanced_chat_screen.dart';
 import 'package:tutortyper_app/views/enhanced_friend_requests_screen.dart';
 import 'package:tutortyper_app/views/add_friends_screen.dart';
+import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
 class FriendsListScreen extends StatefulWidget {
   const FriendsListScreen({super.key});
@@ -367,40 +368,16 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                         width: 3,
                       ),
                     ),
-                    child: CircleAvatar(
+                    child: UserAvatarWidget(
+                      user: friend,
                       radius: 28,
-                      backgroundImage: friend.photoUrl != null
-                          ? CachedNetworkImageProvider(friend.photoUrl!)
-                          : null,
-                      backgroundColor: const Color(0xFF68EAFF),
-                      child: friend.photoUrl == null
-                          ? Text(
-                              friend.displayName.isNotEmpty
-                                  ? friend.displayName[0].toUpperCase()
-                                  : 'U',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                              ),
-                            )
-                          : null,
+                      showOnlineStatus: true,
+                      borderColor: friend.isOnline
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFE2E8F0),
+                      borderWidth: 3,
                     ),
                   ),
-                  if (friend.isOnline)
-                    Positioned(
-                      bottom: 2,
-                      right: 2,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
                 ],
               ),
 
@@ -535,24 +512,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Profile Picture
-              CircleAvatar(
+              UserAvatarWidget(
+                user: friend,
                 radius: 40,
-                backgroundImage: friend.photoUrl != null
-                    ? CachedNetworkImageProvider(friend.photoUrl!)
-                    : null,
                 backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                child: friend.photoUrl == null
-                    ? Text(
-                        friend.displayName.isNotEmpty
-                            ? friend.displayName[0].toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 32,
-                        ),
-                      )
-                    : null,
               ),
 
               const SizedBox(height: 16),

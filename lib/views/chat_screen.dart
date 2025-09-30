@@ -834,12 +834,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildAttachmentOption(
-                    Icons.location_on,
-                    'Location',
-                    Colors.green,
-                    () => _handleAttachment('location'),
-                  ),
-                  _buildAttachmentOption(
                     Icons.mic,
                     'Voice',
                     Colors.orange,

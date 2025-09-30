@@ -1,4 +1,4 @@
-// views/enhanced_chat_screen.dart
+// views/chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,21 +14,21 @@ import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/user_profile_screen.dart';
 import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
-class EnhancedChatScreen extends StatefulWidget {
+class ChatScreen extends StatefulWidget {
   final String chatId;
   final UserModel otherUser;
 
-  const EnhancedChatScreen({
+  const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUser,
   });
 
   @override
-  State<EnhancedChatScreen> createState() => _EnhancedChatScreenState();
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _EnhancedChatScreenState extends State<EnhancedChatScreen> {
+class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final MessageService _messageService = MessageService();

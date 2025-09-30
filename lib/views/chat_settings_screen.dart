@@ -6,8 +6,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/chat_settings_model.dart';
 import 'package:tutortyper_app/services/chat_settings_service.dart';
+import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
+import 'package:tutortyper_app/views/mutual_friends_screen.dart';
 
 class ChatSettingsScreen extends StatefulWidget {
   final String chatId;
@@ -35,6 +37,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
 
   ChatSettingsModel? _settings;
   ChatStatsModel? _stats;
+  int _mutualFriendsCount = 0;
   bool _isLoading = true;
 
   @override
@@ -81,10 +84,15 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     try {
       final settings = await _settingsService.getChatSettings(widget.chatId);
       final stats = await _settingsService.getChatStats(widget.chatId);
+      
+      // Load mutual friends count
+      final UserService userService = UserService();
+      final mutualFriends = await userService.getMutualFriends(widget.otherUser.id);
 
       setState(() {
         _settings = settings;
         _stats = stats;
+        _mutualFriendsCount = mutualFriends.length;
         _nicknameController.text = settings?.nickname ?? '';
         _isLoading = false;
       });
@@ -181,6 +189,9 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
         child: Column(
           children: [
             ScaleTransition(
@@ -348,142 +359,152 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
   Widget _buildSettingsContent() {
     return Column(
       children: [
-        _buildSettingsCard('Personalization', Icons.palette_outlined, [
-          _buildSettingsTile(
-            icon: Icons.edit_outlined,
-            title: 'Nickname',
-            subtitle: _settings?.nickname?.isEmpty ?? true
-                ? 'Set a custom name'
-                : _settings!.nickname!,
-            onTap: _showNicknameDialog,
-            hasValue: _settings?.nickname?.isNotEmpty ?? false,
-          ),
-          _buildSettingsTile(
-            icon: Icons.color_lens_outlined,
-            title: 'Chat Theme',
-            subtitle: _getThemeName(_settings?.chatTheme ?? 'default'),
-            onTap: _showThemeSelector,
-            hasValue: true,
-          ),
-        ]),
-        const SizedBox(height: 16),
-
-        _buildSettingsCard('Privacy & Control', Icons.security_outlined, [
-          _buildSwitchTile(
-            icon: Icons.notifications_off_outlined,
-            title: 'Mute Notifications',
-            subtitle: _getMuteStatus(),
-            value: _settings?.isMuted ?? false,
-            onChanged: _toggleMute,
-          ),
-          _buildSettingsTile(
-            icon: _settings?.isBlocked == true
-                ? Icons.person_add_outlined
-                : Icons.block_outlined,
-            title: _settings?.isBlocked == true ? 'Unblock User' : 'Block User',
-            subtitle: _settings?.isBlocked == true
-                ? 'User is currently blocked'
-                : 'Prevent messages from this user',
-            onTap: _showBlockDialog,
-            isDestructive: _settings?.isBlocked != true,
-          ),
-        ]),
-        const SizedBox(height: 16),
-
-        _buildSettingsCard('Chat Tools', Icons.build_outlined, [
-          _buildSettingsTile(
-            icon: Icons.search_outlined,
-            title: 'Search Messages',
-            subtitle: 'Find specific messages in this chat',
-            onTap: _openMessageSearch,
-          ),
-          _buildSettingsTile(
-            icon: Icons.bar_chart_outlined,
-            title: 'Chat Statistics',
-            subtitle: _getStatsPreview(),
-            onTap: _showStatsDialog,
-          ),
-        ]),
-        const SizedBox(height: 16),
-
-        _buildSettingsCard('Danger Zone', Icons.warning_amber_outlined, [
-          _buildSettingsTile(
-            icon: Icons.delete_sweep_outlined,
-            title: 'Clear Chat History',
-            subtitle: 'Permanently delete all messages',
-            onTap: _showClearChatDialog,
-            isDestructive: true,
-          ),
-        ], isDangerZone: true),
+        _buildMutualFriendsButton(),
+        _buildSettingsTile(
+          icon: Icons.edit_outlined,
+          title: 'Nickname',
+          subtitle: _settings?.nickname?.isEmpty ?? true
+              ? 'Set a custom name'
+              : _settings!.nickname!,
+          onTap: _showNicknameDialog,
+          hasValue: _settings?.nickname?.isNotEmpty ?? false,
+        ),
+        _buildSettingsTile(
+          icon: Icons.color_lens_outlined,
+          title: 'Chat Theme',
+          subtitle: _getThemeName(_settings?.chatTheme ?? 'default'),
+          onTap: _showThemeSelector,
+          hasValue: true,
+        ),
+        _buildSwitchTile(
+          icon: Icons.notifications_off_outlined,
+          title: 'Mute Notifications',
+          subtitle: _getMuteStatus(),
+          value: _settings?.isMuted ?? false,
+          onChanged: _toggleMute,
+        ),
+        _buildSettingsTile(
+          icon: _settings?.isBlocked == true
+              ? Icons.person_add_outlined
+              : Icons.block_outlined,
+          title: _settings?.isBlocked == true ? 'Unblock User' : 'Block User',
+          subtitle: _settings?.isBlocked == true
+              ? 'User is currently blocked'
+              : 'Prevent messages from this user',
+          onTap: _showBlockDialog,
+        ),
+        _buildSettingsTile(
+          icon: Icons.search_outlined,
+          title: 'Search Messages',
+          subtitle: 'Find specific messages in this chat',
+          onTap: _openMessageSearch,
+        ),
+        _buildSettingsTile(
+          icon: Icons.bar_chart_outlined,
+          title: 'Chat Statistics',
+          subtitle: _getStatsPreview(),
+          onTap: _showStatsDialog,
+        ),
+        _buildSettingsTile(
+          icon: Icons.delete_sweep_outlined,
+          title: 'Clear Chat History',
+          subtitle: 'Permanently delete all messages',
+          onTap: _showClearChatDialog,
+        ),
         const SizedBox(height: 32),
       ],
     );
   }
 
-  Widget _buildSettingsCard(
-    String title,
-    IconData titleIcon,
-    List<Widget> children, {
-    bool isDangerZone = false,
-  }) {
+
+  Widget _buildMutualFriendsButton() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isDangerZone
-            ? Border.all(color: const Color(0xFFEF4444).withOpacity(0.2))
-            : null,
         boxShadow: [
           BoxShadow(
-            color: isDangerZone
-                ? const Color(0xFFEF4444).withOpacity(0.05)
-                : const Color(0xFF000000).withOpacity(0.04),
+            color: const Color(0xFF000000).withOpacity(0.04),
             offset: const Offset(0, 2),
             blurRadius: 12,
             spreadRadius: 0,
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _openMutualFriends();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: isDangerZone
-                        ? const Color(0xFFEF4444).withOpacity(0.1)
-                        : const Color(0xFF68EAFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFF68EAFF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    titleIcon,
+                    Icons.group_outlined,
                     size: 20,
-                    color: isDangerZone
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF68EAFF),
+                    color: const Color(0xFF68EAFF),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDangerZone
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF1E293B),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mutual Friends',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _mutualFriendsCount == 0 
+                            ? 'No mutual friends'
+                            : _mutualFriendsCount == 1 
+                                ? '1 mutual friend'
+                                : '$_mutualFriendsCount mutual friends',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFF64748B),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                if (_mutualFriendsCount > 0)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF68EAFF),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: const Color(0xFF94A3B8),
+                  size: 20,
                 ),
               ],
             ),
           ),
-          ...children,
-        ],
+        ),
       ),
     );
   }
@@ -492,82 +513,90 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     bool hasValue = false,
-    bool isDestructive = false,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isDestructive
-                      ? const Color(0xFFEF4444).withOpacity(0.1)
-                      : const Color(0xFF68EAFF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: isDestructive
-                      ? const Color(0xFFEF4444)
-                      : const Color(0xFF68EAFF),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: isDestructive
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: const Color(0xFF64748B),
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (hasValue)
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000000).withOpacity(0.04),
+            offset: const Offset(0, 2),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap != null ? () {
+            HapticFeedback.lightImpact();
+            onTap();
+          } : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
                 Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF68EAFF),
-                    shape: BoxShape.circle,
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF68EAFF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: const Color(0xFF68EAFF),
                   ),
                 ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: const Color(0xFF94A3B8),
-                size: 20,
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFF64748B),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (hasValue)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF68EAFF),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: const Color(0xFF94A3B8),
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -582,56 +611,71 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     required ValueChanged<bool> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF68EAFF).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 20, color: const Color(0xFF68EAFF)),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF64748B),
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Transform.scale(
-            scale: 0.9,
-            child: Switch.adaptive(
-              value: value,
-              onChanged: (newValue) {
-                HapticFeedback.lightImpact();
-                onChanged(newValue);
-              },
-              activeColor: const Color(0xFF68EAFF),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000000).withOpacity(0.04),
+            offset: const Offset(0, 2),
+            blurRadius: 12,
+            spreadRadius: 0,
           ),
         ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF68EAFF).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: const Color(0xFF68EAFF)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: const Color(0xFF64748B),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Transform.scale(
+              scale: 0.9,
+              child: Switch.adaptive(
+                value: value,
+                onChanged: (newValue) {
+                  HapticFeedback.lightImpact();
+                  onChanged(newValue);
+                },
+                activeColor: const Color(0xFF68EAFF),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -697,7 +741,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -899,7 +948,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1035,7 +1089,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -1164,6 +1223,17 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
       MaterialPageRoute(
         builder: (context) => MessageSearchScreen(
           chatId: widget.chatId,
+          otherUser: widget.otherUser,
+        ),
+      ),
+    );
+  }
+
+  void _openMutualFriends() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MutualFriendsScreen(
           otherUser: widget.otherUser,
         ),
       ),

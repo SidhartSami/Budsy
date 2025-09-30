@@ -1197,6 +1197,53 @@ class UserService {
     }
   }
 
+  /// Get mutual friends between current user and another user
+  Future<List<UserModel>> getMutualFriends(String otherUserId) async {
+    if (currentUserId == null) return [];
+
+    try {
+      // Get current user's friends
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!currentUserDoc.exists) return [];
+
+      final currentUserData = currentUserDoc.data()!;
+      final currentUserFriends = List<String>.from(currentUserData['friends'] ?? []);
+      
+      // Get other user's friends
+      final otherUserDoc = await _firestore.collection('users').doc(otherUserId).get();
+      if (!otherUserDoc.exists) return [];
+
+      final otherUserData = otherUserDoc.data()!;
+      final otherUserFriends = List<String>.from(otherUserData['friends'] ?? []);
+      
+      // Find mutual friends (intersection of both friend lists)
+      final mutualFriendIds = currentUserFriends
+          .where((friendId) => otherUserFriends.contains(friendId))
+          .toList();
+      
+      if (mutualFriendIds.isEmpty) return [];
+
+      // Get user data for mutual friends
+      final mutualFriends = <UserModel>[];
+      
+      for (final friendId in mutualFriendIds) {
+        try {
+          final friendDoc = await _firestore.collection('users').doc(friendId).get();
+          if (friendDoc.exists) {
+            mutualFriends.add(UserModel.fromFirestore(friendDoc));
+          }
+        } catch (e) {
+          print('Error getting mutual friend data for $friendId: $e');
+        }
+      }
+      
+      return mutualFriends;
+    } catch (e) {
+      print('Error getting mutual friends: $e');
+      return [];
+    }
+  }
+
   /// Get mutual friend suggestions (users who have mutual friends with current user)
   Future<List<UserModel>> getMutualFriendSuggestions() async {
     if (currentUserId == null) return [];

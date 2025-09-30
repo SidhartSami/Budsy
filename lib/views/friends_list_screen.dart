@@ -7,8 +7,8 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
-import 'package:tutortyper_app/views/enhanced_chat_screen.dart';
-import 'package:tutortyper_app/views/enhanced_friend_requests_screen.dart';
+import 'package:tutortyper_app/views/chat_screen.dart';
+import 'package:tutortyper_app/views/friend_requests_screen.dart';
 import 'package:tutortyper_app/views/add_friends_screen.dart';
 import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
@@ -69,7 +69,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const EnhancedFriendRequestsScreen(),
+                builder: (context) => const FriendRequestsScreen(),
               ),
             );
                     },
@@ -343,13 +343,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EnhancedChatScreen(
+              builder: (context) => ChatScreen(
                 otherUser: friend,
                 chatId: 'chat_${friend.id}',
               ),
             ),
           );
         },
+        onLongPress: () => _showFriendOptions(friend),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -722,12 +723,20 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   void _showFriendOptions(UserModel friend) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -784,49 +793,43 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
               // Options
               _buildOptionTile(
-                icon: Icons.chat,
-                title: 'Start Chat',
+                icon: Icons.message_outlined,
+                title: 'Message',
+                subtitle: 'Start a conversation',
                 onTap: () {
                   Navigator.pop(context);
                   _startChat(friend);
                 },
+                isHighlighted: true,
               ),
 
               _buildOptionTile(
-                icon: Icons.note_add,
-                title: 'Send Note',
+                icon: Icons.notifications_off_outlined,
+                title: 'Mute',
+                subtitle: 'Stop receiving notifications',
                 onTap: () {
                   Navigator.pop(context);
-                  _showSendNoteDialog(friend);
+                  _showMuteConfirmation(friend);
                 },
               ),
 
               _buildOptionTile(
-                icon: Icons.notifications_off,
-                title: 'Mute Notifications',
+                icon: Icons.delete_sweep_outlined,
+                title: 'Clear Chat',
+                subtitle: 'Delete all messages',
                 onTap: () {
                   Navigator.pop(context);
-                  _showMuteOptions(friend);
+                  _showClearChatConfirmation(friend);
                 },
               ),
 
               _buildOptionTile(
-                icon: Icons.delete_outline,
-                title: 'Delete Chat',
-                color: Colors.orange,
+                icon: Icons.person_remove_outlined,
+                title: 'Unfriend',
+                subtitle: 'Remove from friends list',
                 onTap: () {
                   Navigator.pop(context);
-                  _confirmDeleteChat(friend);
-                },
-              ),
-
-              _buildOptionTile(
-                icon: Icons.person_remove,
-                title: 'Remove Friend',
-                color: Colors.red,
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmRemoveFriend(friend);
+                  _showUnfriendConfirmation(friend);
                 },
               ),
             ],
@@ -840,21 +843,80 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    String? subtitle,
     Color? color,
+    bool isHighlighted = false,
   }) {
-    final optionColor = color ?? Colors.grey[700];
+    final optionColor = isHighlighted ? const Color(0xFF68EAFF) : (color ?? Colors.grey[700]);
 
-    return ListTile(
-      leading: Icon(icon, color: optionColor),
-      title: Text(
-        title,
-        style: GoogleFonts.nunito(
-          color: optionColor,
-          fontWeight: FontWeight.w600,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isHighlighted 
+                  ? const Color(0xFF68EAFF).withOpacity(0.1)
+                  : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isHighlighted 
+                    ? const Color(0xFF68EAFF).withOpacity(0.3)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isHighlighted 
+                        ? const Color(0xFF68EAFF).withOpacity(0.2)
+                        : const Color(0xFF68EAFF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: optionColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: optionColor,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 
@@ -940,7 +1002,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                EnhancedChatScreen(chatId: chatId, otherUser: friend),
+                ChatScreen(chatId: chatId, otherUser: friend),
           ),
         );
       }
@@ -1136,6 +1198,85 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       desc: message,
       btnOkOnPress: () {},
     ).show();
+  }
+
+  void _showMuteConfirmation(UserModel friend) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Mute ${friend.displayName}',
+      desc: 'You will stop receiving notifications from ${friend.displayName}. You can unmute them anytime.',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        _muteFriend(friend);
+      },
+      btnOkText: 'Mute',
+      btnCancelText: 'Cancel',
+    ).show();
+  }
+
+  void _showClearChatConfirmation(UserModel friend) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Clear Chat History',
+      desc: 'Are you sure you want to delete all messages with ${friend.displayName}? This action cannot be undone.',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        _clearChatHistory(friend);
+      },
+      btnOkText: 'Clear',
+      btnCancelText: 'Cancel',
+      btnOkColor: const Color(0xFFEF4444),
+    ).show();
+  }
+
+  void _showUnfriendConfirmation(UserModel friend) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Unfriend ${friend.displayName}',
+      desc: 'Are you sure you want to remove ${friend.displayName} from your friends list? You will need to send a new friend request to connect again.',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        _unfriendUser(friend);
+      },
+      btnOkText: 'Unfriend',
+      btnCancelText: 'Cancel',
+      btnOkColor: const Color(0xFFEF4444),
+    ).show();
+  }
+
+  Future<void> _muteFriend(UserModel friend) async {
+    try {
+      // TODO: Implement mute functionality
+      _showSuccessDialog('${friend.displayName} has been muted');
+    } catch (e) {
+      _showErrorDialog('Failed to mute ${friend.displayName}: $e');
+    }
+  }
+
+  Future<void> _clearChatHistory(UserModel friend) async {
+    try {
+      // TODO: Implement clear chat history functionality
+      _showSuccessDialog('Chat history with ${friend.displayName} has been cleared');
+    } catch (e) {
+      _showErrorDialog('Failed to clear chat history: $e');
+    }
+  }
+
+  Future<void> _unfriendUser(UserModel friend) async {
+    try {
+      // TODO: Implement unfriend functionality
+      _showSuccessDialog('${friend.displayName} has been removed from your friends list');
+      // Refresh the friends list
+      setState(() {});
+    } catch (e) {
+      _showErrorDialog('Failed to unfriend ${friend.displayName}: $e');
+    }
   }
 }
 

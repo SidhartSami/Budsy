@@ -10,6 +10,7 @@ import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/services/chat_settings_service.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
+import 'package:tutortyper_app/views/mutual_friends_screen.dart';
 import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -129,8 +130,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       return ClipOval(
         child: SvgPicture.asset(
           widget.user.predefinedAvatar!,
-          width: 130,
-          height: 130,
+          width: 100,
+          height: 100,
           fit: BoxFit.cover,
         ),
       );
@@ -139,7 +140,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     // Check if user has a custom photo
     if (widget.user.photoUrl != null) {
       return CircleAvatar(
-        radius: 65,
+        radius: 50,
         backgroundImage: CachedNetworkImageProvider(widget.user.photoUrl!),
         backgroundColor: const Color(0xFF68EAFF),
       );
@@ -147,7 +148,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     
     // Default to initials
     return CircleAvatar(
-      radius: 65,
+      radius: 50,
       backgroundColor: const Color(0xFF68EAFF),
       child: Text(
         widget.user.displayName.isNotEmpty
@@ -156,7 +157,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         style: GoogleFonts.inter(
           color: Colors.white,
           fontWeight: FontWeight.w600,
-          fontSize: 48,
+          fontSize: 36,
         ),
       ),
     );
@@ -233,10 +234,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: 30),
               _buildProfileImage(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
               _buildUserNameSection(),
+              const SizedBox(height: 4),
             ],
           ),
         ),
@@ -273,7 +275,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       child: Stack(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -284,7 +286,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ),
             ),
             child: Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -292,7 +294,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   color: widget.user.isOnline
                       ? const Color(0xFF10B981)
                       : const Color(0xFFE2E8F0),
-                  width: 4,
+                  width: 3,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -308,22 +310,22 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           ),
           if (widget.user.isOnline)
             Positioned(
-              bottom: 12,
-              right: 12,
+              bottom: 8,
+              right: 8,
               child: Container(
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
+                  border: Border.all(color: Colors.white, width: 3),
                 ),
               ),
             ),
           if (widget.user.isVerified)
             Positioned(
-              top: 12,
-              right: 12,
+              top: 8,
+              right: 8,
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -376,62 +378,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             fontWeight: FontWeight.w400,
           ),
         ),
-        const SizedBox(height: 12),
-        _buildOnlineStatus(),
       ],
     );
   }
 
-  Widget _buildOnlineStatus() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: widget.user.isOnline
-            ? LinearGradient(
-                colors: [
-                  const Color(0xFF10B981).withOpacity(0.15),
-                  const Color(0xFF10B981).withOpacity(0.08),
-                ],
-              )
-            : null,
-        color: widget.user.isOnline ? null : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: widget.user.isOnline
-              ? const Color(0xFF10B981).withOpacity(0.3)
-              : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: widget.user.isOnline
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFF94A3B8),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            widget.user.isOnline
-                ? 'Active now'
-                : _formatLastSeen(widget.user.lastSeen),
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: widget.user.isOnline
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFF64748B),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProfileContent() {
     return Column(
@@ -693,163 +643,101 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   Widget _buildMutualFriendsSection() {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.people_outline,
-                  color: Color(0xFF10B981),
-                  size: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MutualFriendsScreen(
+                  otherUser: widget.user,
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'Mutual Friends',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E293B),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF000000).withOpacity(0.06),
+                  offset: const Offset(0, 4),
+                  blurRadius: 20,
+                  spreadRadius: 0,
                 ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_mutualFriends.length}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF10B981),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.people_outline,
+                    color: Color(0xFF10B981),
+                    size: 20,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _mutualFriends.length > 5 ? 5 : _mutualFriends.length,
-              itemBuilder: (context, index) {
-                if (index == 4 && _mutualFriends.length > 5) {
-                  return _buildMoreFriendsIndicator();
-                }
-                return _buildMutualFriendItem(_mutualFriends[index]);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMutualFriendItem(UserModel friend) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundImage: friend.photoUrl != null
-                ? CachedNetworkImageProvider(friend.photoUrl!)
-                : null,
-            backgroundColor: const Color(0xFF68EAFF),
-            child: friend.photoUrl == null
-                ? Text(
-                    friend.displayName.isNotEmpty
-                        ? friend.displayName[0].toUpperCase()
-                        : 'U',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 60,
-            child: Text(
-              friend.displayName.split(' ').first,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: const Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMoreFriendsIndicator() {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Center(
-              child: Text(
-                '+${_mutualFriends.length - 4}',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mutual Friends',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_mutualFriends.length} ${_mutualFriends.length == 1 ? 'friend' : 'friends'} in common',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_mutualFriends.length}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'More',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: const Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
+
 
   Widget _buildStatsSection() {
     return Container(
@@ -958,154 +846,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     );
   }
 
-  Widget _buildDangerZone() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEF4444).withOpacity(0.05),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.warning_amber_outlined,
-                  color: Color(0xFFEF4444),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Actions',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFEF4444),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildDangerButton(
-            Icons.person_remove_outlined,
-            'Unfriend',
-            'Remove from friends and delete all chat data',
-            () => _showUnfriendDialog(),
-          ),
-          const SizedBox(width: 12),
-          _buildDangerButton(
-            Icons.delete_outline,
-            'Delete Chat',
-            'Delete chat from your side only',
-            () => _showDeleteChatDialog(),
-          ),
-          const SizedBox(width: 12),
-          _buildDangerButton(
-            Icons.block_outlined,
-            'Block User',
-            'Prevent this user from messaging you',
-            () => _showBlockDialog(),
-          ),
-          const SizedBox(width: 12),
-          _buildDangerButton(
-            Icons.report_outlined,
-            'Report User',
-            'Report inappropriate behavior',
-            () => _showReportDialog(),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildDangerButton(
-    IconData icon,
-    String title,
-    String subtitle,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: const Color(0xFFEF4444), size: 20),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFEF4444),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: const Color(0xFFEF4444),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   // Helper Methods
   String _formatLastSeen(DateTime lastSeen) {
@@ -1590,121 +1331,63 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _buildSettingsCard('Personalization', Icons.palette_outlined, [
-            _buildSettingsTile(
-              icon: Icons.edit_outlined,
-              title: 'Nickname',
-              subtitle: _settings?.nickname?.isEmpty ?? true
-                  ? 'Set a custom name'
-                  : _settings!.nickname!,
-              onTap: _showNicknameDialog,
-              hasValue: _settings?.nickname?.isNotEmpty ?? false,
-            ),
-            _buildSettingsTile(
-              icon: Icons.color_lens_outlined,
-              title: 'Chat Theme',
-              subtitle: _getThemeName(_settings?.chatTheme ?? 'default'),
-              onTap: _showThemeSelector,
-              hasValue: true,
-            ),
-          ]),
-          const SizedBox(height: 12),
-          _buildSettingsCard('Privacy & Control', Icons.security_outlined, [
-            _buildSwitchTile(
-              icon: Icons.notifications_off_outlined,
-              title: 'Mute Notifications',
-              subtitle: _getMuteStatus(),
-              value: _settings?.isMuted ?? false,
-              onChanged: _toggleMute,
-            ),
-          ]),
-          const SizedBox(height: 12),
-          _buildSettingsCard('Chat Tools', Icons.build_outlined, [
-            _buildSettingsTile(
-              icon: Icons.search_outlined,
-              title: 'Search Messages',
-              subtitle: 'Find specific messages in this chat',
-              onTap: _openMessageSearch,
-            ),
-          ]),
-          const SizedBox(height: 12),
-          _buildSettingsCard('Actions', Icons.warning_amber_outlined, [
-            _buildSettingsTile(
-              icon: Icons.person_remove_outlined,
-              title: 'Unfriend',
-              subtitle: 'Remove from friends list',
-              onTap: _showUnfriendDialog,
-              isDestructive: true,
-            ),
-            _buildSettingsTile(
-              icon: Icons.block_outlined,
-              title: 'Block User',
-              subtitle: 'Block and remove from friends',
-              onTap: _showBlockDialog,
-              isDestructive: true,
-            ),
-            _buildSettingsTile(
-              icon: Icons.delete_sweep_outlined,
-              title: 'Clear Chat History',
-              subtitle: 'Permanently delete all messages',
-              onTap: _showClearChatDialog,
-              isDestructive: true,
-            ),
-          ], isDangerZone: true),
+          const SizedBox(height: 16),
+          // All settings in one unified list
+          _buildSettingsTile(
+            icon: Icons.edit_outlined,
+            title: 'Nickname',
+            subtitle: _settings?.nickname?.isEmpty ?? true
+                ? 'Set a custom name'
+                : _settings!.nickname!,
+            onTap: _showNicknameDialog,
+            hasValue: _settings?.nickname?.isNotEmpty ?? false,
+          ),
+          _buildSettingsTile(
+            icon: Icons.color_lens_outlined,
+            title: 'Chat Theme',
+            subtitle: _getThemeName(_settings?.chatTheme ?? 'default'),
+            onTap: _showThemeSelector,
+            hasValue: true,
+          ),
+          _buildSwitchTile(
+            icon: Icons.notifications_off_outlined,
+            title: 'Mute Notifications',
+            subtitle: _getMuteStatus(),
+            value: _settings?.isMuted ?? false,
+            onChanged: _toggleMute,
+          ),
+          _buildSettingsTile(
+            icon: Icons.search_outlined,
+            title: 'Search Messages',
+            subtitle: 'Find specific messages in this chat',
+            onTap: _openMessageSearch,
+          ),
+          _buildSettingsTile(
+            icon: Icons.person_remove_outlined,
+            title: 'Unfriend',
+            subtitle: 'Remove from friends list',
+            onTap: _showUnfriendDialog,
+            isDestructive: true,
+          ),
+          _buildSettingsTile(
+            icon: Icons.block_outlined,
+            title: 'Block User',
+            subtitle: 'Block and remove from friends',
+            onTap: _showBlockDialog,
+            isDestructive: true,
+          ),
+          _buildSettingsTile(
+            icon: Icons.delete_sweep_outlined,
+            title: 'Clear Chat History',
+            subtitle: 'Permanently delete all messages',
+            onTap: _showClearChatDialog,
+            isDestructive: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsCard(
-    String title,
-    IconData titleIcon,
-    List<Widget> children, {
-    bool isDangerZone = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDangerZone
-            ? const Color(0xFFFEF2F2)
-            : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: isDangerZone
-            ? Border.all(color: const Color(0xFFEF4444).withOpacity(0.2))
-            : null,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Icon(
-                  titleIcon,
-                  color: isDangerZone
-                      ? const Color(0xFFEF4444)
-                      : const Color(0xFF68EAFF),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDangerZone
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF1E293B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...children,
-        ],
-      ),
-    );
-  }
 
   Widget _buildSettingsTile({
     required IconData icon,
@@ -1729,16 +1412,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: isDestructive
-                      ? const Color(0xFFEF4444).withOpacity(0.1)
-                      : const Color(0xFF68EAFF).withOpacity(0.1),
+                  color: const Color(0xFF68EAFF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
-                  color: isDestructive
-                      ? const Color(0xFFEF4444)
-                      : const Color(0xFF68EAFF),
+                  color: const Color(0xFF68EAFF),
                   size: 18,
                 ),
               ),
@@ -1752,9 +1431,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: isDestructive
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF1E293B),
+                        color: const Color(0xFF1E293B),
                       ),
                     ),
                     const SizedBox(height: 2),

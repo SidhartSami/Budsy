@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutortyper_app/views/welcome_screen.dart';
+import 'package:tutortyper_app/views/introduction_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -131,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            MaterialPageRoute(builder: (context) => const IntroductionScreen()),
           );
         }
       });

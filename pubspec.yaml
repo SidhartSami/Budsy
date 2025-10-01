@@ -36,6 +36,9 @@ dependencies:
   # New dependencies for chat functionality
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
+  
+  # Video player dependency
+  video_player: ^2.8.2
 
 dev_dependencies:
   flutter_test:
@@ -52,3 +55,4 @@ flutter:
     - assets/images/
     - assets/animations/spring_animation.json
     - assets/avatars/
+    - assets/videos/

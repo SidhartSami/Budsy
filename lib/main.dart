@@ -7,6 +7,7 @@ import 'package:tutortyper_app/views/login_view.dart';
 import 'package:tutortyper_app/views/register_view.dart';
 import 'firebase_options.dart';
 import 'package:tutortyper_app/views/welcome_screen.dart';
+import 'package:tutortyper_app/views/onboarding_screen.dart';
 import 'package:tutortyper_app/views/profile_completion_screen.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/friends_list_screen.dart';
@@ -102,11 +103,39 @@ class NotesViewWrapper extends InheritedWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isFirstTime = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstTime();
+  }
+
+  Future<void> _checkFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isFirstTime = prefs.getBool('isFirstTime') ?? true;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -120,9 +149,19 @@ class AuthWrapper extends StatelessWidget {
           return const ProfileCheckWrapper();
         }
 
-        return const WelcomeScreen();
+        // Show onboarding for logged out users (for testing)
+        return const OnboardingWrapper();
       },
     );
+  }
+}
+
+class OnboardingWrapper extends StatelessWidget {
+  const OnboardingWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OnboardingScreen();
   }
 }
 

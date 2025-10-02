@@ -53,6 +53,57 @@ class FriendRequestsBadge extends StatelessWidget {
   }
 }
 
+class SpecialFriendRequestsBadge extends StatelessWidget {
+  final Widget child;
+  final UserService _userService = UserService();
+
+  SpecialFriendRequestsBadge({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: _userService.getPendingSpecialFriendRequestsCountStream(),
+      builder: (context, snapshot) {
+        final pendingCount = snapshot.data ?? 0;
+        
+        if (pendingCount == 0) {
+          return child;
+        }
+        
+        return Stack(
+          children: [
+            child,
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
+                child: Text(
+                  '$pendingCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 // Example usage in a BottomNavigationBar or anywhere else:
 class ExampleBottomNavigation extends StatefulWidget {
   const ExampleBottomNavigation({super.key});

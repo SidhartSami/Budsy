@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/message_model.dart';
 import 'package:tutortyper_app/models/chat_settings_model.dart';
@@ -39,11 +40,13 @@ class _ChatScreenState extends State<ChatScreen> {
   String _currentTheme = 'default';
   String? _nickname;
   bool _isMuted = false;
+  bool _hasPendingSpecialFriendRequest = false;
 
   @override
   void initState() {
     super.initState();
     _loadChatSettings();
+    _checkPendingSpecialFriendRequest();
   }
 
   @override
@@ -203,6 +206,64 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
+          // Special Friend Request Button
+          StreamBuilder<Map<String, bool>>(
+            stream: _getSpecialFriendAndRequestStatusStream(),
+            builder: (context, snapshot) {
+              final data = snapshot.data ?? {
+                'isSpecialFriend': false, 
+                'hasPendingRequest': false,
+                'hasIncomingRequest': false
+              };
+              final isSpecialFriend = data['isSpecialFriend'] ?? false;
+              final hasPendingRequest = data['hasPendingRequest'] ?? false;
+              final hasIncomingRequest = data['hasIncomingRequest'] ?? false;
+              
+              // Determine the visual state
+              Color buttonColor;
+              Color iconColor;
+              IconData iconData;
+              
+              if (hasIncomingRequest) {
+                // Orange for incoming request
+                buttonColor = Colors.orange.withOpacity(0.1);
+                iconColor = Colors.orange;
+                iconData = Icons.favorite_border_rounded;
+              } else if (hasPendingRequest) {
+                // Orange for outgoing request
+                buttonColor = Colors.orange.withOpacity(0.1);
+                iconColor = Colors.orange;
+                iconData = Icons.favorite_border_rounded;
+              } else if (isSpecialFriend) {
+                // Purple for special friends
+                buttonColor = Colors.purple.withOpacity(0.1);
+                iconColor = Colors.purple;
+                iconData = Icons.favorite_rounded;
+              } else {
+                // Blue for regular friends
+                buttonColor = const Color(0xFF68EAFF).withOpacity(0.1);
+                iconColor = const Color(0xFF68EAFF);
+                iconData = Icons.favorite_border_rounded;
+              }
+              
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: buttonColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    iconData,
+                    size: 20,
+                    color: iconColor,
+                  ),
+                  onPressed: () => _handleSpecialFriendRequest(),
+                ),
+              );
+            },
+          ),
+          // Profile Button
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -908,5 +969,427 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Special Friend Request Methods
+  Stream<Map<String, bool>> _getSpecialFriendAndRequestStatusStream() {
+    return UserService().getCurrentUserStream().asyncMap((user) async {
+      if (user == null) return {
+        'isSpecialFriend': false, 
+        'hasPendingRequest': false,
+        'hasIncomingRequest': false
+      };
+      
+      final isSpecialFriend = user.specialFriends.contains(widget.otherUser.id);
+      final hasPendingRequest = await _checkPendingSpecialFriendRequest();
+      final hasIncomingRequest = await _checkIncomingSpecialFriendRequest();
+      
+      return {
+        'isSpecialFriend': isSpecialFriend,
+        'hasPendingRequest': hasPendingRequest,
+        'hasIncomingRequest': hasIncomingRequest,
+      };
+    });
+  }
+
+  Future<void> _handleSpecialFriendRequest() async {
+    try {
+      final userService = UserService();
+      
+      // Check current status
+      final isSpecialFriend = await userService.isSpecialFriend(widget.otherUser.id);
+      final hasPendingRequest = await _checkPendingSpecialFriendRequest();
+      final hasIncomingRequest = await _checkIncomingSpecialFriendRequest();
+      
+      if (isSpecialFriend) {
+        _showSpecialFriendDialog();
+        return;
+      }
+
+      if (hasIncomingRequest) {
+        _showIncomingRequestDialog();
+        return;
+      }
+
+      if (hasPendingRequest) {
+        _showPendingRequestDialog();
+        return;
+      }
+
+      // Send special friend request
+      await userService.sendSpecialFriendRequest(widget.otherUser.id);
+      
+      setState(() {
+        _hasPendingSpecialFriendRequest = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Special friend request sent to ${widget.otherUser.displayName}!'),
+          backgroundColor: const Color(0xFF68EAFF),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<bool> _checkPendingSpecialFriendRequest() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return false;
+
+      // Check if current user has sent a request to this user
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: currentUserId)
+          .where('receiverId', isEqualTo: widget.otherUser.id)
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking pending special friend request: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _checkIncomingSpecialFriendRequest() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return false;
+
+      // Check if this user has sent a request to current user
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: widget.otherUser.id)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking incoming special friend request: $e');
+      return false;
+    }
+  }
+
+  void _showIncomingRequestDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.favorite_border_rounded,
+                color: Colors.orange,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Special Friend Request',
+                style: GoogleFonts.nunito(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.orange.withOpacity(0.1),
+                child: widget.otherUser.photoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.otherUser.photoUrl!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Text(
+                        widget.otherUser.displayName.isNotEmpty
+                            ? widget.otherUser.displayName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '${widget.otherUser.displayName} wants to be your special friend! 💜',
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            // Back button
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Back',
+                style: GoogleFonts.nunito(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            // Reject button
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _rejectIncomingSpecialFriendRequest();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: Text(
+                'Reject',
+                style: GoogleFonts.nunito(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            // Accept button
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _acceptIncomingSpecialFriendRequest();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Accept',
+                style: GoogleFonts.nunito(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSpecialFriendDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Special Friends',
+            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'You and ${widget.otherUser.displayName} are special friends! 💜',
+            style: GoogleFonts.nunito(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _removeSpecialFriend();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Remove Special Friend'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPendingRequestDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Pending Request',
+            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'You have already sent a special friend request to ${widget.otherUser.displayName}. Please wait for their response.',
+            style: GoogleFonts.nunito(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _cancelSpecialFriendRequest();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Cancel Request'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _acceptIncomingSpecialFriendRequest() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return;
+
+      // Find the incoming request
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: widget.otherUser.id)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        final requestId = querySnapshot.docs.first.id;
+        final userService = UserService();
+        await userService.acceptSpecialFriendRequest(requestId, widget.otherUser.id);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You and ${widget.otherUser.displayName} are now special friends! 💜'),
+            backgroundColor: Colors.purple,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error accepting request: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectIncomingSpecialFriendRequest() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return;
+
+      // Find the incoming request
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: widget.otherUser.id)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        final requestId = querySnapshot.docs.first.id;
+        final userService = UserService();
+        await userService.rejectSpecialFriendRequest(requestId);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Special friend request rejected'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error rejecting request: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeSpecialFriend() async {
+    try {
+      final userService = UserService();
+      await userService.removeSpecialFriend(widget.otherUser.id);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Removed ${widget.otherUser.displayName} from special friends'),
+          backgroundColor: const Color(0xFF68EAFF),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error removing special friend: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _cancelSpecialFriendRequest() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return;
+
+      // Find the request document
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: currentUserId)
+          .where('receiverId', isEqualTo: widget.otherUser.id)
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        final requestId = querySnapshot.docs.first.id;
+        await FirebaseFirestore.instance
+            .collection('specialFriendRequests')
+            .doc(requestId)
+            .delete();
+        
+        setState(() {
+          _hasPendingSpecialFriendRequest = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Special friend request cancelled'),
+            backgroundColor: const Color(0xFF68EAFF),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error cancelling request: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

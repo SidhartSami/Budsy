@@ -10,6 +10,7 @@ class UserModel {
   final DateTime lastSeen;
   final bool isOnline;
   final List<String> friends;
+  final List<String> specialFriends;
   final List<String> blockedUsers;
   final DateTime? birthDate;
   final bool showBirthDate;
@@ -30,6 +31,7 @@ class UserModel {
     required this.lastSeen,
     required this.isOnline,
     required this.friends,
+    this.specialFriends = const [],
     this.blockedUsers = const [],
     this.birthDate,
     this.showBirthDate = false,
@@ -69,6 +71,7 @@ class UserModel {
       'lastSeen': Timestamp.fromDate(lastSeen),
       'isOnline': isOnline,
       'friends': friends,
+      'specialFriends': specialFriends,
       'blockedUsers': blockedUsers,
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'showBirthDate': showBirthDate,
@@ -98,6 +101,7 @@ class UserModel {
       lastSeen: _parseDateTime(map['lastSeen']),
       isOnline: map['isOnline'] ?? false,
       friends: List<String>.from(map['friends'] ?? []),
+      specialFriends: List<String>.from(map['specialFriends'] ?? []),
       blockedUsers: List<String>.from(map['blockedUsers'] ?? []),
       birthDate: map['birthDate'] != null
           ? _parseDateTime(map['birthDate'])
@@ -151,6 +155,7 @@ class UserModel {
     DateTime? lastSeen,
     bool? isOnline,
     List<String>? friends,
+    List<String>? specialFriends,
     List<String>? blockedUsers,
     DateTime? birthDate,
     bool? showBirthDate,
@@ -171,6 +176,7 @@ class UserModel {
       lastSeen: lastSeen ?? this.lastSeen,
       isOnline: isOnline ?? this.isOnline,
       friends: friends ?? this.friends,
+      specialFriends: specialFriends ?? this.specialFriends,
       blockedUsers: blockedUsers ?? this.blockedUsers,
       birthDate: birthDate ?? this.birthDate,
       showBirthDate: showBirthDate ?? this.showBirthDate,

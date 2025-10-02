@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/friend_request_model.dart';
+import 'package:tutortyper_app/models/special_friend_request_model.dart';
 import 'dart:io';
 
 class UserService {
@@ -848,6 +849,354 @@ class UserService {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
+  }
+
+  // ============================================================================
+  // SPECIAL FRIEND REQUEST METHODS
+  // ============================================================================
+
+  /// Send special friend request (only to existing friends)
+  Future<bool> sendSpecialFriendRequest(String friendId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('DEBUG: No current user found');
+        return false;
+      }
+
+      print('DEBUG: Sending special friend request from ${currentUser.uid} to friend: $friendId');
+
+      // Get current user data
+      final currentUserDoc = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (!currentUserDoc.exists) {
+        print('DEBUG: Current user document does not exist');
+        return false;
+      }
+
+      final currentUserData = UserModel.fromMap({
+        ...currentUserDoc.data()!,
+        'id': currentUserDoc.id,
+      });
+
+      // Check if they are already friends
+      if (!currentUserData.friends.contains(friendId)) {
+        throw Exception('You can only send special friend requests to existing friends');
+      }
+
+      // Check if they are already special friends
+      if (currentUserData.specialFriends.contains(friendId)) {
+        throw Exception('You are already special friends with this user');
+      }
+
+      // Check if there's already a pending special friend request
+      final existingRequest = await _firestore
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: currentUser.uid)
+          .where('receiverId', isEqualTo: friendId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (existingRequest.docs.isNotEmpty) {
+        throw Exception('Special friend request already sent');
+      }
+
+      // Check if there's a pending request from the other user
+      final reverseRequest = await _firestore
+          .collection('specialFriendRequests')
+          .where('senderId', isEqualTo: friendId)
+          .where('receiverId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (reverseRequest.docs.isNotEmpty) {
+        throw Exception(
+          'This friend has already sent you a special friend request. Check your incoming requests!',
+        );
+      }
+
+      // Create special friend request
+      final requestId = _firestore.collection('specialFriendRequests').doc().id;
+      final specialFriendRequest = SpecialFriendRequestModel(
+        id: requestId,
+        senderId: currentUser.uid,
+        receiverId: friendId,
+        status: SpecialFriendRequestStatus.pending,
+        createdAt: DateTime.now(),
+      );
+
+      print('DEBUG: Creating special friend request with ID: $requestId');
+      print('DEBUG: Request data: ${specialFriendRequest.toMap()}');
+
+      await _firestore
+          .collection('specialFriendRequests')
+          .doc(requestId)
+          .set(specialFriendRequest.toMap());
+
+      print('DEBUG: Special friend request created successfully');
+      return true;
+    } catch (e) {
+      print('Error sending special friend request: $e');
+      rethrow;
+    }
+  }
+
+  /// Get incoming special friend requests stream
+  Stream<List<Map<String, dynamic>>> getIncomingSpecialFriendRequestsStream() {
+    if (currentUserId == null) return Stream.value([]);
+
+    print('DEBUG: Getting incoming special friend requests for user: $currentUserId');
+
+    return _firestore
+        .collection('specialFriendRequests')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .asyncMap((snapshot) async {
+          print('DEBUG: Found ${snapshot.docs.length} incoming special friend requests');
+
+          List<Map<String, dynamic>> requestsWithUserData = [];
+
+          for (var doc in snapshot.docs) {
+            try {
+              print('DEBUG: Processing special friend request doc: ${doc.id}');
+              print('DEBUG: Request data: ${doc.data()}');
+
+              final request = SpecialFriendRequestModel.fromMap(
+                doc.data(),
+                docId: doc.id,
+              );
+              print('DEBUG: Created special friend request model: ${request.toString()}');
+
+              // Get sender's user data
+              final senderDoc = await _firestore
+                  .collection('users')
+                  .doc(request.senderId)
+                  .get();
+
+              if (senderDoc.exists) {
+                final senderData = senderDoc.data()!;
+                senderData['id'] = senderDoc.id;
+
+                final senderUser = UserModel.fromMap(senderData);
+                print(
+                  'DEBUG: Found sender: ${senderUser.displayName} (@${senderUser.username})',
+                );
+
+                requestsWithUserData.add({
+                  'id': request.id,
+                  'fromUser': senderUser.toMap(),
+                });
+              } else {
+                print(
+                  'DEBUG: Sender document not found for ID: ${request.senderId}',
+                );
+              }
+            } catch (e) {
+              print('ERROR: Error processing incoming special friend request ${doc.id}: $e');
+            }
+          }
+
+          print(
+            'DEBUG: Returning ${requestsWithUserData.length} processed incoming special friend requests',
+          );
+          return requestsWithUserData;
+        });
+  }
+
+  /// Get outgoing special friend requests stream
+  Stream<List<Map<String, dynamic>>> getOutgoingSpecialFriendRequestsStream() {
+    if (currentUserId == null) return Stream.value([]);
+
+    print('DEBUG: Getting outgoing special friend requests for user: $currentUserId');
+
+    return _firestore
+        .collection('specialFriendRequests')
+        .where('senderId', isEqualTo: currentUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .asyncMap((snapshot) async {
+          print('DEBUG: Found ${snapshot.docs.length} outgoing special friend requests');
+
+          List<Map<String, dynamic>> requestsWithUserData = [];
+
+          for (var doc in snapshot.docs) {
+            try {
+              print('DEBUG: Processing outgoing special friend request doc: ${doc.id}');
+              print('DEBUG: Request data: ${doc.data()}');
+
+              final request = SpecialFriendRequestModel.fromMap(
+                doc.data(),
+                docId: doc.id,
+              );
+              print('DEBUG: Created special friend request model: ${request.toString()}');
+
+              // Get receiver's user data
+              final receiverDoc = await _firestore
+                  .collection('users')
+                  .doc(request.receiverId)
+                  .get();
+
+              if (receiverDoc.exists) {
+                final receiverData = receiverDoc.data()!;
+                receiverData['id'] = receiverDoc.id;
+
+                final receiverUser = UserModel.fromMap(receiverData);
+                print(
+                  'DEBUG: Found receiver: ${receiverUser.displayName} (@${receiverUser.username})',
+                );
+
+                requestsWithUserData.add({
+                  'id': request.id,
+                  'toUser': receiverUser.toMap(),
+                });
+              } else {
+                print(
+                  'DEBUG: Receiver document not found for ID: ${request.receiverId}',
+                );
+              }
+            } catch (e) {
+              print('ERROR: Error processing outgoing special friend request ${doc.id}: $e');
+            }
+          }
+
+          print(
+            'DEBUG: Returning ${requestsWithUserData.length} processed outgoing special friend requests',
+          );
+          return requestsWithUserData;
+        });
+  }
+
+  /// Accept special friend request
+  Future<void> acceptSpecialFriendRequest(String requestId, String senderId) async {
+    if (currentUserId == null) return;
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        // Update request status
+        final requestRef = _firestore
+            .collection('specialFriendRequests')
+            .doc(requestId);
+        transaction.update(requestRef, {
+          'status': 'accepted',
+          'respondedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Add to both users' special friends lists
+        final currentUserRef = _firestore
+            .collection('users')
+            .doc(currentUserId);
+        final senderUserRef = _firestore.collection('users').doc(senderId);
+
+        transaction.update(currentUserRef, {
+          'specialFriends': FieldValue.arrayUnion([senderId]),
+        });
+
+        transaction.update(senderUserRef, {
+          'specialFriends': FieldValue.arrayUnion([currentUserId]),
+        });
+      });
+    } catch (e) {
+      print('Error accepting special friend request: $e');
+      rethrow;
+    }
+  }
+
+  /// Reject special friend request
+  Future<void> rejectSpecialFriendRequest(String requestId) async {
+    try {
+      await _firestore.collection('specialFriendRequests').doc(requestId).update({
+        'status': 'rejected',
+        'respondedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error rejecting special friend request: $e');
+      rethrow;
+    }
+  }
+
+  /// Cancel outgoing special friend request
+  Future<void> cancelSpecialFriendRequest(String requestId) async {
+    try {
+      await _firestore.collection('specialFriendRequests').doc(requestId).delete();
+    } catch (e) {
+      print('Error canceling special friend request: $e');
+      rethrow;
+    }
+  }
+
+  /// Get count of pending incoming special friend requests
+  Stream<int> getPendingSpecialFriendRequestsCountStream() {
+    if (currentUserId == null) return Stream.value(0);
+
+    return _firestore
+        .collection('specialFriendRequests')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Remove special friend (removes from both sides)
+  Future<void> removeSpecialFriend(String specialFriendId) async {
+    if (currentUserId == null) return;
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final currentUserRef = _firestore
+            .collection('users')
+            .doc(currentUserId);
+        final specialFriendUserRef = _firestore.collection('users').doc(specialFriendId);
+
+        transaction.update(currentUserRef, {
+          'specialFriends': FieldValue.arrayRemove([specialFriendId]),
+        });
+
+        transaction.update(specialFriendUserRef, {
+          'specialFriends': FieldValue.arrayRemove([currentUserId]),
+        });
+      });
+    } catch (e) {
+      print('Error removing special friend: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if user is a special friend
+  Future<bool> isSpecialFriend(String userId) async {
+    if (currentUserId == null) return false;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (userDoc.exists) {
+        final specialFriends = List<String>.from(userDoc.data()?['specialFriends'] ?? []);
+        return specialFriends.contains(userId);
+      }
+      return false;
+    } catch (e) {
+      print('Error checking if user is special friend: $e');
+      return false;
+    }
+  }
+
+  /// Get special friends stream
+  Stream<List<UserModel>> getSpecialFriendsStream(List<String> specialFriendIds) {
+    if (specialFriendIds.isEmpty) {
+      return Stream.value([]);
+    }
+
+    return _firestore
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: specialFriendIds)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return UserModel.fromMap({...doc.data(), 'id': doc.id});
+          }).toList();
+        });
   }
 
   // ============================================================================

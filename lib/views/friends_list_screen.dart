@@ -22,7 +22,6 @@ class FriendsListScreen extends StatefulWidget {
 class _FriendsListScreenState extends State<FriendsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final UserService _userService = UserService();
-  final Set<String> _pinnedFriends = {}; // Store pinned friend IDs
 
   @override
   void dispose() {
@@ -237,19 +236,25 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           .toList();
                     }
 
-                    // Sort friends: pinned first, then by online status, then alphabetically
+                    // Sort friends: special friends first, then by online status, then alphabetically
                     friends.sort((a, b) {
-                      if (_pinnedFriends.contains(a.id) &&
-                          !_pinnedFriends.contains(b.id)) {
+                      final aIsSpecial = currentUser.specialFriends.contains(a.id);
+                      final bIsSpecial = currentUser.specialFriends.contains(b.id);
+                      
+                      // Special friends first
+                      if (aIsSpecial && !bIsSpecial) {
                         return -1;
-                      } else if (!_pinnedFriends.contains(a.id) &&
-                          _pinnedFriends.contains(b.id)) {
+                      } else if (!aIsSpecial && bIsSpecial) {
                         return 1;
-                      } else if (a.isOnline && !b.isOnline) {
+                      } 
+                      // Then by online status (online friends come first within each group)
+                      else if (a.isOnline && !b.isOnline) {
                         return -1;
                       } else if (!a.isOnline && b.isOnline) {
                         return 1;
-                      } else {
+                      } 
+                      // Finally alphabetically
+                      else {
                         return a.displayName.compareTo(b.displayName);
                       }
                     });
@@ -314,9 +319,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Widget _buildEnhancedFriendCard(UserModel friend) {
-    final bool isPinned = _pinnedFriends.contains(friend.id);
     final bool isVerified = friend.isVerified;
     final String bio = friend.bio ?? "";
+    
+    // Check if this friend is a special friend
+    return StreamBuilder<UserModel?>(
+      stream: _userService.getCurrentUserStream(),
+      builder: (context, snapshot) {
+        final currentUser = snapshot.data;
+        final bool isSpecialFriend = currentUser?.specialFriends.contains(friend.id) ?? false;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -331,9 +342,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             spreadRadius: 0,
           ),
         ],
-        border: isPinned
+        border: isSpecialFriend
             ? Border.all(
-                color: const Color(0xFF68EAFF),
+                color: const Color(0xFF8B5CF6),
                 width: 2,
               )
             : null,
@@ -410,96 +421,127 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                             size: 18,
                           ),
                         ],
-                        if (isPinned) ...[
+                        if (isSpecialFriend) ...[
                           const SizedBox(width: 6),
                           const Icon(
-                            Icons.push_pin_rounded,
-                            color: Color(0xFF68EAFF),
+                            Icons.favorite_rounded,
+                            color: Color(0xFF8B5CF6),
                             size: 16,
                           ),
                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '@${friend.username}',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF64748B),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                    FutureBuilder<Map<String, dynamic>?>(
+                      future: _getLastMessageSimple(friend.id),
+                      builder: (context, snapshot) {
+                        final lastMessage = snapshot.data;
+                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                        
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Text(
+                            'Loading...',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF64748B),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          );
+                        }
+
+                        if (lastMessage == null || lastMessage['text'].toString().isEmpty) {
+                          return Text(
+                            'Start a conversation with ${friend.displayName}',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF64748B),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }
+
+                        final messageText = lastMessage['text'].toString();
+                        final senderId = lastMessage['senderId'].toString();
+                        final isRead = lastMessage['isRead'] ?? false;
+                        final isFromCurrentUser = senderId == currentUserId;
+                        final isUnread = !isFromCurrentUser && !isRead;
+
+                        return Row(
+                          children: [
+                            if (isUnread) ...[
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF3B82F6),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            Expanded(
+                              child: Text(
+                                isFromCurrentUser ? 'You: $messageText' : messageText,
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF64748B),
+                                  fontSize: 14,
+                                  fontWeight: isUnread 
+                                      ? FontWeight.w700
+                                      : isFromCurrentUser 
+                                          ? FontWeight.w400
+                                          : FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: friend.isOnline
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF94A3B8),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          friend.isOnline
-                              ? 'Online'
-                              : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
-                          style: GoogleFonts.inter(
-                            color: friend.isOnline
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF64748B),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (bio.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        bio,
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
                 ),
               ),
 
-              // Action Buttons
-              IconButton(
-                onPressed: () => _togglePin(friend.id),
-                icon: Icon(
-                  isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-                  color: isPinned
-                      ? const Color(0xFF68EAFF)
-                      : const Color(0xFF94A3B8),
-                  size: 20,
+              // Special Friend Heart Button
+              if (isSpecialFriend)
+                IconButton(
+                  onPressed: () => _handleSpecialFriendAction(friend),
+                  icon: const Icon(
+                    Icons.favorite_rounded,
+                    color: Color(0xFF8B5CF6),
+                    size: 20,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
       ),
     );
+      },
+    );
   }
 
-  void _togglePin(String friendId) {
-    setState(() {
-      if (_pinnedFriends.contains(friendId)) {
-        _pinnedFriends.remove(friendId);
-      } else {
-        _pinnedFriends.add(friendId);
+  void _handleSpecialFriendAction(UserModel friend) async {
+    // Navigate to chat screen where special friend request functionality is handled
+    try {
+      final chatId = await _userService.createOrGetPrivateChat(friend.id);
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              otherUser: friend,
+              chatId: chatId,
+            ),
+          ),
+        );
       }
-    });
+    } catch (e) {
+      print('Error creating chat: $e');
+    }
   }
 
   void _showFriendProfileDialog(UserModel friend) {
@@ -1276,6 +1318,66 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       setState(() {});
     } catch (e) {
       _showErrorDialog('Failed to unfriend ${friend.displayName}: $e');
+    }
+  }
+
+  String _generateChatId(String friendId) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return '';
+    
+    // Create consistent chat ID (same format as createOrGetPrivateChat)
+    final participants = [currentUserId, friendId]..sort();
+    return participants.join('_');
+  }
+
+  Future<Map<String, dynamic>?> _getLastMessageSimple(String friendId) async {
+    final chatId = _generateChatId(friendId);
+    if (chatId.isEmpty) return null;
+    
+    print('DEBUG: Getting last message for chatId: $chatId');
+    print('DEBUG: Current user ID: ${FirebaseAuth.instance.currentUser?.uid}');
+    print('DEBUG: Friend ID: $friendId');
+    
+    try {
+      // Check if chat document exists
+      final chatDoc = await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .get();
+      
+      print('DEBUG: Chat document exists: ${chatDoc.exists}');
+      
+      if (!chatDoc.exists) {
+        print('DEBUG: Chat document does not exist for chatId: $chatId');
+        return null;
+      }
+      
+      // Get the last message
+      final messagesSnapshot = await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+      
+      print('DEBUG: Messages snapshot size: ${messagesSnapshot.docs.length}');
+      if (messagesSnapshot.docs.isNotEmpty) {
+        final messageData = messagesSnapshot.docs.first.data();
+        print('DEBUG: Last message text: ${messageData['text']}');
+        print('DEBUG: Last message sender: ${messageData['senderId']}');
+        return {
+          'text': messageData['text'] ?? '',
+          'senderId': messageData['senderId'] ?? '',
+          'timestamp': messageData['timestamp'],
+          'isRead': messageData['isRead'] ?? false,
+        };
+      }
+      print('DEBUG: No messages found for chatId: $chatId');
+      return null;
+    } catch (e) {
+      print('DEBUG: Error getting last message: $e');
+      return null;
     }
   }
 }

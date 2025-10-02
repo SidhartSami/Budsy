@@ -1869,6 +1869,188 @@ class UserService {
     }
   }
 
+  /// Get total unread message count for current user
+  Future<int> getTotalUnreadMessageCount() async {
+    if (currentUserId == null) return 0;
+    
+    try {
+      // Get all chats where current user is a participant
+      final chatsSnapshot = await _firestore
+          .collection('chats')
+          .where('participants', arrayContains: currentUserId!)
+          .get();
+      
+      int totalUnreadCount = 0;
+      
+      for (final chatDoc in chatsSnapshot.docs) {
+        final chatData = chatDoc.data();
+        final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+        if (unreadCount != null && unreadCount.containsKey(currentUserId!)) {
+          totalUnreadCount += (unreadCount[currentUserId!] as int? ?? 0);
+        }
+      }
+      
+      return totalUnreadCount;
+    } catch (e) {
+      print('Error getting total unread message count: $e');
+      return 0;
+    }
+  }
+
+  /// Get total unread message count stream for current user
+  Stream<int> getTotalUnreadMessageCountStream() {
+    if (currentUserId == null) return Stream.value(0);
+    
+    return _firestore
+        .collection('chats')
+        .where('participants', arrayContains: currentUserId!)
+        .snapshots()
+        .map((snapshot) {
+          int totalUnreadCount = 0;
+          
+          for (final chatDoc in snapshot.docs) {
+            final chatData = chatDoc.data();
+            final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+            if (unreadCount != null && unreadCount.containsKey(currentUserId!)) {
+              totalUnreadCount += (unreadCount[currentUserId!] as int? ?? 0);
+            }
+          }
+          
+          return totalUnreadCount;
+        });
+  }
+
+  /// Mark all messages in a chat as read for current user
+  Future<void> markMessagesAsRead(String chatId) async {
+    if (currentUserId == null) return;
+    
+    try {
+      // Update unread count for current user to 0
+      await _firestore.collection('chats').doc(chatId).update({
+        'unreadCount.$currentUserId': 0,
+      });
+      
+      // Mark all unread messages from other users as read
+      final messagesSnapshot = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('senderId', isNotEqualTo: currentUserId)
+          .where('isRead', isEqualTo: false)
+          .get();
+      
+      final batch = _firestore.batch();
+      for (final doc in messagesSnapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      
+      if (messagesSnapshot.docs.isNotEmpty) {
+        await batch.commit();
+      }
+    } catch (e) {
+      print('Error marking messages as read: $e');
+    }
+  }
+
+  /// Get chat info stream for real-time updates
+  Stream<Map<String, dynamic>?> getChatInfoStream(String friendId) {
+    if (currentUserId == null) return Stream.value(null);
+    
+    final participants = [currentUserId!, friendId]..sort();
+    final chatId = participants.join('_');
+    
+    print('DEBUG: Getting chat info stream for chatId: $chatId, currentUser: $currentUserId, friend: $friendId');
+    
+    return _firestore
+        .collection('chats')
+        .doc(chatId)
+        .snapshots()
+        .asyncMap((chatDoc) async {
+          print('DEBUG: Chat doc exists: ${chatDoc.exists} for chatId: $chatId');
+          
+          if (!chatDoc.exists) return null;
+          
+          final chatData = chatDoc.data()!;
+          final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+          final myUnreadCount = unreadCount?[currentUserId!] as int? ?? 0;
+          final hasUnreadMessages = myUnreadCount > 0;
+          
+          print('DEBUG: Unread count for $currentUserId: $myUnreadCount, hasUnread: $hasUnreadMessages');
+          
+          // Get the last message
+          final messagesSnapshot = await _firestore
+              .collection('chats')
+              .doc(chatId)
+              .collection('messages')
+              .orderBy('timestamp', descending: true)
+              .limit(1)
+              .get();
+          
+          if (messagesSnapshot.docs.isNotEmpty) {
+            final messageData = messagesSnapshot.docs.first.data();
+            final senderId = messageData['senderId'] ?? '';
+            final isFromCurrentUser = senderId == currentUserId;
+            
+            print('DEBUG: Last message from: $senderId, isFromCurrentUser: $isFromCurrentUser, hasUnread: $hasUnreadMessages');
+            
+            return {
+              'text': messageData['text'] ?? '',
+              'senderId': senderId,
+              'timestamp': messageData['timestamp'],
+              'isRead': messageData['isRead'] ?? false,
+              'hasUnreadMessages': hasUnreadMessages && !isFromCurrentUser,
+              'unreadCount': hasUnreadMessages && !isFromCurrentUser ? myUnreadCount : 0,
+            };
+          }
+          return null;
+        });
+  }
+
+  /// Mute a friend (add to muted list)
+  Future<void> muteFriend(String friendId) async {
+    if (currentUserId == null) throw Exception('User not authenticated');
+    
+    try {
+      await _firestore.collection('users').doc(currentUserId!).update({
+        'mutedFriends': FieldValue.arrayUnion([friendId]),
+      });
+    } catch (e) {
+      print('Error muting friend: $e');
+      rethrow;
+    }
+  }
+
+  /// Unmute a friend (remove from muted list)
+  Future<void> unmuteFriend(String friendId) async {
+    if (currentUserId == null) throw Exception('User not authenticated');
+    
+    try {
+      await _firestore.collection('users').doc(currentUserId!).update({
+        'mutedFriends': FieldValue.arrayRemove([friendId]),
+      });
+    } catch (e) {
+      print('Error unmuting friend: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if a friend is muted
+  Future<bool> isFriendMuted(String friendId) async {
+    if (currentUserId == null) return false;
+    
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUserId!).get();
+      if (!userDoc.exists) return false;
+      
+      final userData = userDoc.data()!;
+      final mutedFriends = List<String>.from(userData['mutedFriends'] ?? []);
+      return mutedFriends.contains(friendId);
+    } catch (e) {
+      print('Error checking if friend is muted: $e');
+      return false;
+    }
+  }
+
   // ============================================================================
   // NOTES AND MESSAGING METHODS
   // ============================================================================

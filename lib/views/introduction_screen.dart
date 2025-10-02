@@ -27,21 +27,21 @@ class _IntroductionScreenState extends State<IntroductionScreen>
     IntroductionPage(
       title: "Conversations that flow.",
       description: "Stay close with friends and groups through fast, real-time chat.",
-      gradientColors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+      gradientColors: [Colors.white, Colors.white],
       imagePath: 'assets/images/chat.png',
       accentColor: Color(0xFF60A5FA),
     ),
     IntroductionPage(
       title: "Chat. Share. Remember.",
       description: "Send notes, ideas, and reminders that never get lost in the scroll.",
-      gradientColors: [Color(0xFF1E40AF), Color(0xFF2563EB)],
+      gradientColors: [Colors.white, Colors.white],
       imagePath: 'assets/images/notes.png',
       accentColor: Color(0xFF60A5FA),
     ),
     IntroductionPage(
       title: "Private. Simple. Yours.",
       description: "Secure conversations designed around you — no clutter, just connection.",
-      gradientColors: [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
+      gradientColors: [Colors.white, Colors.white],
       imagePath: 'assets/images/secure.png',
       accentColor: Color(0xFF60A5FA),
     ),
@@ -184,10 +184,10 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(25),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.grey[300]!,
                       width: 1,
                     ),
                     boxShadow: [
@@ -203,7 +203,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: Colors.grey[700],
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -250,11 +250,11 @@ class _IntroductionScreenState extends State<IntroductionScreen>
           height: 16,
           decoration: BoxDecoration(
             color: isCurrentPage 
-                ? Colors.white.withOpacity(0.9)
-                : Colors.white.withOpacity(0.3),
+                ? Color(0xFF60A5FA)
+                : Colors.grey[300],
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.grey[400]!,
               width: 1,
             ),
             boxShadow: [
@@ -276,14 +276,14 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white,
-                        Colors.white.withOpacity(0.8),
+                        Color(0xFF3B82F6),
+                        Color(0xFF60A5FA),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Color(0xFF60A5FA).withOpacity(0.4),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -298,14 +298,14 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white,
-                        Colors.white.withOpacity(0.8),
+                        Color(0xFF3B82F6),
+                        Color(0xFF60A5FA),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Color(0xFF60A5FA).withOpacity(0.4),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -353,7 +353,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: Colors.black,
                           height: 1.2,
                           letterSpacing: -0.5,
                         ),
@@ -373,7 +373,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w400,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.grey[700],
                             height: 1.6,
                             letterSpacing: 0.2,
                           ),
@@ -411,7 +411,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                               child: Icon(
                                 Icons.image_not_supported,
                                 size: 80,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.grey[400],
                               ),
                             );
                           },
@@ -448,7 +448,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                                   child: Icon(
                                     Icons.image_not_supported,
                                     size: 80,
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.grey[400],
                                   ),
                                 );
                               },
@@ -477,7 +477,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                           style: GoogleFonts.poppins(
                             fontSize: 30,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: Colors.black,
                             height: 1.2,
                             letterSpacing: -0.5,
                           ),
@@ -497,7 +497,7 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                             style: GoogleFonts.poppins(
                               fontSize: 17,
                               fontWeight: FontWeight.w400,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.grey[700],
                               height: 1.5,
                               letterSpacing: 0.2,
                             ),

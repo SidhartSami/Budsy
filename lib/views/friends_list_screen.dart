@@ -32,18 +32,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: Text(
-          'Friends',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 24),
-        ),
-        backgroundColor: const Color(0xFF68EAFF),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header Section with Gradient Background
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
@@ -51,19 +47,67 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 Color(0xFF4FD1C7),
               ],
             ),
-          ),
-        ),
-        actions: [
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Top Bar with Title and Icons
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            StreamBuilder<UserModel?>(
+                              stream: _userService.getCurrentUserStream(),
+                              builder: (context, userSnapshot) {
+                                final userName = userSnapshot.data?.displayName ?? 'User';
+                                return Text(
+                                  'Hi, $userName!',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 4),
+                            StreamBuilder<int>(
+                              stream: _userService.getTotalUnreadMessageCountStream(),
+                              builder: (context, snapshot) {
+                                final messageCount = snapshot.data ?? 0;
+                                return Text(
+                                  'You Received\n$messageCount Messages',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    height: 1.2,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
           // Friend Requests Button with Badge
           StreamBuilder<int>(
             stream: _userService.getPendingRequestsCountStream(),
             builder: (context, snapshot) {
               final pendingCount = snapshot.data ?? 0;
-
               return Stack(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.mail_outline),
+                                      color: Colors.white,
+                                      iconSize: 26,
                     onPressed: () {
             Navigator.push(
               context,
@@ -102,8 +146,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               );
             },
           ),
+                            const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.person_add),
+                              color: Colors.white,
+                              iconSize: 26,
             onPressed: () {
               Navigator.push(
                 context,
@@ -115,80 +162,152 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           ),
         ],
       ),
-      body: Column(
+                      ],
+                    ),
+                  ),
+
+                  // Active People (Horizontal Scroll of Online Friends)
+                  StreamBuilder<UserModel?>(
+                    stream: _userService.getCurrentUserStream(),
+                    builder: (context, userSnapshot) {
+                      if (!userSnapshot.hasData || userSnapshot.data?.friends.isEmpty == true) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final currentUser = userSnapshot.data!;
+                      return StreamBuilder<List<UserModel>>(
+                        stream: _userService.getFriendsStream(currentUser.friends),
+                        builder: (context, friendsSnapshot) {
+                          if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          // Filter to show only online friends
+                          final activeFriends = friendsSnapshot.data!
+                              .where((friend) => friend.isOnline)
+                              .take(10)
+                              .toList();
+
+                          // Only show the section if there are active friends
+                          if (activeFriends.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search Bar
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Active People',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF68EAFF),
-                  Color(0xFF4FD1C7),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${activeFriends.length}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 90,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  itemCount: activeFriends.length,
+                                  itemBuilder: (context, index) {
+                                    final friend = activeFriends[index];
+                                    return _buildActivePersonItem(friend);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
             ),
+
+            // Extended Search Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF9E9E9E),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
             child: TextField(
               controller: _searchController,
               style: GoogleFonts.inter(
-                fontSize: 16,
+                          fontSize: 15,
                 color: const Color(0xFF1E293B),
               ),
               decoration: InputDecoration(
                 hintText: 'Search friends...',
                 hintStyle: GoogleFonts.inter(
-                  color: const Color(0xFF64748B),
-                  fontSize: 16,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFF64748B),
-                  size: 22,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
+                            color: const Color(0xFF9E9E9E),
+                            fontSize: 15,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (value) {
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
                         icon: const Icon(
                           Icons.clear_rounded,
-                          color: Color(0xFF64748B),
+                          color: Color(0xFF9E9E9E),
                           size: 20,
                         ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {});
                         },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF68EAFF),
-                    width: 2,
-                  ),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                      ),
+                  ],
                 ),
               ),
-              onChanged: (value) {
-                setState(() {}); // Trigger rebuild for search
-              },
             ),
-          ),
 
-          // Friends List
+            // Messages List
           Expanded(
             child: StreamBuilder<UserModel?>(
               stream: _userService.getCurrentUserStream(),
@@ -197,8 +316,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (!userSnapshot.hasData ||
-                    userSnapshot.data?.friends.isEmpty == true) {
+                  if (!userSnapshot.hasData || userSnapshot.data?.friends.isEmpty == true) {
                   return _buildEmptyState();
                 }
 
@@ -206,13 +324,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 return StreamBuilder<List<UserModel>>(
                   stream: _userService.getFriendsStream(currentUser.friends),
                   builder: (context, friendsSnapshot) {
-                    if (friendsSnapshot.connectionState ==
-                        ConnectionState.waiting) {
+                      if (friendsSnapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    if (!friendsSnapshot.hasData ||
-                        friendsSnapshot.data!.isEmpty) {
+                      if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
                       return _buildEmptyState();
                     }
 
@@ -220,54 +336,47 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
                     // Filter friends based on search
                     if (_searchController.text.isNotEmpty) {
-                      friends = friends
-                          .where(
-                            (friend) =>
-                                friend.displayName.toLowerCase().contains(
-                                  _searchController.text.toLowerCase(),
-                                ) ||
-                                friend.username.toLowerCase().contains(
-                                  _searchController.text.toLowerCase(),
-                                ) ||
-                                friend.email.toLowerCase().contains(
-                                  _searchController.text.toLowerCase(),
-                                ),
-                          )
-                          .toList();
-                    }
-
-                    // Sort friends: special friends first, then by online status, then alphabetically
-                    friends.sort((a, b) {
-                      final aIsSpecial = currentUser.specialFriends.contains(a.id);
-                      final bIsSpecial = currentUser.specialFriends.contains(b.id);
-                      
-                      // Special friends first
-                      if (aIsSpecial && !bIsSpecial) {
-                        return -1;
-                      } else if (!aIsSpecial && bIsSpecial) {
-                        return 1;
-                      } 
-                      // Then by online status (online friends come first within each group)
-                      else if (a.isOnline && !b.isOnline) {
-                        return -1;
-                      } else if (!a.isOnline && b.isOnline) {
-                        return 1;
-                      } 
-                      // Finally alphabetically
-                      else {
-                        return a.displayName.compareTo(b.displayName);
+                        friends = friends.where((friend) =>
+                          friend.displayName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+                          friend.username.toLowerCase().contains(_searchController.text.toLowerCase())
+                        ).toList();
                       }
-                    });
 
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: friends.length,
-                      itemBuilder: (context, index) {
-                        return _buildEnhancedFriendCard(friends[index]);
-                      },
+                      // Separate pinned and regular friends
+                      final pinnedFriends = friends.where((f) => currentUser.specialFriends.contains(f.id)).toList();
+                      final regularFriends = friends.where((f) => !currentUser.specialFriends.contains(f.id)).toList();
+
+                      return ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        children: [
+                          // Close Friends Section
+                          if (pinnedFriends.isNotEmpty) ...[
+                            Text(
+                              'Close Friends (${pinnedFriends.length})',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...pinnedFriends.map((friend) => _buildMessageCard(friend, isPinned: true)),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // All Messages Section
+                          Text(
+                            'All Message(${regularFriends.length})',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...regularFriends.map((friend) => _buildMessageCard(friend, isPinned: false)),
+                          const SizedBox(height: 80),
+                        ],
                     );
                   },
                 );
@@ -275,127 +384,153 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _buildActivePersonItem(UserModel friend) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 20),
+      child: GestureDetector(
+        onTap: () => _startChat(friend),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No friends yet',
-            style: GoogleFonts.nunito(
-              fontSize: 24,
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundImage: friend.photoUrl != null
+                        ? CachedNetworkImageProvider(friend.photoUrl!)
+                        : null,
+                    backgroundColor: Colors.white,
+                    child: friend.photoUrl == null
+                        ? Text(
+                            friend.displayName.isNotEmpty
+                                ? friend.displayName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Color(0xFF68EAFF),
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Send friend requests to start connecting!',
-            style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _showSendFriendRequestDialog,
-            icon: const Icon(Icons.person_add),
-            label: const Text('Send Friend Request'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
+                              fontSize: 20,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                if (friend.isOnline)
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF68EAFF), width: 2),
               ),
             ),
           ),
         ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 60,
+              child: Text(
+                friend.displayName.split(' ')[0],
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEnhancedFriendCard(UserModel friend) {
-    final bool isVerified = friend.isVerified;
-    final String bio = friend.bio ?? "";
-    
-    // Check if this friend is a special friend
-    return StreamBuilder<UserModel?>(
-      stream: _userService.getCurrentUserStream(),
-      builder: (context, snapshot) {
-        final currentUser = snapshot.data;
-        final bool isSpecialFriend = currentUser?.specialFriends.contains(friend.id) ?? false;
-    
+  Widget _buildMessageCard(UserModel friend, {required bool isPinned}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
+            color: Colors.black.withOpacity(0.04),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
           ),
         ],
-        border: isSpecialFriend
-            ? Border.all(
-                color: const Color(0xFF8B5CF6),
-                width: 2,
-              )
-            : null,
       ),
+      child: Material(
+        color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                otherUser: friend,
-                chatId: 'chat_${friend.id}',
-              ),
-            ),
-          );
-        },
+          onTap: () => _startChat(friend),
         onLongPress: () => _showFriendOptions(friend),
-        borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Profile Picture with Online Status
+                // Avatar
               Stack(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: friend.isOnline
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFE2E8F0),
-                        width: 3,
-                      ),
-                    ),
-                    child: UserAvatarWidget(
-                      user: friend,
+                    CircleAvatar(
                       radius: 28,
-                      showOnlineStatus: true,
-                      borderColor: friend.isOnline
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFE2E8F0),
-                      borderWidth: 3,
+                      backgroundImage: friend.photoUrl != null
+                          ? CachedNetworkImageProvider(friend.photoUrl!)
+                          : null,
+                      backgroundColor: const Color(0xFFF5F5F5),
+                      child: friend.photoUrl == null
+                          ? Text(
+                              friend.displayName.isNotEmpty
+                                  ? friend.displayName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                color: Color(0xFF68EAFF),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            )
+                          : null,
                     ),
+                    if (friend.isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                    decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
                   ),
                 ],
               ),
 
               const SizedBox(width: 16),
 
-              // User Info
+                // Message Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,49 +548,53 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (isVerified) ...[
+                          if (friend.isVerified) ...[
                           const SizedBox(width: 6),
                           const Icon(
                             Icons.verified_rounded,
                             color: Color(0xFF3B82F6),
-                            size: 18,
-                          ),
-                        ],
-                        if (isSpecialFriend) ...[
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.favorite_rounded,
-                            color: Color(0xFF8B5CF6),
                             size: 16,
                           ),
                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
-                    FutureBuilder<Map<String, dynamic>?>(
-                      future: _getLastMessageSimple(friend.id),
-                      builder: (context, snapshot) {
-                        final lastMessage = snapshot.data;
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('chats')
+                            .doc(_generateChatId(friend.id))
+                            .snapshots(),
+                        builder: (context, chatSnapshot) {
                         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                        
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          bool hasUnreadMessages = false;
+                          
+                          if (chatSnapshot.hasData && chatSnapshot.data!.exists) {
+                            final chatData = chatSnapshot.data!.data() as Map<String, dynamic>;
+                            final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+                            final myUnreadCount = unreadCount?[currentUserId] as int? ?? 0;
+                            hasUnreadMessages = myUnreadCount > 0;
+                          }
+                          
+                          return FutureBuilder<Map<String, dynamic>?>(
+                            future: _getLastMessageSimple(friend.id),
+                            builder: (context, messageSnapshot) {
+                              if (messageSnapshot.connectionState == ConnectionState.waiting) {
                           return Text(
                             'Loading...',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF64748B),
+                                    color: const Color(0xFF9E9E9E),
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
                             ),
                           );
                         }
 
+                              final lastMessage = messageSnapshot.data;
                         if (lastMessage == null || lastMessage['text'].toString().isEmpty) {
                           return Text(
-                            'Start a conversation with ${friend.displayName}',
+                                  'Start a conversation',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF64748B),
+                                    color: const Color(0xFF9E9E9E),
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -464,302 +603,165 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
                         final messageText = lastMessage['text'].toString();
                         final senderId = lastMessage['senderId'].toString();
-                        final isRead = lastMessage['isRead'] ?? false;
                         final isFromCurrentUser = senderId == currentUserId;
-                        final isUnread = !isFromCurrentUser && !isRead;
 
-                        return Row(
-                          children: [
-                            if (isUnread) ...[
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF3B82F6),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                            ],
-                            Expanded(
-                              child: Text(
+                              return Text(
                                 isFromCurrentUser ? 'You: $messageText' : messageText,
                                 style: GoogleFonts.inter(
-                                  color: const Color(0xFF64748B),
+                                  color: hasUnreadMessages && !isFromCurrentUser 
+                                      ? const Color(0xFF1E293B) 
+                                      : const Color(0xFF9E9E9E),
                                   fontSize: 14,
-                                  fontWeight: isUnread 
-                                      ? FontWeight.w700
-                                      : isFromCurrentUser 
-                                          ? FontWeight.w400
-                                          : FontWeight.w600,
+                                  fontWeight: hasUnreadMessages && !isFromCurrentUser 
+                                      ? FontWeight.w600 
+                                      : FontWeight.normal,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
 
-              // Special Friend Heart Button
-              if (isSpecialFriend)
-                IconButton(
-                  onPressed: () => _handleSpecialFriendAction(friend),
-                  icon: const Icon(
-                    Icons.favorite_rounded,
-                    color: Color(0xFF8B5CF6),
-                    size: 20,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-      },
-    );
-  }
+                const SizedBox(width: 12),
 
-  void _handleSpecialFriendAction(UserModel friend) async {
-    // Navigate to chat screen where special friend request functionality is handled
-    try {
-      final chatId = await _userService.createOrGetPrivateChat(friend.id);
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              otherUser: friend,
-              chatId: chatId,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error creating chat: $e');
-    }
-  }
-
-  void _showFriendProfileDialog(UserModel friend) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Profile Picture
-              UserAvatarWidget(
-                user: friend,
-                radius: 40,
-                backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Name and verification
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                // Time and Badge
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    friend.displayName,
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
+                      '10:50 am',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF9E9E9E),
+                      ),
                     ),
-                  ),
-                  if (friend.isVerified) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.verified, color: Colors.blue, size: 24),
-                  ],
-                ],
-              ),
-
-              Text(
-                '@${friend.username}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 16),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Bio - only show if not empty
-              if (friend.bio != null && friend.bio!.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                    const SizedBox(height: 8),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('chats')
+                          .doc(_generateChatId(friend.id))
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return const SizedBox.shrink();
+                        }
+                        
+                        final chatData = snapshot.data!.data() as Map<String, dynamic>;
+                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                        final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+                        final myUnreadCount = unreadCount?[currentUserId] as int? ?? 0;
+                        
+                        print('DEBUG: ${friend.displayName} - myUnreadCount: $myUnreadCount');
+                        
+                        // Show unread badge if there are unread messages
+                        if (myUnreadCount > 0) {
+                          return Container(
+                            width: 20,
+                            height: 20,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE91E63),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
                   child: Text(
-                    friend.bio!,
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ] else
-                const SizedBox(height: 20),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _startChat(friend);
+                                myUnreadCount > 9 ? '9+' : '$myUnreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        
+                        // Show read receipts for sent messages
+                        return FutureBuilder<Map<String, dynamic>?>(
+                          future: _getLastMessageSimple(friend.id),
+                          builder: (context, messageSnapshot) {
+                            final lastMessage = messageSnapshot.data;
+                            if (lastMessage == null) return const SizedBox.shrink();
+                            
+                            final senderId = lastMessage['senderId'].toString();
+                            final isRead = lastMessage['isRead'] ?? false;
+                            final isFromCurrentUser = senderId == currentUserId;
+                            
+                            if (isFromCurrentUser) {
+                              return Icon(
+                                isRead ? Icons.done_all : Icons.done,
+                                size: 16,
+                                color: isRead ? const Color(0xFF4CAF50) : const Color(0xFF9E9E9E),
+                              );
+                            }
+                            
+                            return const SizedBox.shrink();
+                          },
+                        );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(
-                          255,
-                          104,
-                          234,
-                          243,
-                        ),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Chat'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showSendNoteDialog(friend);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color.fromARGB(
-                          255,
-                          104,
-                          234,
-                          243,
-                        ),
-                        side: const BorderSide(
-                          color: Color.fromARGB(255, 104, 234, 243),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Send Note'),
-                    ),
                   ),
                 ],
               ),
             ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _showSendNoteDialog(UserModel friend) {
-    final noteController = TextEditingController();
-
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.noHeader,
-      animType: AnimType.scale,
-      width: MediaQuery.of(context).size.width * 0.9,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+  Widget _buildEmptyState() {
+    return Center(
         child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.note_add,
-              size: 50,
-              color: Color.fromARGB(255, 104, 234, 243),
-            ),
+          Icon(Icons.people_outline, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
-              'Send Note to ${friend.displayName}',
-              style: GoogleFonts.nunito(
+            'No friends yet',
+            style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Send a quick note that will appear in their notifications',
-              style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: noteController,
-              maxLines: 3,
-              maxLength: 100,
-              decoration: InputDecoration(
-                labelText: 'Your Note',
-                hintText: 'Type your note here...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                prefixIcon: const Icon(Icons.message),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[300],
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (noteController.text.trim().isNotEmpty) {
-                        Navigator.of(context).pop();
-                        _sendNote(friend, noteController.text.trim());
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Send Note'),
+            'Send friend requests to start connecting!',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[500],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    ).show();
+    );
   }
 
-  void _sendNote(UserModel friend, String note) {
-    // TODO: Implement note sending functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Note sent to ${friend.displayName}'),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-      ),
-    );
+
+  // Keep all your existing helper methods
+  void _startChat(UserModel friend) async {
+    try {
+      final chatId = await _userService.createOrGetPrivateChat(friend.id);
+      
+      // Mark messages as read when opening the chat
+      await _userService.markMessagesAsRead(chatId);
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(chatId: chatId, otherUser: friend),
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorDialog('Failed to start chat: $e');
+    }
   }
 
   void _showFriendOptions(UserModel friend) {
@@ -790,7 +792,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                     backgroundImage: friend.photoUrl != null
                         ? CachedNetworkImageProvider(friend.photoUrl!)
                         : null,
-                    backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+                    backgroundColor: const Color(0xFF68EAFF),
                     child: friend.photoUrl == null
                         ? Text(
                             friend.displayName.isNotEmpty
@@ -811,7 +813,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       children: [
                         Text(
                           friend.displayName,
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -856,16 +858,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               ),
 
               _buildOptionTile(
-                icon: Icons.delete_sweep_outlined,
-                title: 'Clear Chat',
-                subtitle: 'Delete all messages',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showClearChatConfirmation(friend);
-                },
-              ),
-
-              _buildOptionTile(
                 icon: Icons.person_remove_outlined,
                 title: 'Unfriend',
                 subtitle: 'Remove from friends list',
@@ -873,6 +865,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   Navigator.pop(context);
                   _showUnfriendConfirmation(friend);
                 },
+                color: Colors.red[600],
               ),
             ],
           ),
@@ -962,286 +955,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     );
   }
 
-  void _showMuteOptions(UserModel friend) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.noHeader,
-      animType: AnimType.scale,
-      width: MediaQuery.of(context).size.width * 0.8,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Icon(Icons.notifications_off, size: 50, color: Colors.orange),
-            const SizedBox(height: 16),
-            Text(
-              'Mute ${friend.displayName}',
-              style: GoogleFonts.nunito(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...[
-              ('15 minutes', '15m'),
-              ('1 hour', '1h'),
-              ('8 hours', '8h'),
-              ('24 hours', '24h'),
-              ('Until I turn it back on', 'forever'),
-            ].map(
-              (option) => ListTile(
-                title: Text(option.$1),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _muteChat(friend, option.$2);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).show();
-  }
-
-  void _confirmDeleteChat(UserModel friend) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.scale,
-      title: 'Delete Chat',
-      desc:
-          'Are you sure you want to delete your chat history with ${friend.displayName}? This action cannot be undone.',
-      btnCancelOnPress: () {},
-      btnOkOnPress: () => _deleteChat(friend),
-      btnOkColor: Colors.orange,
-      btnOkText: 'Delete',
-      btnCancelText: 'Cancel',
-    ).show();
-  }
-
-  String _formatLastSeen(DateTime lastSeen) {
-    final now = DateTime.now();
-    final difference = now.difference(lastSeen);
-
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${lastSeen.day}/${lastSeen.month}/${lastSeen.year}';
-    }
-  }
-
-  void _startChat(UserModel friend) async {
-    try {
-      final chatId = await _userService.createOrGetPrivateChat(friend.id);
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ChatScreen(chatId: chatId, otherUser: friend),
-          ),
-        );
-      }
-    } catch (e) {
-      _showErrorDialog('Failed to start chat: $e');
-    }
-  }
-
-  void _muteChat(UserModel friend, String duration) {
-    // TODO: Implement mute functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Muted ${friend.displayName} for $duration'),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-      ),
-    );
-  }
-
-  void _deleteChat(UserModel friend) async {
-    try {
-      final chatId = await _userService.createOrGetPrivateChat(friend.id);
-      // TODO: Implement delete chat functionality
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Chat history deleted'),
-          backgroundColor: Color.fromARGB(255, 104, 234, 243),
-        ),
-      );
-    } catch (e) {
-      _showErrorDialog('Failed to delete chat: $e');
-    }
-  }
-
-  void _showSendFriendRequestDialog() {
-    final usernameController = TextEditingController();
-
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.noHeader,
-      animType: AnimType.scale,
-      width: MediaQuery.of(context).size.width * 0.9,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.person_add,
-              size: 50,
-              color: Color.fromARGB(255, 104, 234, 243),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Send Friend Request',
-              style: GoogleFonts.nunito(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'The user will receive a request and can choose to accept or decline',
-              style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: usernameController,
-              decoration: InputDecoration(
-                labelText: 'Friend\'s Username',
-                hintText: 'Enter username (without @)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                prefixIcon: const Icon(Icons.alternate_email),
-              ),
-              textCapitalization: TextCapitalization.none,
-              autocorrect: false,
-              enableSuggestions: false,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Enter the username without the @ symbol',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[300],
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _sendFriendRequest(usernameController.text.trim());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Send Request'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).show();
-  }
-
-  void _sendFriendRequest(String username) async {
-    if (username.isEmpty) {
-      _showErrorDialog('Please enter a username');
-      return;
-    }
-
-    // Remove @ if user included it
-    if (username.startsWith('@')) {
-      username = username.substring(1);
-    }
-
-    try {
-      final success = await _userService.sendFriendRequest(username);
-      if (success) {
-        _showSuccessDialog('Friend request sent to @$username!');
-      } else {
-        _showErrorDialog('User @$username not found');
-      }
-    } catch (e) {
-      String errorMessage = e.toString();
-      if (errorMessage.contains('Exception:')) {
-        errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
-      }
-      _showErrorDialog(errorMessage);
-    }
-  }
-
-  void _confirmRemoveFriend(UserModel friend) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.scale,
-      title: 'Remove Friend',
-      desc:
-          'Are you sure you want to remove ${friend.displayName} (@${friend.username}) from your friends?',
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        _removeFriend(friend);
-      },
-      btnOkColor: Colors.red,
-      btnOkText: 'Remove',
-      btnCancelText: 'Cancel',
-    ).show();
-  }
-
-  void _removeFriend(UserModel friend) async {
-    try {
-      await _userService.removeFriend(friend.id);
-      _showSuccessDialog('Friend @${friend.username} removed successfully');
-    } catch (e) {
-      _showErrorDialog('Failed to remove friend: $e');
-    }
-  }
-
-  void _showSuccessDialog(String message) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.success,
-      animType: AnimType.scale,
-      title: 'Success',
-      desc: message,
-      btnOkOnPress: () {},
-    ).show();
-  }
-
-  void _showErrorDialog(String message) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.error,
-      animType: AnimType.scale,
-      title: 'Error',
-      desc: message,
-      btnOkOnPress: () {},
-    ).show();
-  }
-
   void _showMuteConfirmation(UserModel friend) {
     AwesomeDialog(
       context: context,
@@ -1258,21 +971,27 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ).show();
   }
 
-  void _showClearChatConfirmation(UserModel friend) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.scale,
-      title: 'Clear Chat History',
-      desc: 'Are you sure you want to delete all messages with ${friend.displayName}? This action cannot be undone.',
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        _clearChatHistory(friend);
-      },
-      btnOkText: 'Clear',
-      btnCancelText: 'Cancel',
-      btnOkColor: const Color(0xFFEF4444),
-    ).show();
+  Future<void> _muteFriend(UserModel friend) async {
+    try {
+      await _userService.muteFriend(friend.id);
+      if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+            content: Text('${friend.displayName} has been muted'),
+            backgroundColor: const Color(0xFF68EAFF),
+            action: SnackBarAction(
+              label: 'Undo',
+              textColor: Colors.white,
+              onPressed: () async {
+                await _userService.unmuteFriend(friend.id);
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorDialog('Failed to mute ${friend.displayName}: $e');
+    }
   }
 
   void _showUnfriendConfirmation(UserModel friend) {
@@ -1281,10 +1000,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       dialogType: DialogType.warning,
       animType: AnimType.scale,
       title: 'Unfriend ${friend.displayName}',
-      desc: 'Are you sure you want to remove ${friend.displayName} from your friends list? You will need to send a new friend request to connect again.',
+      desc: 'Are you sure you want to remove ${friend.displayName} from your friends list?',
       btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        _unfriendUser(friend);
+      btnOkOnPress: () async {
+        await _userService.removeFriend(friend.id);
       },
       btnOkText: 'Unfriend',
       btnCancelText: 'Cancel',
@@ -1292,40 +1011,21 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ).show();
   }
 
-  Future<void> _muteFriend(UserModel friend) async {
-    try {
-      // TODO: Implement mute functionality
-      _showSuccessDialog('${friend.displayName} has been muted');
-    } catch (e) {
-      _showErrorDialog('Failed to mute ${friend.displayName}: $e');
-    }
-  }
-
-  Future<void> _clearChatHistory(UserModel friend) async {
-    try {
-      // TODO: Implement clear chat history functionality
-      _showSuccessDialog('Chat history with ${friend.displayName} has been cleared');
-    } catch (e) {
-      _showErrorDialog('Failed to clear chat history: $e');
-    }
-  }
-
-  Future<void> _unfriendUser(UserModel friend) async {
-    try {
-      // TODO: Implement unfriend functionality
-      _showSuccessDialog('${friend.displayName} has been removed from your friends list');
-      // Refresh the friends list
-      setState(() {});
-    } catch (e) {
-      _showErrorDialog('Failed to unfriend ${friend.displayName}: $e');
-    }
+  void _showErrorDialog(String message) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.scale,
+      title: 'Error',
+      desc: message,
+      btnOkOnPress: () {},
+    ).show();
   }
 
   String _generateChatId(String friendId) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return '';
     
-    // Create consistent chat ID (same format as createOrGetPrivateChat)
     final participants = [currentUserId, friendId]..sort();
     return participants.join('_');
   }
@@ -1334,25 +1034,21 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     final chatId = _generateChatId(friendId);
     if (chatId.isEmpty) return null;
     
-    print('DEBUG: Getting last message for chatId: $chatId');
-    print('DEBUG: Current user ID: ${FirebaseAuth.instance.currentUser?.uid}');
-    print('DEBUG: Friend ID: $friendId');
-    
     try {
-      // Check if chat document exists
       final chatDoc = await FirebaseFirestore.instance
           .collection('chats')
           .doc(chatId)
           .get();
       
-      print('DEBUG: Chat document exists: ${chatDoc.exists}');
+      if (!chatDoc.exists) return null;
       
-      if (!chatDoc.exists) {
-        print('DEBUG: Chat document does not exist for chatId: $chatId');
-        return null;
-      }
+      final chatData = chatDoc.data()!;
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
+      final hasUnreadMessages = unreadCount != null && 
+          currentUserId != null && 
+          (unreadCount[currentUserId] as int? ?? 0) > 0;
       
-      // Get the last message
       final messagesSnapshot = await FirebaseFirestore.instance
           .collection('chats')
           .doc(chatId)
@@ -1361,24 +1057,23 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           .limit(1)
           .get();
       
-      print('DEBUG: Messages snapshot size: ${messagesSnapshot.docs.length}');
       if (messagesSnapshot.docs.isNotEmpty) {
         final messageData = messagesSnapshot.docs.first.data();
-        print('DEBUG: Last message text: ${messageData['text']}');
-        print('DEBUG: Last message sender: ${messageData['senderId']}');
+        final senderId = messageData['senderId'] ?? '';
+        final isFromCurrentUser = senderId == currentUserId;
+        
         return {
           'text': messageData['text'] ?? '',
-          'senderId': messageData['senderId'] ?? '',
+          'senderId': senderId,
           'timestamp': messageData['timestamp'],
           'isRead': messageData['isRead'] ?? false,
+          'hasUnreadMessages': hasUnreadMessages && !isFromCurrentUser,
+          'unreadCount': hasUnreadMessages ? (unreadCount![currentUserId!] as int? ?? 0) : 0,
         };
       }
-      print('DEBUG: No messages found for chatId: $chatId');
       return null;
     } catch (e) {
-      print('DEBUG: Error getting last message: $e');
       return null;
     }
   }
 }
-

@@ -16,6 +16,7 @@ import 'package:tutortyper_app/views/create_notes.dart';
 import 'package:tutortyper_app/views/setting_screen.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tutortyper_app/widgets/special_friend_interaction_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -460,48 +461,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Bottom Row Cards: Bloom Counter & To-Do List
-                  Row(
-                    children: [
-                      // Bloom Counter Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFFDFFA9),
-                          title: 'Bloom Counter',
-                          titleColor: const Color(0xFF66612B),
-                          imagePath: 'assets/images/bloom_counter_icon.png',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Bloom Counter feature coming soon!',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 23),
-                      // To-Do List Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFFFDAEB),
-                          title: 'To - Do List',
-                          titleColor: const Color(0xFF72266C),
-                          imagePath: 'assets/images/todo_list_icon.png',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'To-Do List feature coming soon!',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Special Friend Interaction Widget
+                  const SpecialFriendInteractionWidget(),
 
                   // Add extra padding at bottom to ensure content is scrollable
                   const SizedBox(height: 40),

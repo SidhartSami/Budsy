@@ -90,9 +90,17 @@ class MessageService {
         .snapshots()
         .map((snapshot) {
           print('DEBUG: Received ${snapshot.docs.length} messages');
-          return snapshot.docs
+          final allMessages = snapshot.docs
               .map((doc) => MessageModel.fromMap(doc.data()))
               .toList();
+          
+          // Filter out messages deleted by current user
+          final visibleMessages = allMessages
+              .where((message) => !message.deletedBy.contains(currentUserId))
+              .toList();
+          
+          print('DEBUG: Filtered to ${visibleMessages.length} visible messages for user $currentUserId');
+          return visibleMessages;
         });
   }
 
@@ -154,23 +162,23 @@ class MessageService {
           .collection('messages')
           .get();
 
-      // Delete in batches (Firestore limit is 500 operations per batch)
+      // Mark messages as deleted for current user (in batches)
       final batch = _firestore.batch();
 
       for (final doc in messagesSnapshot.docs) {
-        batch.delete(doc.reference);
+        final messageData = doc.data();
+        final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
+        
+        // Add current user to deletedBy list if not already present
+        if (!deletedBy.contains(currentUserId)) {
+          deletedBy.add(currentUserId!);
+          batch.update(doc.reference, {'deletedBy': deletedBy});
+        }
       }
 
       await batch.commit();
 
-      // Update chat metadata
-      await _firestore.collection('chats').doc(chatId).update({
-        'lastMessage': null,
-        'lastMessageTime': null,
-        'lastMessageSender': null,
-      });
-
-      print('DEBUG: Chat cleared successfully');
+      print('DEBUG: Chat cleared successfully for user $currentUserId');
     } catch (e) {
       print('DEBUG: Error clearing chat: $e');
       rethrow;

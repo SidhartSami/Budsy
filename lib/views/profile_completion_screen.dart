@@ -38,13 +38,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     // If using predefined avatar
     if (selectedAvatar != null && selectedAvatar != 'custom' && 
         AvatarManager.isPredefinedAvatar(selectedAvatar)) {
-      return ClipOval(
-        child: SvgPicture.asset(
-          selectedAvatar!,
-          width: 120,
-          height: 120,
-          fit: BoxFit.cover,
-        ),
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(selectedAvatar!),
       );
     }
 
@@ -170,7 +167,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
                   // Gender Selection Section
                   const Text(
-                    'Gender (Optional)',
+                    'Gender *',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
@@ -557,6 +554,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     if (selectedBirthDate == null || !_isValidAge()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a valid birth date')),
+      );
+      return;
+    }
+
+    if (selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your gender')),
       );
       return;
     }

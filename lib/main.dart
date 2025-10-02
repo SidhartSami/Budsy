@@ -17,6 +17,7 @@ import 'package:tutortyper_app/views/setting_screen.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tutortyper_app/widgets/special_friend_interaction_widget.dart';
+import 'package:tutortyper_app/widgets/birthday_countdown_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -234,20 +235,44 @@ class NotesView extends StatefulWidget {
   State<NotesView> createState() => _NotesViewState();
 }
 
-class _NotesViewState extends State<NotesView> {
+class _NotesViewState extends State<NotesView> with WidgetsBindingObserver {
   final UserService _userService = UserService();
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _userService.updateOnlineStatus(true);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _userService.updateOnlineStatus(false);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App is in foreground
+        _userService.updateOnlineStatus(true);
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        // App is in background or closed
+        _userService.updateOnlineStatus(false);
+        break;
+      case AppLifecycleState.hidden:
+        // App is hidden but still running
+        _userService.updateOnlineStatus(false);
+        break;
+    }
   }
 
   List<Widget> get _screens => [
@@ -458,6 +483,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // Birthday Countdown Widget
+                  const BirthdayCountdownWidget(),
 
                   const SizedBox(height: 20),
 

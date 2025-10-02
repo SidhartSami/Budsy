@@ -37,10 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool activityStatus = true;
   bool showOnlineStatus = true;
   bool showBirthDate = false;
-  bool locationSharing = false;
   bool pushNotifications = true;
   bool emailNotifications = false;
-  String selectedLanguage = 'English (US)';
   UserModel? currentUser;
   bool isLoading = false;
   bool isUploadingImage = false;
@@ -59,11 +57,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() {
           currentUser = user;
           activityStatus = user.isOnline;
-          // Handle optional fields safely
-          showOnlineStatus =
-              true; // Default value since field doesn't exist in original model
-          showBirthDate =
-              false; // Default value since field doesn't exist in original model
+          showOnlineStatus = user.showOnlineStatus; // Load actual value from user data
+          showBirthDate = user.showBirthDate; // Load actual value from user data
         });
       }
     } catch (e) {
@@ -76,10 +71,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() {
         isDarkMode = prefs.getBool('isDarkMode') ?? false;
-        locationSharing = prefs.getBool('locationSharing') ?? false;
         pushNotifications = prefs.getBool('pushNotifications') ?? true;
         emailNotifications = prefs.getBool('emailNotifications') ?? false;
-        selectedLanguage = prefs.getString('language') ?? 'English (US)';
       });
     }
   }
@@ -87,10 +80,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isDarkMode', isDarkMode);
-    await prefs.setBool('locationSharing', locationSharing);
     await prefs.setBool('pushNotifications', pushNotifications);
     await prefs.setBool('emailNotifications', emailNotifications);
-    await prefs.setString('language', selectedLanguage);
   }
 
   @override
@@ -205,12 +196,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Change password',
               () => _showChangePasswordDialog(),
             ),
-            _buildSettingsTile(
-              Icons.person_outline_rounded,
-              'Gender',
-              currentUser?.gender?.toUpperCase() ?? 'Not set',
-              () => _showGenderSelectionDialog(),
-            ),
 
             const SizedBox(height: 24),
 
@@ -222,12 +207,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Toggle dark/light theme',
               isDarkMode,
               (value) => _updateDarkMode(value),
-            ),
-            _buildSettingsTile(
-              Icons.language_rounded,
-              'Language',
-              selectedLanguage,
-              () => _showLanguageSelection(),
             ),
             _buildSettingsTile(
               Icons.notifications_outlined,
@@ -246,13 +225,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Let friends see when you\'re online',
               showOnlineStatus,
               (value) => _updateShowOnlineStatus(value),
-            ),
-            _buildSwitchTile(
-              Icons.location_on_outlined,
-              'Share Location',
-              'Allow friends to see your location',
-              locationSharing,
-              (value) => _updateLocationSharing(value),
             ),
             _buildSettingsTile(
               Icons.block_rounded,
@@ -346,33 +318,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileAvatar() {
-    // Check if user has a predefined avatar
-    if (currentUser?.predefinedAvatar != null && 
-        AvatarManager.isPredefinedAvatar(currentUser!.predefinedAvatar)) {
-      return ClipOval(
-        child: SvgPicture.asset(
-          currentUser!.predefinedAvatar!,
-          width: 100,
-          height: 100,
-          fit: BoxFit.cover,
+    return Hero(
+      tag: 'profile_picture',
+      child: _buildAvatarContent(50),
+    );
+  }
+
+  Widget _buildFullScreenAvatar() {
+    return _buildAvatarContent(150);
+  }
+
+  Widget _buildAvatarContent(double radius) {
+    // Check if user has a custom photo
+    if (currentUser?.photoUrl != null) {
+      return Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(currentUser!.photoUrl!),
+            fit: BoxFit.cover,
+          ),
         ),
       );
     }
     
-    // Check if user has a custom photo
-    if (currentUser?.photoUrl != null) {
-      return CircleAvatar(
-        radius: 50,
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-        backgroundImage: NetworkImage(currentUser!.photoUrl!),
+    // Check if user has a predefined avatar
+    if (currentUser?.predefinedAvatar != null && 
+        AvatarManager.isPredefinedAvatar(currentUser!.predefinedAvatar)) {
+      return Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: AssetImage(currentUser!.predefinedAvatar!),
+            fit: BoxFit.cover,
+          ),
+        ),
       );
     }
     
-    // Default to icon
+    // Default to gender-based avatar or icon
+    if (currentUser?.gender != null) {
+      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(currentUser!.gender);
+      return Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: AssetImage(defaultAvatar),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    
+    // Final fallback to icon
     return CircleAvatar(
-      radius: 50,
+      radius: radius,
       backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-      child: const Icon(Icons.person, size: 50, color: Colors.white),
+      child: Icon(Icons.person, size: radius, color: Colors.white),
     );
   }
 
@@ -399,26 +407,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: isUploadingImage ? null : _openEditProfile,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 104, 234, 243),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -497,23 +485,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: true,
+      barrierColor: Colors.black87,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
         child: Stack(
           children: [
-            // Full screen background
+            // Full screen background - tap to close
             GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               child: Container(
-                color: Colors.black54,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () {}, // Prevent closing when tapping on image
-                    child: Container(
-                      margin: const EdgeInsets.all(20),
-                      child: ClipOval(
-                        child: _buildProfileAvatar(),
-                      ),
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.transparent,
+              ),
+            ),
+            // Centered profile image
+            Center(
+              child: Hero(
+                tag: 'profile_picture',
+                child: GestureDetector(
+                  onTap: () {}, // Prevent closing when tapping on image
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    height: MediaQuery.of(context).size.width * 0.8,
+                    constraints: const BoxConstraints(
+                      maxWidth: 300,
+                      maxHeight: 300,
+                    ),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: _buildFullScreenAvatar(),
                     ),
                   ),
                 ),
@@ -521,20 +532,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             // Close button
             Positioned(
-              top: 50,
+              top: MediaQuery.of(context).padding.top + 20,
               right: 20,
               child: GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black54,
+                    color: Colors.black.withOpacity(0.6),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.close,
                     color: Colors.white,
                     size: 24,
+                  ),
+                ),
+              ),
+            ),
+            // Edit button
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openEditProfile();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 104, 234, 243),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Edit Profile Picture',
+                          style: GoogleFonts.nunito(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -561,80 +619,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
-  void _showGenderSelectionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select Gender',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.male),
-              title: const Text('Male'),
-              selected: currentUser?.gender == 'male',
-              onTap: () {
-                Navigator.of(context).pop();
-                _updateGender('male');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.female),
-              title: const Text('Female'),
-              selected: currentUser?.gender == 'female',
-              onTap: () {
-                Navigator.of(context).pop();
-                _updateGender('female');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text('Prefer not to say'),
-              selected: currentUser?.gender == 'prefer_not_to_say',
-              onTap: () {
-                Navigator.of(context).pop();
-                _updateGender('prefer_not_to_say');
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Future<void> _updateGender(String? gender) async {
+
+
+  // Privacy Settings
+  Future<void> _updateShowOnlineStatus(bool value) async {
     setState(() {
+      showOnlineStatus = value;
       isLoading = true;
     });
 
     try {
-      await _userService.updateUserProfile(gender: gender);
-      await _loadUserData();
+      // Update the user's showOnlineStatus in Firestore
+      await _userService.updateUserProfile(showOnlineStatus: value);
+      
+      // If turning off online status, also set isOnline to false
+      if (!value) {
+        await _userService.updateOnlineStatus(false);
+      } else {
+        // If turning on, set to online
+        await _userService.updateOnlineStatus(true);
+      }
+
+      await _saveSettings();
+      await _loadUserData(); // Refresh user data
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              gender != null 
-                  ? 'Gender updated to ${gender.toUpperCase()}'
-                  : 'Gender removed'
+              'Online status visibility ${value ? 'enabled' : 'disabled'}',
             ),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
       }
     } catch (e) {
+      // Revert the state if update failed
+      setState(() {
+        showOnlineStatus = !value;
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating gender: $e')),
+          SnackBar(
+            content: Text('Failed to update online status: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -643,27 +674,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           isLoading = false;
         });
       }
-    }
-  }
-
-
-
-  // Privacy Settings
-  Future<void> _updateShowOnlineStatus(bool value) async {
-    setState(() {
-      showOnlineStatus = value;
-    });
-
-    await _saveSettings();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Online status visibility ${value ? 'enabled' : 'disabled'}',
-          ),
-        ),
-      );
     }
   }
 
@@ -684,21 +694,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _updateLocationSharing(bool value) async {
-    setState(() {
-      locationSharing = value;
-    });
-
-    await _saveSettings();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Location sharing ${value ? 'enabled' : 'disabled'}'),
-        ),
-      );
-    }
-  }
 
   Future<void> _updateDisplayName(String newDisplayName) async {
     if (newDisplayName.trim().isEmpty) {
@@ -1154,60 +1149,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showLanguageSelection() {
-    final languages = [
-      'English (US)',
-      'Spanish',
-      'French',
-      'German',
-      'Italian',
-      'Portuguese',
-      'Chinese',
-      'Japanese',
-      'Korean',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select Language',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: languages.length,
-            itemBuilder: (context, index) {
-              final language = languages[index];
-              return RadioListTile<String>(
-                title: Text(language),
-                value: language,
-                groupValue: selectedLanguage,
-                onChanged: (value) async {
-                  setState(() {
-                    selectedLanguage = value!;
-                  });
-                  await _saveSettings();
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Language changed to $value')),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showNotificationSettings() {
     Navigator.of(context).push(

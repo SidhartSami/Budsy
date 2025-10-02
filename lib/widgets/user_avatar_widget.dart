@@ -28,42 +28,50 @@ class UserAvatarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget avatarWidget;
 
-    // Check if user has a predefined avatar
-    if (user.predefinedAvatar != null && 
-        AvatarManager.isPredefinedAvatar(user.predefinedAvatar)) {
-      avatarWidget = ClipOval(
-        child: SvgPicture.asset(
-          user.predefinedAvatar!,
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
     // Check if user has a custom photo
-    else if (user.photoUrl != null) {
+    if (user.photoUrl != null) {
       avatarWidget = CircleAvatar(
         radius: radius,
         backgroundColor: backgroundColor ?? const Color(0xFF68EAFF),
         backgroundImage: CachedNetworkImageProvider(user.photoUrl!),
       );
     }
-    // Default to initials
-    else {
+    // Check if user has a predefined avatar
+    else if (user.predefinedAvatar != null && 
+        AvatarManager.isPredefinedAvatar(user.predefinedAvatar)) {
       avatarWidget = CircleAvatar(
         radius: radius,
-        backgroundColor: backgroundColor ?? const Color(0xFF68EAFF),
-        child: Text(
-          user.displayName.isNotEmpty
-              ? user.displayName[0].toUpperCase()
-              : 'U',
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: radius * 0.6,
-          ),
-        ),
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(user.predefinedAvatar!),
       );
+    }
+    // Default to gender-based avatar or initials
+    else {
+      // If user has gender, use gender-based default avatar
+      if (user.gender != null) {
+        final defaultAvatar = AvatarManager.getDefaultAvatarForGender(user.gender);
+        avatarWidget = CircleAvatar(
+          radius: radius,
+          backgroundColor: Colors.transparent,
+          backgroundImage: AssetImage(defaultAvatar),
+        );
+      } else {
+        // Fallback to initials if no gender is set
+        avatarWidget = CircleAvatar(
+          radius: radius,
+          backgroundColor: backgroundColor ?? const Color(0xFF68EAFF),
+          child: Text(
+            user.displayName.isNotEmpty
+                ? user.displayName[0].toUpperCase()
+                : 'U',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: radius * 0.6,
+            ),
+          ),
+        );
+      }
     }
 
     // Add border if specified

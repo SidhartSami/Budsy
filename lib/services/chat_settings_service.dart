@@ -156,25 +156,21 @@ class ChatSettingsService {
           .collection('messages')
           .get();
 
-      print('Found ${messagesQuery.docs.length} messages to delete');
+      print('Found ${messagesQuery.docs.length} messages to mark as deleted for user $currentUserId');
 
-      // Delete each message document
+      // Mark each message as deleted for current user
       for (final doc in messagesQuery.docs) {
-        batch.delete(doc.reference);
+        final messageData = doc.data();
+        final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
+        
+        // Add current user to deletedBy list if not already present
+        if (!deletedBy.contains(currentUserId)) {
+          deletedBy.add(currentUserId);
+          batch.update(doc.reference, {'deletedBy': deletedBy});
+        }
       }
 
-      // Update chat document to reflect cleared state
-      final chatRef = _firestore.collection('chats').doc(chatId);
-      batch.update(chatRef, {
-        'lastMessage': null,
-        'lastMessageTime': null,
-        'messageCount': 0,
-        'clearedAt': FieldValue.serverTimestamp(),
-        'clearedBy': currentUserId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Reset chat statistics for current user
+      // Reset chat statistics for current user only
       final statsId = _generateSettingsId(chatId, currentUserId);
       final statsRef = _firestore.collection('chatStats').doc(statsId);
 
@@ -193,7 +189,7 @@ class ChatSettingsService {
       // Commit all changes atomically
       await batch.commit();
 
-      print('Chat history cleared successfully for chat: $chatId');
+      print('Chat history cleared successfully for user $currentUserId in chat: $chatId');
     } catch (e) {
       print('Error clearing chat history: $e');
       rethrow;

@@ -225,13 +225,10 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
     // If using predefined avatar
     if (_selectedAvatar != null && _selectedAvatar != 'custom' && 
         AvatarManager.isPredefinedAvatar(_selectedAvatar)) {
-      return ClipOval(
-        child: SvgPicture.asset(
-          _selectedAvatar!,
-          width: 120,
-          height: 120,
-          fit: BoxFit.cover,
-        ),
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(_selectedAvatar!),
       );
     }
 
@@ -241,6 +238,16 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
         radius: 60,
         backgroundColor: const Color.fromARGB(255, 104, 234, 243),
         backgroundImage: CachedNetworkImageProvider(widget.currentUser.photoUrl!),
+      );
+    }
+
+    // If user has gender, use gender-based default avatar
+    if (widget.currentUser.gender != null) {
+      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(widget.currentUser.gender);
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(defaultAvatar),
       );
     }
 
@@ -265,10 +272,10 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Avatar Selection - Show all avatars regardless of gender
+        // Avatar Selection - Show avatar based on user's gender
         AvatarSelectionWidget(
           selectedAvatar: _selectedAvatar,
-          gender: 'all', // Show both male and female avatars
+          gender: widget.currentUser.gender, // Use user's gender for appropriate default
           onAvatarSelected: (avatar) {
             setState(() {
               _selectedAvatar = avatar;

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
+import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
 class AddFriendsScreen extends StatefulWidget {
   const AddFriendsScreen({super.key});
@@ -21,11 +22,50 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   List<UserModel> _mutualFriendSuggestions = [];
   bool _isSearching = false;
   bool _isLoadingSuggestions = true;
+  Set<String> _sentRequestUserIds = {}; // Track users to whom requests have been sent
+  Set<String> _currentFriendIds = {}; // Track current user's friends
 
   @override
   void initState() {
     super.initState();
     _loadMutualFriendSuggestions();
+    _loadSentRequestsStatus();
+    _loadCurrentUserFriends();
+  }
+
+  Future<void> _loadSentRequestsStatus() async {
+    try {
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) return;
+
+      // Get all outgoing friend requests
+      final querySnapshot = await _firestore
+          .collection('friendRequests')
+          .where('senderId', isEqualTo: currentUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      setState(() {
+        _sentRequestUserIds = querySnapshot.docs
+            .map((doc) => doc.data()['receiverId'] as String)
+            .toSet();
+      });
+    } catch (e) {
+      print('Error loading sent requests status: $e');
+    }
+  }
+
+  Future<void> _loadCurrentUserFriends() async {
+    try {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser != null) {
+        setState(() {
+          _currentFriendIds = currentUser.friends.toSet();
+        });
+      }
+    } catch (e) {
+      print('Error loading current user friends: $e');
+    }
   }
 
   @override
@@ -240,58 +280,10 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
             // Profile Picture
             Hero(
               tag: 'profile_${user.id}',
-              child: CircleAvatar(
+              child: UserAvatarWidget(
+                user: user,
                 radius: 28,
                 backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
-                child: user.photoUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
-                        child: CachedNetworkImage(
-                          imageUrl: user.photoUrl!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF68EAFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Color(0xFF68EAFF),
-                              size: 24,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF68EAFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Color(0xFF68EAFF),
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF68EAFF).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF68EAFF),
-                          size: 24,
-                        ),
-                      ),
               ),
             ),
             const SizedBox(width: 16),
@@ -350,30 +342,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
               ),
             ),
             // Add Button
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF68EAFF),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => _sendFriendRequest(user),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Text(
-                      'Add',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _buildAddButton(user),
           ],
         ),
       ),
@@ -434,11 +403,65 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
     );
   }
 
+  Widget _buildAddButton(UserModel user) {
+    final isRequestSent = _sentRequestUserIds.contains(user.id);
+    final isAlreadyFriend = _currentFriendIds.contains(user.id);
+    
+    // Determine button state
+    String buttonText;
+    Color buttonColor;
+    VoidCallback? onTap;
+    
+    if (isAlreadyFriend) {
+      buttonText = 'Added';
+      buttonColor = Colors.green;
+      onTap = null; // Disabled
+    } else if (isRequestSent) {
+      buttonText = 'Sent';
+      buttonColor = Colors.grey[400]!;
+      onTap = null; // Disabled
+    } else {
+      buttonText = 'Add';
+      buttonColor = const Color(0xFF68EAFF);
+      onTap = () => _sendFriendRequest(user);
+    }
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: buttonColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              buttonText,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // Action Methods
   Future<void> _sendFriendRequest(UserModel user) async {
     try {
       HapticFeedback.lightImpact();
       await _userService.sendFriendRequest(user.username);
+      
+      // Add user to sent requests set
+      setState(() {
+        _sentRequestUserIds.add(user.id);
+      });
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -460,5 +483,11 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
         ),
       );
     }
+  }
+
+  // Refresh friends list (call this when returning from other screens)
+  Future<void> _refreshFriendsList() async {
+    await _loadCurrentUserFriends();
+    await _loadSentRequestsStatus();
   }
 }

@@ -117,25 +117,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       width: 2,
                     ),
                   ),
-                  child: CircleAvatar(
+                  child: UserAvatarWidget(
+                    user: widget.otherUser,
                     radius: 18,
-                    backgroundImage: widget.otherUser.photoUrl != null
-                        ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
-                        : null,
                     backgroundColor: const Color(0xFF68EAFF),
-                    child: widget.otherUser.photoUrl == null
-                        ? Text(
-                            (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                                ? (_nickname ?? widget.otherUser.displayName)[0]
-                                      .toUpperCase()
-                                : 'U',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          )
-                        : null,
                   ),
                 ),
                 if (widget.otherUser.isOnline)
@@ -156,17 +141,30 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _nickname ?? widget.otherUser.displayName,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
+              child: GestureDetector(
+                onTap: () {
+                  // Directly open user profile
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfileScreen(
+                        user: widget.otherUser,
+                        chatId: widget.chatId,
+                      ),
                     ),
-                  ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _nickname ?? widget.otherUser.displayName,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
                   Row(
                     children: [
                       Container(
@@ -202,22 +200,30 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ],
               ),
+              ),
             ),
           ],
         ),
         actions: [
-          // Special Friend Request Button
+          // Special Friend Request Button (only show if user doesn't already have a special friend)
           StreamBuilder<Map<String, bool>>(
             stream: _getSpecialFriendAndRequestStatusStream(),
             builder: (context, snapshot) {
               final data = snapshot.data ?? {
                 'isSpecialFriend': false, 
                 'hasPendingRequest': false,
-                'hasIncomingRequest': false
+                'hasIncomingRequest': false,
+                'hasExistingSpecialFriend': false,
               };
               final isSpecialFriend = data['isSpecialFriend'] ?? false;
               final hasPendingRequest = data['hasPendingRequest'] ?? false;
               final hasIncomingRequest = data['hasIncomingRequest'] ?? false;
+              final hasExistingSpecialFriend = data['hasExistingSpecialFriend'] ?? false;
+              
+              // Hide button if user already has a special friend (and this isn't it)
+              if (hasExistingSpecialFriend) {
+                return const SizedBox.shrink();
+              }
               
               // Determine the visual state
               Color buttonColor;
@@ -262,32 +268,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               );
             },
-          ),
-          // Profile Button
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF68EAFF).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.person_outline_rounded,
-                size: 20,
-                color: Color(0xFF68EAFF),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserProfileScreen(
-                      user: widget.otherUser,
-                      chatId: widget.chatId,
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -335,11 +315,27 @@ class _ChatScreenState extends State<ChatScreen> {
                   controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
+                  itemCount: _buildMessageItems(messages).length,
                   itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == UserService.currentUserId;
-                    return _buildMessageBubble(message, isMe, primaryColor);
+                    final items = _buildMessageItems(messages);
+                    final item = items[index];
+                    
+                    if (item['type'] == 'date_separator') {
+                      return _buildDateSeparator(item['date'] as DateTime);
+                    } else {
+                      final message = item['message'] as MessageModel;
+                      final isMe = message.senderId == UserService.currentUserId;
+                      final showTimestamp = item['showTimestamp'] as bool;
+                      final isGrouped = item['isGrouped'] as bool;
+                      
+                      return _buildMessageBubble(
+                        message, 
+                        isMe, 
+                        primaryColor, 
+                        showTimestamp: showTimestamp,
+                        isGrouped: isGrouped,
+                      );
+                    }
                   },
                 );
               },
@@ -463,25 +459,10 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
+          UserAvatarWidget(
+            user: widget.otherUser,
             radius: 40,
-            backgroundImage: widget.otherUser.photoUrl != null
-                ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
-                : null,
             backgroundColor: Color(_getThemeColors()['primaryColor']),
-            child: widget.otherUser.photoUrl == null
-                ? Text(
-                    (_nickname ?? widget.otherUser.displayName).isNotEmpty
-                        ? (_nickname ?? widget.otherUser.displayName)[0]
-                              .toUpperCase()
-                        : 'U',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                    ),
-                  )
-                : null,
           ),
           const SizedBox(height: 16),
           Text(
@@ -503,58 +484,160 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  List<Map<String, dynamic>> _buildMessageItems(List<MessageModel> messages) {
+    final items = <Map<String, dynamic>>[];
+    
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      final previousMessage = i > 0 ? messages[i - 1] : null;
+      final nextMessage = i < messages.length - 1 ? messages[i + 1] : null;
+      
+      // Check if we need a date separator
+      if (previousMessage != null) {
+        final currentDate = DateTime(
+          message.timestamp.year,
+          message.timestamp.month,
+          message.timestamp.day,
+        );
+        final previousDate = DateTime(
+          previousMessage.timestamp.year,
+          previousMessage.timestamp.month,
+          previousMessage.timestamp.day,
+        );
+        
+        if (currentDate != previousDate) {
+          items.add({
+            'type': 'date_separator',
+            'date': message.timestamp,
+          });
+        }
+      } else {
+        // First message, always show date separator
+        items.add({
+          'type': 'date_separator',
+          'date': message.timestamp,
+        });
+      }
+      
+      // Determine if we should show timestamp and if message is grouped
+      bool showTimestamp = false;
+      bool isGrouped = false;
+      
+      if (nextMessage != null) {
+        final timeDifference = message.timestamp.difference(nextMessage.timestamp).inMinutes;
+        final isSameSender = message.senderId == nextMessage.senderId;
+        
+        // Group messages from same sender within 2 minutes
+        if (isSameSender && timeDifference <= 2) {
+          isGrouped = true;
+        } else {
+          showTimestamp = true;
+        }
+      } else {
+        // Last message, always show timestamp
+        showTimestamp = true;
+      }
+      
+      // Show timestamp if there's a significant time gap (>15 minutes)
+      if (nextMessage != null) {
+        final timeDifference = message.timestamp.difference(nextMessage.timestamp).inMinutes;
+        if (timeDifference > 15) {
+          showTimestamp = true;
+        }
+      }
+      
+      items.add({
+        'type': 'message',
+        'message': message,
+        'showTimestamp': showTimestamp,
+        'isGrouped': isGrouped,
+      });
+    }
+    
+    return items;
+  }
+
+  Widget _buildDateSeparator(DateTime date) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey[300])),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _formatDateSeparator(date),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: Colors.grey[300])),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMessageBubble(
     MessageModel message,
     bool isMe,
-    Color primaryColor,
-  ) {
+    Color primaryColor, {
+    bool showTimestamp = true,
+    bool isGrouped = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+      padding: EdgeInsets.only(bottom: isGrouped ? 2 : 8),
+      child: Column(
         children: [
-          if (!isMe) ...[
-            UserAvatarWidget(
-              user: widget.otherUser,
-              radius: 16,
-              backgroundColor: primaryColor,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isMe 
-                    ? const Color(0xFF68EAFF)
-                    : Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isMe ? 20 : 6),
-                  bottomRight: Radius.circular(isMe ? 6 : 20),
+          Row(
+            mainAxisAlignment: isMe
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isMe && !isGrouped) ...[
+                UserAvatarWidget(
+                  user: widget.otherUser,
+                  radius: 16,
+                  backgroundColor: primaryColor,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF000000).withOpacity(0.08),
-                    offset: const Offset(0, 2),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  ),
-                ],
-                border: isMe 
-                    ? null 
-                    : Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1,
+                const SizedBox(width: 8),
+              ] else if (!isMe && isGrouped) ...[
+                const SizedBox(width: 40), // Space for avatar alignment
+              ],
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isMe 
+                        ? const Color(0xFF68EAFF)
+                        : Colors.white,
+                    borderRadius: _getBubbleBorderRadius(isMe, isGrouped),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF000000).withOpacity(0.08),
+                        offset: const Offset(0, 2),
+                        blurRadius: 12,
+                        spreadRadius: 0,
                       ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+                    ],
+                    border: isMe 
+                        ? null 
+                        : Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1,
+                          ),
+                  ),
+                  child: Text(
                     message.text,
                     style: GoogleFonts.inter(
                       color: isMe ? Colors.white : const Color(0xFF1E293B),
@@ -563,20 +646,31 @@ class _ChatScreenState extends State<ChatScreen> {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: GoogleFonts.inter(
-                      color: isMe ? Colors.white.withOpacity(0.8) : const Color(0xFF64748B),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              if (isMe) const SizedBox(width: 48),
+            ],
           ),
-          if (isMe) const SizedBox(width: 48),
+          if (showTimestamp) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: isMe 
+                  ? MainAxisAlignment.end 
+                  : MainAxisAlignment.start,
+              children: [
+                if (!isMe) const SizedBox(width: 48),
+                Text(
+                  _formatRelativeTime(message.timestamp),
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (isMe) const SizedBox(width: 48),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -951,6 +1045,68 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  BorderRadius _getBubbleBorderRadius(bool isMe, bool isGrouped) {
+    if (isGrouped) {
+      // Grouped messages have less rounded corners on the sender's side
+      return BorderRadius.only(
+        topLeft: Radius.circular(isMe ? 20 : 8),
+        topRight: Radius.circular(isMe ? 8 : 20),
+        bottomLeft: Radius.circular(isMe ? 20 : 8),
+        bottomRight: Radius.circular(isMe ? 8 : 20),
+      );
+    } else {
+      // Regular message bubbles
+      return BorderRadius.only(
+        topLeft: const Radius.circular(20),
+        topRight: const Radius.circular(20),
+        bottomLeft: Radius.circular(isMe ? 20 : 6),
+        bottomRight: Radius.circular(isMe ? 6 : 20),
+      );
+    }
+  }
+
+  String _formatRelativeTime(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    } else if (difference.inDays < 7) {
+      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return '${weekdays[timestamp.weekday - 1]} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${timestamp.day}/${timestamp.month} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String _formatDateSeparator(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(date.year, date.month, date.day);
+    
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday';
+    } else if (now.difference(messageDate).inDays < 7) {
+      final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      return weekdays[date.weekday - 1];
+    } else if (date.year == now.year) {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -977,17 +1133,20 @@ class _ChatScreenState extends State<ChatScreen> {
       if (user == null) return {
         'isSpecialFriend': false, 
         'hasPendingRequest': false,
-        'hasIncomingRequest': false
+        'hasIncomingRequest': false,
+        'hasExistingSpecialFriend': false,
       };
       
       final isSpecialFriend = user.specialFriends.contains(widget.otherUser.id);
       final hasPendingRequest = await _checkPendingSpecialFriendRequest();
       final hasIncomingRequest = await _checkIncomingSpecialFriendRequest();
+      final hasExistingSpecialFriend = user.specialFriends.isNotEmpty && !isSpecialFriend;
       
       return {
         'isSpecialFriend': isSpecialFriend,
         'hasPendingRequest': hasPendingRequest,
         'hasIncomingRequest': hasIncomingRequest,
+        'hasExistingSpecialFriend': hasExistingSpecialFriend,
       };
     });
   }
@@ -1107,29 +1266,10 @@ class _ChatScreenState extends State<ChatScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
+              UserAvatarWidget(
+                user: widget.otherUser,
                 radius: 30,
                 backgroundColor: Colors.orange.withOpacity(0.1),
-                child: widget.otherUser.photoUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(30),
-                        child: CachedNetworkImage(
-                          imageUrl: widget.otherUser.photoUrl!,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Text(
-                        widget.otherUser.displayName.isNotEmpty
-                            ? widget.otherUser.displayName[0].toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                        ),
-                      ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1392,4 +1532,5 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
   }
+
 }

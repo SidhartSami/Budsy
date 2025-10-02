@@ -45,58 +45,17 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
         ),
         const SizedBox(height: 16),
         
-        // Avatar Grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
-          ),
-          itemCount: _getAvatarCount() + (widget.showCustomOption ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (widget.showCustomOption && index == _getAvatarCount()) {
-              return _buildCustomAvatarOption();
-            }
+        // Avatar Options
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Default Avatar Option
+            _buildDefaultAvatarOption(),
             
-            final avatarPath = _getAvatarPath(index);
-            final isSelected = _selectedAvatar == avatarPath;
-            
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedAvatar = avatarPath;
-                });
-                widget.onAvatarSelected(avatarPath);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected 
-                        ? const Color.fromARGB(255, 104, 234, 243)
-                        : Colors.grey[300]!,
-                    width: isSelected ? 3 : 1,
-                  ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: const Color.fromARGB(255, 104, 234, 243).withOpacity(0.3),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ] : null,
-                ),
-                child: ClipOval(
-                  child: SvgPicture.asset(
-                    avatarPath,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            );
-          },
+            // Custom Avatar Option
+            if (widget.showCustomOption)
+              _buildCustomAvatarOption(),
+          ],
         ),
         
         const SizedBox(height: 16),
@@ -124,7 +83,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
                   child: Text(
                     _selectedAvatar == 'custom' 
                         ? 'Custom photo selected'
-                        : 'Avatar selected',
+                        : 'Default avatar selected',
                     style: GoogleFonts.nunito(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -149,89 +108,137 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
         });
         widget.onAvatarSelected('custom');
       },
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected 
-                ? const Color.fromARGB(255, 104, 234, 243)
-                : Colors.grey[300]!,
-            width: isSelected ? 3 : 1,
-          ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: const Color.fromARGB(255, 104, 234, 243).withOpacity(0.3),
-              blurRadius: 8,
-              spreadRadius: 2,
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected 
+                    ? const Color.fromARGB(255, 104, 234, 243)
+                    : Colors.grey[300]!,
+                width: isSelected ? 3 : 1,
+              ),
+              boxShadow: isSelected ? [
+                BoxShadow(
+                  color: const Color.fromARGB(255, 104, 234, 243).withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ] : null,
             ),
-          ] : null,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey[100],
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey[100],
+              ),
+              child: Icon(
+                Icons.camera_alt,
+                color: isSelected 
+                    ? const Color.fromARGB(255, 104, 234, 243)
+                    : Colors.grey[600],
+                size: 30,
+              ),
+            ),
           ),
-          child: Icon(
-            Icons.camera_alt,
-            color: isSelected 
-                ? const Color.fromARGB(255, 104, 234, 243)
-                : Colors.grey[600],
-            size: 30,
+          const SizedBox(height: 8),
+          Text(
+            'Custom',
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isSelected 
+                  ? const Color.fromARGB(255, 104, 234, 243)
+                  : Colors.grey[600],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  int _getAvatarCount() {
-    return 5; // We have 5 avatars for each gender
-  }
-
-  String _getAvatarPath(int index) {
-    final gender = widget.gender ?? 'male';
-    return 'assets/avatars/$gender/avatar_${index + 1}.svg';
+  Widget _buildDefaultAvatarOption() {
+    final defaultAvatar = AvatarManager.getDefaultAvatarForGender(widget.gender);
+    final isSelected = _selectedAvatar == defaultAvatar;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAvatar = defaultAvatar;
+        });
+        widget.onAvatarSelected(defaultAvatar);
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected 
+                    ? const Color.fromARGB(255, 104, 234, 243)
+                    : Colors.grey[300]!,
+                width: isSelected ? 3 : 1,
+              ),
+              boxShadow: isSelected ? [
+                BoxShadow(
+                  color: const Color.fromARGB(255, 104, 234, 243).withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ] : null,
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                defaultAvatar,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Default',
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isSelected 
+                  ? const Color.fromARGB(255, 104, 234, 243)
+                  : Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 // Helper class for avatar management
 class AvatarManager {
-  static const List<String> maleAvatars = [
-    'assets/avatars/male/avatar_1.svg',
-    'assets/avatars/male/avatar_2.svg',
-    'assets/avatars/male/avatar_3.svg',
-    'assets/avatars/male/avatar_4.svg',
-    'assets/avatars/male/avatar_5.svg',
-  ];
+  static const String maleDefaultAvatar = 'assets/avatars/male.png';
+  static const String femaleDefaultAvatar = 'assets/avatars/female.png';
 
-  static const List<String> femaleAvatars = [
-    'assets/avatars/female/avatar_1.svg',
-    'assets/avatars/female/avatar_2.svg',
-    'assets/avatars/female/avatar_3.svg',
-    'assets/avatars/female/avatar_4.svg',
-    'assets/avatars/female/avatar_5.svg',
-  ];
-
-  static List<String> getAvatarsForGender(String? gender) {
+  static String getDefaultAvatarForGender(String? gender) {
     switch (gender?.toLowerCase()) {
       case 'male':
-        return maleAvatars;
+        return maleDefaultAvatar;
       case 'female':
-        return femaleAvatars;
-      case 'all':
-        return [...maleAvatars, ...femaleAvatars]; // Show both male and female avatars
+        return femaleDefaultAvatar;
       default:
-        return [...maleAvatars, ...femaleAvatars]; // Default to all avatars
+        return maleDefaultAvatar; // Default to male avatar
     }
   }
 
   static bool isPredefinedAvatar(String? avatarPath) {
     if (avatarPath == null || avatarPath == 'custom') return false;
-    return maleAvatars.contains(avatarPath) || femaleAvatars.contains(avatarPath);
+    return avatarPath == maleDefaultAvatar || avatarPath == femaleDefaultAvatar;
   }
 
   static String getGenderFromAvatarPath(String avatarPath) {
-    if (avatarPath.contains('/male/')) return 'male';
-    if (avatarPath.contains('/female/')) return 'female';
+    if (avatarPath == maleDefaultAvatar) return 'male';
+    if (avatarPath == femaleDefaultAvatar) return 'female';
     return 'male'; // Default
   }
 }

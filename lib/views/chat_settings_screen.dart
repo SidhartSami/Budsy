@@ -10,6 +10,7 @@ import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/message_search_screen.dart';
 import 'package:tutortyper_app/views/chat_theme_selector_screen.dart';
 import 'package:tutortyper_app/views/mutual_friends_screen.dart';
+import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
 class ChatSettingsScreen extends StatefulWidget {
   final String chatId;
@@ -250,24 +251,10 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
                       width: 3,
                     ),
                   ),
-                  child: CircleAvatar(
+                  child: UserAvatarWidget(
+                    user: widget.otherUser,
                     radius: 50,
-                    backgroundImage: widget.otherUser.photoUrl != null
-                        ? CachedNetworkImageProvider(widget.otherUser.photoUrl!)
-                        : null,
                     backgroundColor: const Color(0xFF68EAFF),
-                    child: widget.otherUser.photoUrl == null
-                        ? Text(
-                            widget.otherUser.displayName.isNotEmpty
-                                ? widget.otherUser.displayName[0].toUpperCase()
-                                : 'U',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 36,
-                            ),
-                          )
-                        : null,
                   ),
                 ),
               ),

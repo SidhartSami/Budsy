@@ -11,6 +11,7 @@ class MessageModel {
   final String? imageUrl;
   final String? fileUrl;
   final String? fileName;
+  final List<String> deletedBy; // List of user IDs who have deleted this message
 
   MessageModel({
     required this.id,
@@ -22,6 +23,7 @@ class MessageModel {
     this.imageUrl,
     this.fileUrl,
     this.fileName,
+    this.deletedBy = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class MessageModel {
       'imageUrl': imageUrl,
       'fileUrl': fileUrl,
       'fileName': fileName,
+      'deletedBy': deletedBy,
     };
   }
 
@@ -49,6 +52,7 @@ class MessageModel {
       imageUrl: map['imageUrl'],
       fileUrl: map['fileUrl'],
       fileName: map['fileName'],
+      deletedBy: List<String>.from(map['deletedBy'] ?? []),
     );
   }
 
@@ -80,6 +84,7 @@ class MessageModel {
     String? imageUrl,
     String? fileUrl,
     String? fileName,
+    List<String>? deletedBy,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -91,6 +96,7 @@ class MessageModel {
       imageUrl: imageUrl ?? this.imageUrl,
       fileUrl: fileUrl ?? this.fileUrl,
       fileName: fileName ?? this.fileName,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 }

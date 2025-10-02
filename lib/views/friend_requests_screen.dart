@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/friend_request_model.dart';
 import 'package:tutortyper_app/services/user_service.dart';
+import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
 
 class FriendRequestsScreen extends StatefulWidget {
   const FriendRequestsScreen({super.key});
@@ -162,58 +163,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         child: Row(
           children: [
             // Profile Picture
-            CircleAvatar(
+            UserAvatarWidget(
+              user: user,
               radius: 28,
               backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
-              child: user.photoUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: CachedNetworkImage(
-                        imageUrl: user.photoUrl!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF68EAFF).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF68EAFF),
-                            size: 24,
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF68EAFF).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF68EAFF),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF68EAFF).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Color(0xFF68EAFF),
-                        size: 24,
-                      ),
-                    ),
             ),
             const SizedBox(width: 16),
             // User Info
@@ -367,58 +320,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         child: Row(
           children: [
             // Profile Picture
-            CircleAvatar(
+            UserAvatarWidget(
+              user: user,
               radius: 28,
               backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
-              child: user.photoUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: CachedNetworkImage(
-                        imageUrl: user.photoUrl!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF68EAFF).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF68EAFF),
-                            size: 24,
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF68EAFF).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF68EAFF),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF68EAFF).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Color(0xFF68EAFF),
-                        size: 24,
-                      ),
-                    ),
             ),
             const SizedBox(width: 16),
             // User Info

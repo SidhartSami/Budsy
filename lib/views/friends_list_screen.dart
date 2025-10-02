@@ -1,5 +1,6 @@
 // views/friends_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,8 @@ import 'package:tutortyper_app/views/chat_screen.dart';
 import 'package:tutortyper_app/views/friend_requests_screen.dart';
 import 'package:tutortyper_app/views/add_friends_screen.dart';
 import 'package:tutortyper_app/widgets/user_avatar_widget.dart';
+import 'package:tutortyper_app/services/birthday_service.dart';
+import 'package:tutortyper_app/services/chat_settings_service.dart';
 
 class FriendsListScreen extends StatefulWidget {
   const FriendsListScreen({super.key});
@@ -22,6 +25,55 @@ class FriendsListScreen extends StatefulWidget {
 class _FriendsListScreenState extends State<FriendsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final UserService _userService = UserService();
+  final BirthdayService _birthdayService = BirthdayService();
+  final ChatSettingsService _chatSettingsService = ChatSettingsService();
+  List<UserModel> _friendsWithBirthdaysToday = [];
+  Map<String, String> _friendNicknames = {}; // friendId -> nickname
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFriendsWithBirthdaysToday();
+    _loadFriendNicknames();
+  }
+
+  String _generateChatId(String friendId) {
+    final currentUserId = UserService.currentUserId;
+    if (currentUserId == null) return '';
+    
+    final participants = [currentUserId, friendId]..sort();
+    return participants.join('_');
+  }
+
+  Future<void> _loadFriendNicknames() async {
+    try {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser == null) return;
+
+      final nicknames = <String, String>{};
+      
+      // Load nicknames for all friends
+      for (final friendId in currentUser.friends) {
+        final chatId = _generateChatId(friendId);
+        final chatSettings = await _chatSettingsService.getChatSettings(chatId);
+        if (chatSettings?.nickname != null && chatSettings!.nickname!.isNotEmpty) {
+          nicknames[friendId] = chatSettings.nickname!;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _friendNicknames = nicknames;
+        });
+      }
+    } catch (e) {
+      print('Error loading friend nicknames: $e');
+    }
+  }
+
+  String _getFriendDisplayName(UserModel friend) {
+    return _friendNicknames[friend.id] ?? friend.displayName;
+  }
 
   @override
   void dispose() {
@@ -29,30 +81,54 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     super.dispose();
   }
 
+  Future<void> _loadFriendsWithBirthdaysToday() async {
+    try {
+      final friends = await _birthdayService.getFriendsWithBirthdaysToday();
+      setState(() {
+        _friendsWithBirthdaysToday = friends;
+      });
+    } catch (e) {
+      print('Error loading friends with birthdays today: $e');
+    }
+  }
+
+  bool _isFriendBirthdayToday(String friendId) {
+    return _friendsWithBirthdaysToday.any((friend) => friend.id == friendId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section with Gradient Background
-            Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF68EAFF),
-                Color(0xFF4FD1C7),
-              ],
-            ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+              // Header Section with Gradient Background
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF68EAFF),
+                      Color(0xFF4FD1C7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
                 ),
-              ),
-              child: Column(
+                child: Column(
                 children: [
                   // Top Bar with Title and Icons
                   Padding(
@@ -336,10 +412,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
                     // Filter friends based on search
                     if (_searchController.text.isNotEmpty) {
-                        friends = friends.where((friend) =>
-                          friend.displayName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-                          friend.username.toLowerCase().contains(_searchController.text.toLowerCase())
-                        ).toList();
+                        friends = friends.where((friend) {
+                          final searchTerm = _searchController.text.toLowerCase();
+                          final displayName = _getFriendDisplayName(friend).toLowerCase();
+                          return displayName.contains(searchTerm) ||
+                                 friend.username.toLowerCase().contains(searchTerm);
+                        }).toList();
                       }
 
                       // Separate pinned and regular friends
@@ -408,24 +486,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       width: 2,
                     ),
                   ),
-                  child: CircleAvatar(
+                  child: UserAvatarWidget(
+                    user: friend,
                     radius: 26,
-                    backgroundImage: friend.photoUrl != null
-                        ? CachedNetworkImageProvider(friend.photoUrl!)
-                        : null,
                     backgroundColor: Colors.white,
-                    child: friend.photoUrl == null
-                        ? Text(
-                            friend.displayName.isNotEmpty
-                                ? friend.displayName[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Color(0xFF68EAFF),
-              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          )
-                        : null,
                   ),
                 ),
                 if (friend.isOnline)
@@ -442,13 +506,34 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               ),
             ),
           ),
+                // Birthday cake emoji for friends with birthdays today
+                if (_isFriendBirthdayToday(friend.id))
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFFF9800), width: 1),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '🎂',
+                          style: TextStyle(fontSize: 10),
+                        ),
+                      ),
+                    ),
+                  ),
         ],
             ),
             const SizedBox(height: 8),
             SizedBox(
               width: 60,
               child: Text(
-                friend.displayName.split(' ')[0],
+                _getFriendDisplayName(friend).split(' ')[0],
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -492,24 +577,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 // Avatar
               Stack(
                 children: [
-                    CircleAvatar(
+                    UserAvatarWidget(
+                      user: friend,
                       radius: 28,
-                      backgroundImage: friend.photoUrl != null
-                          ? CachedNetworkImageProvider(friend.photoUrl!)
-                          : null,
                       backgroundColor: const Color(0xFFF5F5F5),
-                      child: friend.photoUrl == null
-                          ? Text(
-                              friend.displayName.isNotEmpty
-                                  ? friend.displayName[0].toUpperCase()
-                                  : 'U',
-                              style: const TextStyle(
-                                color: Color(0xFF68EAFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            )
-                          : null,
                     ),
                     if (friend.isOnline)
                       Positioned(
@@ -525,6 +596,27 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           ),
                         ),
                   ),
+                    // Birthday cake emoji for friends with birthdays today
+                    if (_isFriendBirthdayToday(friend.id))
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFFF9800), width: 1),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '🎂',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
                 ],
               ),
 
@@ -539,7 +631,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            friend.displayName,
+                            _getFriendDisplayName(friend),
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
@@ -787,24 +879,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               // Friend Info Header
               Row(
                 children: [
-                  CircleAvatar(
+                  UserAvatarWidget(
+                    user: friend,
                     radius: 20,
-                    backgroundImage: friend.photoUrl != null
-                        ? CachedNetworkImageProvider(friend.photoUrl!)
-                        : null,
                     backgroundColor: const Color(0xFF68EAFF),
-                    child: friend.photoUrl == null
-                        ? Text(
-                            friend.displayName.isNotEmpty
-                                ? friend.displayName[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          )
-                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -812,7 +890,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          friend.displayName,
+                          _getFriendDisplayName(friend),
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -1022,13 +1100,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ).show();
   }
 
-  String _generateChatId(String friendId) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null) return '';
-    
-    final participants = [currentUserId, friendId]..sort();
-    return participants.join('_');
-  }
 
   Future<Map<String, dynamic>?> _getLastMessageSimple(String friendId) async {
     final chatId = _generateChatId(friendId);
@@ -1054,11 +1125,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           .doc(chatId)
           .collection('messages')
           .orderBy('timestamp', descending: true)
-          .limit(1)
+          .limit(10) // Get more messages to find one not deleted by current user
           .get();
       
-      if (messagesSnapshot.docs.isNotEmpty) {
-        final messageData = messagesSnapshot.docs.first.data();
+      // Find the first message not deleted by current user
+      for (final doc in messagesSnapshot.docs) {
+        final messageData = doc.data();
+        final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
+        
+        // Skip if current user has deleted this message
+        if (deletedBy.contains(currentUserId)) continue;
+        
         final senderId = messageData['senderId'] ?? '';
         final isFromCurrentUser = senderId == currentUserId;
         

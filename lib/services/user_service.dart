@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/friend_request_model.dart';
 import 'package:tutortyper_app/models/special_friend_request_model.dart';
+import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 import 'dart:io';
 
 class UserService {
@@ -246,7 +247,29 @@ class UserService {
       if (photoUrl != null) updates['photoUrl'] = photoUrl;
       if (profileCompleted != null)
         updates['profileCompleted'] = profileCompleted;
-      if (gender != null) updates['gender'] = gender;
+      
+      // Handle gender update and assign default avatar if needed
+      if (gender != null) {
+        updates['gender'] = gender;
+        
+        // If user doesn't have a custom photo and no predefined avatar is being set,
+        // assign the default avatar for their gender
+        if (profileImage == null && predefinedAvatar == null && removeImage != true) {
+          // Get current user to check if they have a custom photo
+          final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+          if (currentUserDoc.exists) {
+            final currentUserData = currentUserDoc.data()!;
+            final hasCustomPhoto = currentUserData['photoUrl'] != null;
+            
+            // Only set default avatar if user doesn't have a custom photo
+            if (!hasCustomPhoto) {
+              final defaultAvatar = AvatarManager.getDefaultAvatarForGender(gender);
+              updates['predefinedAvatar'] = defaultAvatar;
+            }
+          }
+        }
+      }
+      
       if (predefinedAvatar != null) updates['predefinedAvatar'] = predefinedAvatar;
 
       // Handle profile image
@@ -392,6 +415,12 @@ class UserService {
         profileCompleted = true;
       }
 
+      // Assign default avatar based on gender if no custom photo or predefined avatar is provided
+      String? finalPredefinedAvatar = predefinedAvatar;
+      if (photoUrl == null && predefinedAvatar == null && gender != null) {
+        finalPredefinedAvatar = AvatarManager.getDefaultAvatarForGender(gender);
+      }
+
       final userModel = UserModel(
         id: userId,
         email: email.toLowerCase(),
@@ -407,7 +436,7 @@ class UserService {
         profileCompleted: profileCompleted,
         bio: bio?.trim(),
         gender: gender,
-        predefinedAvatar: predefinedAvatar,
+        predefinedAvatar: finalPredefinedAvatar,
       );
 
       await _firestore.collection('users').doc(userId).set(userModel.toMap());
@@ -430,10 +459,29 @@ class UserService {
     if (currentUserId == null) return;
 
     try {
-      await _firestore.collection('users').doc(currentUserId).update({
-        'isOnline': isOnline,
+      // Get current user's privacy settings
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!userDoc.exists) return;
+      
+      final userData = userDoc.data()!;
+      final showOnlineStatus = userData['showOnlineStatus'] ?? true;
+      
+      // Only update online status if user allows it to be shown
+      // Always update lastSeen regardless of privacy setting
+      Map<String, dynamic> updates = {
         'lastSeen': FieldValue.serverTimestamp(),
-      });
+      };
+      
+      if (showOnlineStatus) {
+        updates['isOnline'] = isOnline;
+      } else {
+        // If privacy is disabled, always show as offline
+        updates['isOnline'] = false;
+      }
+      
+      await _firestore.collection('users').doc(currentUserId).update(updates);
+      
+      print('DEBUG: Updated online status - isOnline: ${updates['isOnline']}, showOnlineStatus: $showOnlineStatus');
     } catch (e) {
       print('Error updating online status: $e');
     }
@@ -892,6 +940,11 @@ class UserService {
         throw Exception('You are already special friends with this user');
       }
 
+      // Check if user already has a special friend (only one allowed)
+      if (currentUserData.specialFriends.isNotEmpty) {
+        throw Exception('You can only have one special friend at a time. Remove your current special friend first.');
+      }
+
       // Check if there's already a pending special friend request
       final existingRequest = await _firestore
           .collection('specialFriendRequests')
@@ -1075,6 +1128,24 @@ class UserService {
     if (currentUserId == null) return;
 
     try {
+      // First check if user already has a special friend
+      final currentUserDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (currentUserDoc.exists) {
+        final currentUserData = UserModel.fromMap({...currentUserDoc.data()!, 'id': currentUserDoc.id});
+        if (currentUserData.specialFriends.isNotEmpty) {
+          throw Exception('You can only have one special friend at a time. Remove your current special friend first.');
+        }
+      }
+
+      // Also check if sender already has a special friend
+      final senderUserDoc = await _firestore.collection('users').doc(senderId).get();
+      if (senderUserDoc.exists) {
+        final senderUserData = UserModel.fromMap({...senderUserDoc.data()!, 'id': senderUserDoc.id});
+        if (senderUserData.specialFriends.isNotEmpty) {
+          throw Exception('The sender already has a special friend. They can only have one special friend at a time.');
+        }
+      }
+
       await _firestore.runTransaction((transaction) async {
         // Update request status
         final requestRef = _firestore
@@ -1214,12 +1285,15 @@ class UserService {
             .doc(currentUserId);
         final friendUserRef = _firestore.collection('users').doc(friendId);
 
+        // Remove from friends list on both sides
         transaction.update(currentUserRef, {
           'friends': FieldValue.arrayRemove([friendId]),
+          'specialFriends': FieldValue.arrayRemove([friendId]), // Also remove from special friends
         });
 
         transaction.update(friendUserRef, {
           'friends': FieldValue.arrayRemove([currentUserId]),
+          'specialFriends': FieldValue.arrayRemove([currentUserId]), // Also remove from special friends
         });
       });
     } catch (e) {
@@ -1243,10 +1317,12 @@ class UserService {
 
         transaction.update(currentUserRef, {
           'friends': FieldValue.arrayRemove([friendId]),
+          'specialFriends': FieldValue.arrayRemove([friendId]), // Also remove from special friends
         });
 
         transaction.update(friendUserRef, {
           'friends': FieldValue.arrayRemove([currentUserId]),
+          'specialFriends': FieldValue.arrayRemove([currentUserId]), // Also remove from special friends
         });
 
         // Delete all chat-related data for current user
@@ -1314,15 +1390,17 @@ class UserService {
         final currentUserRef = _firestore.collection('users').doc(currentUserId);
         final blockedUserRef = _firestore.collection('users').doc(userId);
         
-        // Add to blocked users list and remove from friends
+        // Add to blocked users list and remove from friends and special friends
         transaction.update(currentUserRef, {
           'blockedUsers': FieldValue.arrayUnion([userId]),
           'friends': FieldValue.arrayRemove([userId]),
+          'specialFriends': FieldValue.arrayRemove([userId]), // Also remove from special friends
         });
 
-        // Remove current user from the blocked user's friends list
+        // Remove current user from the blocked user's friends and special friends list
         transaction.update(blockedUserRef, {
           'friends': FieldValue.arrayRemove([currentUserId]),
+          'specialFriends': FieldValue.arrayRemove([currentUserId]), // Also remove from special friends
         });
 
         // Delete all chat-related data for BOTH users
@@ -1977,21 +2055,27 @@ class UserService {
           
           print('DEBUG: Unread count for $currentUserId: $myUnreadCount, hasUnread: $hasUnreadMessages');
           
-          // Get the last message
+          // Get the last message that current user hasn't deleted
           final messagesSnapshot = await _firestore
               .collection('chats')
               .doc(chatId)
               .collection('messages')
               .orderBy('timestamp', descending: true)
-              .limit(1)
+              .limit(10) // Get more messages to find one not deleted by current user
               .get();
           
-          if (messagesSnapshot.docs.isNotEmpty) {
-            final messageData = messagesSnapshot.docs.first.data();
+          // Find the first message not deleted by current user
+          for (final doc in messagesSnapshot.docs) {
+            final messageData = doc.data();
+            final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
+            
+            // Skip if current user has deleted this message
+            if (deletedBy.contains(currentUserId)) continue;
+            
             final senderId = messageData['senderId'] ?? '';
             final isFromCurrentUser = senderId == currentUserId;
             
-            print('DEBUG: Last message from: $senderId, isFromCurrentUser: $isFromCurrentUser, hasUnread: $hasUnreadMessages');
+            print('DEBUG: Last visible message from: $senderId, isFromCurrentUser: $isFromCurrentUser, hasUnread: $hasUnreadMessages');
             
             return {
               'text': messageData['text'] ?? '',

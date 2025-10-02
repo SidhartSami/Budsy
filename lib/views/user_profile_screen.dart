@@ -124,25 +124,32 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildUserAvatar() {
-    // Check if user has a predefined avatar
-    if (widget.user.predefinedAvatar != null && 
-        AvatarManager.isPredefinedAvatar(widget.user.predefinedAvatar)) {
-      return ClipOval(
-        child: SvgPicture.asset(
-          widget.user.predefinedAvatar!,
-          width: 100,
-          height: 100,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-    
     // Check if user has a custom photo
     if (widget.user.photoUrl != null) {
       return CircleAvatar(
         radius: 50,
         backgroundImage: CachedNetworkImageProvider(widget.user.photoUrl!),
         backgroundColor: const Color(0xFF68EAFF),
+      );
+    }
+    
+    // Check if user has a predefined avatar
+    if (widget.user.predefinedAvatar != null && 
+        AvatarManager.isPredefinedAvatar(widget.user.predefinedAvatar)) {
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(widget.user.predefinedAvatar!),
+      );
+    }
+    
+    // If user has gender, use gender-based default avatar
+    if (widget.user.gender != null) {
+      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(widget.user.gender);
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage(defaultAvatar),
       );
     }
     

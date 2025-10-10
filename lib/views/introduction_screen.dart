@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/views/welcome_screen.dart';
+import 'package:tutortyper_app/views/login_view.dart';
+import 'package:tutortyper_app/views/register_view.dart';
 
 class IntroductionScreen extends StatefulWidget {
   const IntroductionScreen({super.key});
@@ -28,22 +31,22 @@ class _IntroductionScreenState extends State<IntroductionScreen>
       title: "Conversations that flow.",
       description: "Stay close with friends and groups through fast, real-time chat.",
       gradientColors: [Colors.white, Colors.white],
-      imagePath: 'assets/images/chat.png',
-      accentColor: Color(0xFF60A5FA),
+      imagePath: 'assets/images/Chatting-bro.svg',
+      accentColor: Color(0xFF4CAF50),
     ),
     IntroductionPage(
       title: "Chat. Share. Remember.",
       description: "Send notes, ideas, and reminders that never get lost in the scroll.",
       gradientColors: [Colors.white, Colors.white],
-      imagePath: 'assets/images/notes.png',
-      accentColor: Color(0xFF60A5FA),
+      imagePath: 'assets/images/Bullet journal-pana.svg',
+      accentColor: Color(0xFF4CAF50),
     ),
     IntroductionPage(
       title: "Private. Simple. Yours.",
       description: "Secure conversations designed around you — no clutter, just connection.",
       gradientColors: [Colors.white, Colors.white],
-      imagePath: 'assets/images/secure.png',
-      accentColor: Color(0xFF60A5FA),
+      imagePath: 'assets/images/Security-rafiki.svg',
+      accentColor: Color(0xFF4CAF50),
     ),
   ];
 
@@ -99,12 +102,8 @@ class _IntroductionScreenState extends State<IntroductionScreen>
         if (_fillProgress >= 1.0) {
           timer.cancel();
           _showCountdown = false;
-          // Auto-advance after countdown
-          if (_currentPage < _pages.length - 1) {
+          // Auto-advance after countdown - loop back to first page
             _nextPage();
-          } else {
-            _navigateToWelcome();
-          }
         }
       } else {
         timer.cancel();
@@ -120,7 +119,12 @@ class _IntroductionScreenState extends State<IntroductionScreen>
         curve: Curves.easeInOut,
       );
     } else {
-      _navigateToWelcome();
+      // Loop back to first page
+      _pageController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -139,9 +143,16 @@ class _IntroductionScreenState extends State<IntroductionScreen>
     );
   }
 
-  void _skipIntroduction() {
-    _countdownTimer?.cancel();
-    _navigateToWelcome();
+  void _navigateToLogin() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const LoginView()),
+    );
+  }
+
+  void _navigateToRegister() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const RegisterView()),
+    );
   }
 
   @override
@@ -174,65 +185,85 @@ class _IntroductionScreenState extends State<IntroductionScreen>
             },
           ),
           
-          // Skip button (top right) with modern styling
-          Positioned(
-            top: 50,
-            right: 20,
-            child: SafeArea(
-              child: GestureDetector(
-                onTap: _skipIntroduction,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.grey[300]!,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'Skip',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           
-          // Navigation bubbles (bottom center)
-          Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _pages.length,
-                (index) => _buildNavigationBubble(index),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildNavigationBubble(int index) {
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        // Sign In Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: _navigateToLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              elevation: 8,
+              shadowColor: const Color(0xFF4CAF50).withOpacity(0.3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+            child: Text(
+              'Sign In',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Register Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton(
+            onPressed: _navigateToRegister,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF4CAF50),
+              side: const BorderSide(
+                color: Color(0xFF4CAF50),
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+            child: Text(
+              'Register',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageIndicators() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        _pages.length,
+        (index) => _buildPageIndicator(index),
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator(int index) {
     bool isCurrentPage = index == _currentPage;
-    bool isCompleted = index < _currentPage;
     
     return GestureDetector(
       onTap: () {
@@ -243,76 +274,16 @@ class _IntroductionScreenState extends State<IntroductionScreen>
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: isCurrentPage ? 60 : 16,
-          height: 16,
+          width: isCurrentPage ? 24 : 8,
+          height: 8,
           decoration: BoxDecoration(
             color: isCurrentPage 
-                ? Color(0xFF60A5FA)
+                ? const Color(0xFF4CAF50)
                 : Colors.grey[300],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey[400]!,
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Fill animation for current page
-              if (isCurrentPage)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 50),
-                  width: 60 * _fillProgress,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF3B82F6),
-                        Color(0xFF60A5FA),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF60A5FA).withOpacity(0.4),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              // Completed pages
-              if (isCompleted)
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF3B82F6),
-                        Color(0xFF60A5FA),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF60A5FA).withOpacity(0.4),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
       ),
@@ -320,9 +291,6 @@ class _IntroductionScreenState extends State<IntroductionScreen>
   }
 
   Widget _buildIntroductionPage(IntroductionPage page) {
-    // Determine if this is the middle page (index 1) for different layout
-    bool isMiddlePage = _pages.indexOf(page) == 1;
-    
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -336,74 +304,29 @@ class _IntroductionScreenState extends State<IntroductionScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              // Top spacing
-              const SizedBox(height: 60),
+              // Top spacing - consistent for all pages
+              const SizedBox(height: 20),
               
-              // For middle page: Text above image
-              if (isMiddlePage) ...[
-                // Content section (above image for middle page)
-                Column(
-                  children: [
-                    // Title with modern typography
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Text(
-                        page.title,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                          height: 1.2,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Description with improved readability
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          page.description,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.grey[700],
-                            height: 1.6,
-                            letterSpacing: 0.2,
+              // Image section - consistent size and positioning for all pages
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _scaleAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            maxWidth: 280,
+                            maxHeight: 280,
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 40),
-              ],
-              
-              // Image section without borders - positioned at top for 1st and 3rd pages
-              if (!isMiddlePage) ...[
-                // Image at top for first and third pages - bigger size
-                AnimatedBuilder(
-                  animation: _scaleAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Container(
-                        width: 320,
-                        height: 320,
-                        child: Image.asset(
-                          page.imagePath,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: 320,
-                              height: 320,
+                          child: SvgPicture.asset(
+                            page.imagePath,
+                            fit: BoxFit.contain,
+                            placeholderBuilder: (context) => Container(
+                              width: 280,
+                              height: 280,
                               decoration: BoxDecoration(
                                 color: page.accentColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(24),
@@ -413,103 +336,70 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                                 size: 80,
                                 color: Colors.grey[400],
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                
-                const SizedBox(height: 40),
-              ] else ...[
-                // Image in middle for second page
-                Expanded(
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _scaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _scaleAnimation.value,
-                          child: Container(
-                            width: 300,
-                            height: 300,
-                            child: Image.asset(
-                              page.imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 300,
-                                  height: 300,
-                                  decoration: BoxDecoration(
-                                    color: page.accentColor.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    size: 80,
-                                    color: Colors.grey[400],
-                                  ),
-                                );
-                              },
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ],
+              ),
               
-              // For first and last pages: Text below image with optimal spacing
-              if (!isMiddlePage) ...[
-                // Content section (below image for first and last pages)
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Title with modern typography
-                      FadeTransition(
-                        opacity: _fadeAnimation,
+              // Content section - consistent for all pages
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Title with consistent typography
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Text(
+                        page.title,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          height: 1.2,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Description with consistent styling
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          page.title,
+                          page.description,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                            height: 1.2,
-                            letterSpacing: -0.5,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey[700],
+                            height: 1.5,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Description with improved readability
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            page.description,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey[700],
-                              height: 1.5,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
               
-              // Bottom spacing - optimal distance from navigation bubbles
+              // Page indicators - consistent positioning
+              const SizedBox(height: 20),
+              _buildPageIndicators(),
+              
+              // Action buttons - consistent positioning
+              const SizedBox(height: 20),
+              _buildActionButtons(),
+              
+              // Bottom spacing - consistent for all pages
               const SizedBox(height: 30),
             ],
           ),

@@ -221,7 +221,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                   Icon(
                                     Icons.play_circle_outline,
                                     size: 80,
-                                    color: Color(0xFF68EAF3),
+                                    color: Color(0xFF4CAF50),
                                   ),
                                   SizedBox(height: 16),
                                   Text(
@@ -249,7 +249,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     )
                   : const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF68EAF3),
+                        color: Color(0xFF4CAF50),
                       ),
                     ),
             ),
@@ -338,8 +338,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [
-                                            Color(0xFF68EAF3),
-                                            Color(0xFF4FC3F7),
+                                            Color(0xFF4CAF50),
+                                            Color(0xFF66BB6A),
                                           ],
                                         ),
                                         borderRadius: BorderRadius.circular(35),
@@ -371,7 +371,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                             Icon(
                                               Icons.arrow_forward_ios,
                                               color: _slideProgress > 0.1 
-                                                  ? const Color(0xFF68EAF3).withOpacity(0.6)
+                                                  ? const Color(0xFF4CAF50).withOpacity(0.6)
                                                   : Colors.grey[400],
                                               size: 12,
                                             ),
@@ -379,7 +379,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                             Icon(
                                               Icons.arrow_forward_ios,
                                               color: _slideProgress > 0.1 
-                                                  ? const Color(0xFF68EAF3)
+                                                  ? const Color(0xFF4CAF50)
                                                   : Colors.grey[600],
                                               size: 14,
                                             ),
@@ -387,7 +387,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                             Icon(
                                               Icons.arrow_forward_ios,
                                               color: _slideProgress > 0.1 
-                                                  ? const Color(0xFF68EAF3).withOpacity(0.6)
+                                                  ? const Color(0xFF4CAF50).withOpacity(0.6)
                                                   : Colors.grey[400],
                                               size: 12,
                                             ),

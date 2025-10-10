@@ -53,7 +53,9 @@ flutter:
     - assets/animations/login_background.json
     - assets/animations/login_view.json
     - assets/animations/Loading.json
-    - assets/images/
     - assets/animations/spring_animation.json
+    - assets/animations/sahiwala.json
+    - assets/animations/avatar_animation.json
+    - assets/images/
     - assets/avatars/
     - assets/videos/

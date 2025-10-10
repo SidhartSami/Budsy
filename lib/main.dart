@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'package:tutortyper_app/views/welcome_screen.dart';
+import 'package:tutortyper_app/views/onboarding_screen.dart';
 import 'package:tutortyper_app/views/profile_completion_screen.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/views/friends_list_screen.dart';
@@ -174,11 +175,48 @@ class NotesViewWrapper extends InheritedWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isFirstTime = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstTime();
+  }
+
+  Future<void> _checkFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Check if this is the first time user is opening the app
+    final isFirstTime = prefs.getBool('isFirstTime') ?? true;
+    
+    setState(() {
+      _isFirstTime = isFirstTime;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Show onboarding screen for first-time users (always true for testing)
+    if (_isFirstTime) {
+      return const OnboardingScreen();
+    }
+
+    // For authenticated users, show the main app flow
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {

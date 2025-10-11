@@ -9,174 +9,179 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Helper for responsive sizing
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F1E8), // Cream/beige background
-      body: Stack(
-        children: [
-          // Background Lottie Animation (Full Screen)
-          Positioned.fill(
-            child: Lottie.asset(
-              'assets/animations/spring_animation.json',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(color: const Color(0xFFF5F1E8));
-              },
-            ),
-          ),
-
-          // Main Content
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  // Top spacing
-                  const SizedBox(height: 80),
-
-                  // Your Logo (Leaf Icon)
-                  Container(
-                    height: 80,
-                    width: 80,
-                    child: Image.asset(
-                      'assets/images/leaf_icon.png',
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback if logo doesn't load
-                        return Container(
-                          height: 80,
-                          width: 80,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D5D3F),
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: const Icon(
-                            Icons.eco,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // App Name/Heading
-                  const SizedBox(height: 16),
-                  Image.asset(
-                    'assets/images/leafnotes_heading.png',
-                    height: 50,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback text if heading image doesn't load
-                      return Text(
-                        'LeafNotes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF2D5D3F),
-                          letterSpacing: -0.5,
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Spacer to push buttons to bottom
-                  const Spacer(),
-
-                  // Login Button (Custom Image or Modern Button)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginView(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: Image.asset(
-                          'assets/images/login_button.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback modern button
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D5D3F),
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Login',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Sign Up Button (Custom Image or Modern Button)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterView(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: Image.asset(
-                          'assets/images/signup_button.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback modern button
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D5D3F),
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Sign Up',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Bottom spacing
-                  const SizedBox(height: 60),
-                ],
+      body: Container(
+        width: size.width,
+        height: size.height,
+        decoration: const BoxDecoration(color: Color(0xFFF1EDE6)),
+        child: Stack(
+          children: [
+            // Background decoration container (top area)
+            Positioned(
+              left: -size.width * 0.075,
+              top: -size.height * 0.035,
+              child: Container(
+                width: size.width * 1.25,
+                height: size.height * 0.625,
+                clipBehavior: Clip.antiAlias,
+                decoration: const BoxDecoration(),
               ),
             ),
-          ),
-        ],
+
+            SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.05,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Lottie Animation
+                      Lottie.asset(
+                        'assets/animations/sahiwala.json',
+                        width: size.width * 0.6,
+                        height: size.height * 0.25,
+                        fit: BoxFit.contain,
+                      ),
+
+                      SizedBox(height: size.height * 0.02),
+
+                      // App Title
+                      Text(
+                        'Budsy',
+                        style: TextStyle(
+                          color: const Color(0xFF0C3C2B),
+                          fontSize: size.width * 0.12,
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.01),
+
+                      // Subtitle
+                      Text(
+                        'Your Digital Garden',
+                        style: TextStyle(
+                          color: const Color(0xFF0C3C2B).withOpacity(0.7),
+                          fontSize: size.width * 0.04,
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.08),
+
+                      // Login Button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginView(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: size.width * 0.08,
+                            vertical: size.height * 0.02,
+                          ),
+                          decoration: ShapeDecoration(
+                            color: const Color(0xFF0C3C2B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                size.width * 0.07,
+                              ),
+                            ),
+                            shadows: [
+                              BoxShadow(
+                                color: const Color(0x3F000000),
+                                blurRadius: size.width * 0.01,
+                                offset: Offset(0, size.height * 0.005),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'Login',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: size.width * 0.06,
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.025),
+
+                      // Sign Up Button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegisterView(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: size.width * 0.08,
+                            vertical: size.height * 0.02,
+                          ),
+                          decoration: ShapeDecoration(
+                            color: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                size.width * 0.07,
+                              ),
+                              side: BorderSide(
+                                color: const Color(0xFF0C3C2B),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Sign Up',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: const Color(0xFF0C3C2B),
+                              fontSize: size.width * 0.06,
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.04),
+
+                      // Welcome message
+                      Text(
+                        'Start your journey with us',
+                        style: TextStyle(
+                          color: const Color(0xFF0C3C2B).withOpacity(0.6),
+                          fontSize: size.width * 0.035,
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

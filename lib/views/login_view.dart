@@ -54,92 +54,58 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildInputRow({
-    required String label,
+  Widget _buildInputField({
     required IconData icon,
     required TextEditingController controller,
     required String hint,
     bool isPassword = false,
   }) {
-    return Row(
-      children: [
-        // Label Container
-        Container(
-          width: size.width * 0.38,
-          height: size.height * 0.055,
-          padding: EdgeInsets.all(size.width * 0.025),
-          decoration: ShapeDecoration(
-            color: const Color(0xFF0C3C2B),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(size.width * 0.07),
-            ),
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: size.height * 0.01),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.grey[600],
+            fontSize: size.width * 0.04,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: size.width * 0.05),
-              SizedBox(width: size.width * 0.02),
-              Text(
-                '$label:',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size.width * 0.04,
-                  fontFamily: 'Fredoka One',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          prefixIcon: Icon(icon, color: Colors.grey),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.9),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide.none,
           ),
-        ),
-
-        SizedBox(width: size.width * 0.025),
-
-        // Input Field
-        Expanded(
-          child: Container(
-            height: size.height * 0.055,
-            padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
-            decoration: ShapeDecoration(
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide(
               color: const Color(0xFF0C3C2B),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(size.width * 0.07),
-              ),
-              shadows: [
-                BoxShadow(
-                  color: const Color(0x3F000000),
-                  blurRadius: size.width * 0.01,
-                  offset: Offset(0, size.height * 0.005),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(
-                  color: Colors.white54,
-                  fontSize: size.width * 0.035,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: size.height * 0.015,
-                ),
-              ),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: size.width * 0.04,
-              ),
-              obscureText: isPassword,
-              enabled: !_isLoading,
-              enableSuggestions: false,
-              autocorrect: false,
-              textCapitalization: isPassword
-                  ? TextCapitalization.none
-                  : TextCapitalization.none,
+              width: 2,
             ),
           ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: size.width * 0.05,
+            vertical: size.height * 0.02,
+          ),
         ),
-      ],
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: size.width * 0.04,
+        ),
+        cursorColor: const Color(0xFF0C3C2B),
+        obscureText: isPassword,
+        enabled: !_isLoading,
+        enableSuggestions: false,
+        autocorrect: false,
+        textCapitalization: isPassword
+            ? TextCapitalization.none
+            : TextCapitalization.none,
+      ),
     );
   }
 
@@ -201,9 +167,8 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
 
                             SizedBox(height: size.height * 0.08),
 
-                            // Username Row
-                            _buildInputRow(
-                              label: 'Username',
+                            // Username Field
+                            _buildInputField(
                               icon: Icons.alternate_email,
                               controller: _username,
                               hint: 'Enter Username',
@@ -211,9 +176,8 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
 
                             SizedBox(height: size.height * 0.04),
 
-                            // Password Row
-                            _buildInputRow(
-                              label: 'Password',
+                            // Password Field
+                            _buildInputField(
                               icon: Icons.lock,
                               controller: _password,
                               hint: 'Enter your password',

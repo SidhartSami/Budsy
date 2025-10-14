@@ -10,10 +10,12 @@ class SpecialFriendInteractionWidget extends StatefulWidget {
   const SpecialFriendInteractionWidget({super.key});
 
   @override
-  State<SpecialFriendInteractionWidget> createState() => _SpecialFriendInteractionWidgetState();
+  State<SpecialFriendInteractionWidget> createState() =>
+      _SpecialFriendInteractionWidgetState();
 }
 
-class _SpecialFriendInteractionWidgetState extends State<SpecialFriendInteractionWidget> {
+class _SpecialFriendInteractionWidgetState
+    extends State<SpecialFriendInteractionWidget> {
   final InteractionService _interactionService = InteractionService();
   List<Map<String, dynamic>> _specialFriendsData = [];
   bool _isLoading = true;
@@ -44,87 +46,73 @@ class _SpecialFriendInteractionWidgetState extends State<SpecialFriendInteractio
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
-      return _buildLoadingWidget();
+      return _buildLoadingWidget(isDark);
     }
 
     if (_specialFriendsData.isEmpty) {
-      return _buildEmptyWidget();
+      return _buildEmptyWidget(isDark);
     }
 
-    // For now, show the first special friend. Later can be expanded to show multiple
     final friendData = _specialFriendsData.first;
     final friend = friendData['friend'] as UserModel;
     final myCount = friendData['myCount'] as int;
     final theirCount = friendData['theirCount'] as int;
 
-    return _buildInteractionCard(friend, myCount, theirCount);
+    return _buildInteractionCard(friend, myCount, theirCount, isDark);
   }
 
-  Widget _buildLoadingWidget() {
+  Widget _buildLoadingWidget(bool isDark) {
     return Container(
-      height: 120,
-      margin: const EdgeInsets.symmetric(horizontal: 21, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FD),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 25,
-            offset: Offset(0, 4),
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: const Center(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
         child: CircularProgressIndicator(
-          color: Color(0xFF60A5FA),
+          color: isDark ? const Color(0xFF1A5C42) : const Color(0xFF0C3C2B),
+          strokeWidth: 3,
         ),
       ),
     );
   }
 
-  Widget _buildEmptyWidget() {
+  Widget _buildEmptyWidget(bool isDark) {
     return Container(
-      height: 120,
-      margin: const EdgeInsets.symmetric(horizontal: 21, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FD),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 25,
-            offset: Offset(0, 4),
-            spreadRadius: 1,
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.favorite_outline,
-              size: 32,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'No Special Friends Yet',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.favorite_outline,
+                size: 32,
+                color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
               ),
             ),
+            const SizedBox(height: 16),
+            Text(
+              'No Special Friends Yet',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 4),
             Text(
               'Add a special friend to start sharing moments',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
+              style: GoogleFonts.inter(
+                fontSize: 13,
                 fontWeight: FontWeight.w400,
-                color: Colors.grey[500],
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -134,7 +122,12 @@ class _SpecialFriendInteractionWidgetState extends State<SpecialFriendInteractio
     );
   }
 
-  Widget _buildInteractionCard(UserModel friend, int myCount, int theirCount) {
+  Widget _buildInteractionCard(
+    UserModel friend,
+    int myCount,
+    int theirCount,
+    bool isDark,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -145,142 +138,232 @@ class _SpecialFriendInteractionWidgetState extends State<SpecialFriendInteractio
         );
       },
       child: Container(
-        height: 207,
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F4FD),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x19000000),
-              blurRadius: 25,
-              offset: Offset(0, 4),
-              spreadRadius: 1,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Friend info section
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF0C3C2B).withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child:
+                        friend.photoUrl != null && friend.photoUrl!.isNotEmpty
+                        ? Image.network(
+                            friend.photoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildAvatarFallback(
+                                friend.displayName,
+                                isDark,
+                              );
+                            },
+                          )
+                        : _buildAvatarFallback(friend.displayName, isDark),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friend.displayName,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap to view interactions',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Connection strength visualization
+            Row(
+              children: [
+                Expanded(
+                  child: _buildHeartProgress(
+                    'You',
+                    myCount,
+                    const Color(0xFF0C3C2B),
+                    isDark,
+                    isLeft: true,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Center heart icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: Color(0xFF0C3C2B),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: _buildHeartProgress(
+                    'Them',
+                    theirCount,
+                    const Color(0xFF1A5C42),
+                    isDark,
+                    isLeft: false,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Title
-              Text(
-                'Miss You',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1E40AF),
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Hearts Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Your Heart
-                  _buildHeartWithCount('You', myCount, const Color(0xFF60A5FA)),
-                  
-                  // Their Heart  
-                  _buildHeartWithCount('Them', theirCount, const Color(0xFFEC4899)),
-                ],
-              ),
-            ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarFallback(String name, bool isDark) {
+    return Container(
+      color: const Color(0xFF0C3C2B).withOpacity(0.1),
+      child: Center(
+        child: Text(
+          name[0].toUpperCase(),
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF0C3C2B),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeartWithCount(String label, int count, Color color) {
-    final maxHeartFill = 100;
-    final heartFill = (count / maxHeartFill).clamp(0.0, 1.0);
-    
+  Widget _buildHeartProgress(
+    String label,
+    int count,
+    Color color,
+    bool isDark, {
+    required bool isLeft,
+  }) {
+    final maxCount = 100;
+    final progress = (count / maxCount).clamp(0.0, 1.0);
+
     return Column(
+      crossAxisAlignment: isLeft
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end,
       children: [
-        // Heart with fill
-        Container(
-          width: 50,
-          height: 50,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Heart outline
-              Icon(
-                Icons.favorite_border,
-                size: 50,
-                color: color.withOpacity(0.2),
+        // Label and count
+        Row(
+          mainAxisAlignment: isLeft
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.end,
+          children: [
+            if (!isLeft) ...[
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
               ),
-              
-              // Heart fill
-              ClipPath(
-                clipper: MiniHeartFillClipper(heartFill),
-                child: Icon(
-                  Icons.favorite,
-                  size: 50,
+              const SizedBox(width: 8),
+            ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                count.toString(),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
-              
-              // Count text
+            ),
+            if (isLeft) ...[
+              const SizedBox(width: 8),
               Text(
-                count.toString(),
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 2,
-                    ),
-                  ],
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
               ),
             ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Progress bar
+        Container(
+          height: 8,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: FractionallySizedBox(
+            alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+            widthFactor: progress,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color.withOpacity(0.7), color],
+                  begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+                  end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
           ),
         ),
-        
         const SizedBox(height: 4),
-        
-        // Label
+        // Progress percentage
         Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E40AF),
+          '${(progress * 100).toInt()}%',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
           ),
         ),
       ],
     );
-  }
-}
-
-// Custom clipper for mini heart fill animation
-class MiniHeartFillClipper extends CustomClipper<Path> {
-  final double fillLevel;
-
-  MiniHeartFillClipper(this.fillLevel);
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    
-    // Calculate the fill height (from bottom to top)
-    final fillHeight = size.height * fillLevel;
-    final startY = size.height - fillHeight;
-    
-    // Create a rectangle that clips from the bottom up
-    path.addRect(Rect.fromLTWH(0, startY, size.width, fillHeight));
-    
-    return path;
-  }
-
-  @override
-  bool shouldReclip(MiniHeartFillClipper oldClipper) {
-    return oldClipper.fillLevel != fillLevel;
   }
 }

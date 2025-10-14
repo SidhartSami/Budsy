@@ -13,7 +13,8 @@ class CreateNotes extends StatefulWidget {
   State<CreateNotes> createState() => _CreateNotesState();
 }
 
-class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin {
+class _CreateNotesState extends State<CreateNotes>
+    with TickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -34,22 +35,15 @@ class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
 
     _contentController.addListener(_updateCounts);
     _animationController.forward();
@@ -67,7 +61,9 @@ class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin
     final text = _contentController.text;
     setState(() {
       _characterCount = text.length;
-      _wordCount = text.trim().isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
+      _wordCount = text.trim().isEmpty
+          ? 0
+          : text.trim().split(RegExp(r'\s+')).length;
     });
   }
 
@@ -125,7 +121,7 @@ class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       appBar: PreferredSize(
@@ -206,8 +202,8 @@ class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin
                       children: [
                         Text(
                           'Content',
-                          style: isDark 
-                              ? AppTextStyles.labelDark 
+                          style: isDark
+                              ? AppTextStyles.labelDark
                               : AppTextStyles.label,
                         ),
                         const Spacer(),
@@ -263,7 +259,7 @@ class _CreateNotesState extends State<CreateNotes> with TickerProviderStateMixin
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark 
+                        color: isDark
                             ? AppColors.surfaceDark.withOpacity(0.5)
                             : AppColors.secondary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),

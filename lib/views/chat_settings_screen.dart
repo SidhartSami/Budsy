@@ -85,10 +85,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     try {
       final settings = await _settingsService.getChatSettings(widget.chatId);
       final stats = await _settingsService.getChatStats(widget.chatId);
-      
+
       // Load mutual friends count
       final UserService userService = UserService();
-      final mutualFriends = await userService.getMutualFriends(widget.otherUser.id);
+      final mutualFriends = await userService.getMutualFriends(
+        widget.otherUser.id,
+      );
 
       setState(() {
         _settings = settings;
@@ -208,138 +210,147 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
   }
 
   Widget _buildUserInfoSection() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF68EAFF).withOpacity(0.2),
-                      const Color(0xFF68EAFF).withOpacity(0.1),
-                    ],
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: widget.otherUser.isOnline
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFE2E8F0),
-                      width: 3,
-                    ),
-                  ),
-                  child: UserAvatarWidget(
-                    user: widget.otherUser,
-                    radius: 50,
-                    backgroundColor: const Color(0xFF68EAFF),
-                  ),
-                ),
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF000000).withOpacity(0.06),
+                offset: const Offset(0, 4),
+                blurRadius: 20,
+                spreadRadius: 0,
               ),
-              if (widget.otherUser.isOnline)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                    ),
-                  ),
-                ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            _getDisplayName(),
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '@${widget.otherUser.username}',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: widget.otherUser.isOnline
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFF10B981).withOpacity(0.1),
-                        const Color(0xFF10B981).withOpacity(0.05),
-                      ],
-                    )
-                  : null,
-              color: widget.otherUser.isOnline ? null : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: widget.otherUser.isOnline
-                    ? const Color(0xFF10B981).withOpacity(0.3)
-                    : const Color(0xFFE2E8F0),
+          child: Column(
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF68EAFF).withOpacity(0.2),
+                          const Color(0xFF68EAFF).withOpacity(0.1),
+                        ],
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.otherUser.isOnline
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFE2E8F0),
+                          width: 3,
+                        ),
+                      ),
+                      child: UserAvatarWidget(
+                        user: widget.otherUser,
+                        radius: 50,
+                        backgroundColor: const Color(0xFF68EAFF),
+                      ),
+                    ),
+                  ),
+                  if (widget.otherUser.isOnline)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
+              const SizedBox(height: 20),
+              Text(
+                _getDisplayName(),
+                style: GoogleFonts.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '@${widget.otherUser.username}',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: widget.otherUser.isOnline
+                      ? LinearGradient(
+                          colors: [
+                            const Color(0xFF10B981).withOpacity(0.1),
+                            const Color(0xFF10B981).withOpacity(0.05),
+                          ],
+                        )
+                      : null,
+                  color: widget.otherUser.isOnline
+                      ? null
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
                     color: widget.otherUser.isOnline
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF94A3B8),
-                    shape: BoxShape.circle,
+                        ? const Color(0xFF10B981).withOpacity(0.3)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  widget.otherUser.isOnline ? 'Online now' : 'Offline',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: widget.otherUser.isOnline
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF64748B),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: widget.otherUser.isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.otherUser.isOnline ? 'Online now' : 'Offline',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: widget.otherUser.isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -403,7 +414,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     );
   }
 
-
   Widget _buildMutualFriendsButton() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -459,11 +469,11 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _mutualFriendsCount == 0 
+                        _mutualFriendsCount == 0
                             ? 'No mutual friends'
-                            : _mutualFriendsCount == 1 
-                                ? '1 mutual friend'
-                                : '$_mutualFriendsCount mutual friends',
+                            : _mutualFriendsCount == 1
+                            ? '1 mutual friend'
+                            : '$_mutualFriendsCount mutual friends',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: const Color(0xFF64748B),
@@ -520,10 +530,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap != null ? () {
-            HapticFeedback.lightImpact();
-            onTap();
-          } : null,
+          onTap: onTap != null
+              ? () {
+                  HapticFeedback.lightImpact();
+                  onTap();
+                }
+              : null,
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -536,11 +548,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
                     color: const Color(0xFF68EAFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 20,
-                    color: const Color(0xFF68EAFF),
-                  ),
+                  child: Icon(icon, size: 20, color: const Color(0xFF68EAFF)),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1220,9 +1228,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MutualFriendsScreen(
-          otherUser: widget.otherUser,
-        ),
+        builder: (context) => MutualFriendsScreen(otherUser: widget.otherUser),
       ),
     );
   }

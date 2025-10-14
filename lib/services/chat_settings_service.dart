@@ -156,13 +156,15 @@ class ChatSettingsService {
           .collection('messages')
           .get();
 
-      print('Found ${messagesQuery.docs.length} messages to mark as deleted for user $currentUserId');
+      print(
+        'Found ${messagesQuery.docs.length} messages to mark as deleted for user $currentUserId',
+      );
 
       // Mark each message as deleted for current user
       for (final doc in messagesQuery.docs) {
         final messageData = doc.data();
         final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
-        
+
         // Add current user to deletedBy list if not already present
         if (!deletedBy.contains(currentUserId)) {
           deletedBy.add(currentUserId);
@@ -189,7 +191,9 @@ class ChatSettingsService {
       // Commit all changes atomically
       await batch.commit();
 
-      print('Chat history cleared successfully for user $currentUserId in chat: $chatId');
+      print(
+        'Chat history cleared successfully for user $currentUserId in chat: $chatId',
+      );
     } catch (e) {
       print('Error clearing chat history: $e');
       rethrow;

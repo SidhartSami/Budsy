@@ -60,41 +60,24 @@ class _MyAppState extends State<MyApp> {
       title: 'LeafNotes',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+          seedColor: const Color(0xFF0C3C2B),
           brightness: Brightness.light,
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
-          surface: AppColors.surface,
-          background: AppColors.background,
+          primary: const Color(0xFF0C3C2B),
+          secondary: const Color(0xFF1A5C42),
+          surface: Colors.white,
+          background: const Color(0xFFF8F9FA),
         ),
         useMaterial3: true,
-        textTheme: TextTheme(
-          headlineLarge: AppTextStyles.heading1,
-          headlineMedium: AppTextStyles.heading2,
-          headlineSmall: AppTextStyles.heading3,
-          titleLarge: AppTextStyles.heading4,
-          bodyLarge: AppTextStyles.body1,
-          bodyMedium: AppTextStyles.body2,
-          bodySmall: AppTextStyles.body3,
-          labelLarge: AppTextStyles.label,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF0C3C2B),
           elevation: 0,
-          titleTextStyle: AppTextStyles.heading2.copyWith(color: Colors.white),
+          centerTitle: false,
         ),
         cardTheme: CardThemeData(
-          elevation: 8,
-          shadowColor: AppColors.shadowMedium,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 8,
+          elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -102,41 +85,24 @@ class _MyAppState extends State<MyApp> {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+          seedColor: const Color(0xFF0C3C2B),
           brightness: Brightness.dark,
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
-          surface: AppColors.surfaceDark,
-          background: AppColors.backgroundDark,
+          primary: const Color(0xFF0C3C2B),
+          secondary: const Color(0xFF1A5C42),
+          surface: const Color(0xFF1E1E1E),
+          background: const Color(0xFF121212),
         ),
         useMaterial3: true,
-        textTheme: TextTheme(
-          headlineLarge: AppTextStyles.heading1Dark,
-          headlineMedium: AppTextStyles.heading2Dark,
-          headlineSmall: AppTextStyles.heading3Dark,
-          titleLarge: AppTextStyles.heading4Dark,
-          bodyLarge: AppTextStyles.body1Dark,
-          bodyMedium: AppTextStyles.body2Dark,
-          bodySmall: AppTextStyles.body3Dark,
-          labelLarge: AppTextStyles.labelDark,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.primary,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E1E1E),
           foregroundColor: Colors.white,
           elevation: 0,
-          titleTextStyle: AppTextStyles.heading2Dark.copyWith(color: Colors.white),
+          centerTitle: false,
         ),
         cardTheme: CardThemeData(
-          elevation: 8,
-          shadowColor: Colors.black26,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 8,
+          elevation: 0,
+          color: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -194,9 +160,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkFirstTime() async {
     final prefs = await SharedPreferences.getInstance();
-    // Check if this is the first time user is opening the app
     final isFirstTime = prefs.getBool('isFirstTime') ?? true;
-    
+
     setState(() {
       _isFirstTime = isFirstTime;
       _isLoading = false;
@@ -206,17 +171,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Show onboarding screen for first-time users (always true for testing)
     if (_isFirstTime) {
       return const OnboardingScreen();
     }
 
-    // For authenticated users, show the main app flow
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -235,7 +196,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     );
   }
 }
-
 
 class ProfileCheckWrapper extends StatelessWidget {
   const ProfileCheckWrapper({super.key});
@@ -296,8 +256,6 @@ class ProfileCheckWrapper extends StatelessWidget {
   }
 }
 
-enum MenuAction { logout }
-
 class NotesView extends StatefulWidget {
   const NotesView({super.key});
 
@@ -334,66 +292,88 @@ class _NotesViewState extends State<NotesView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+              width: 0.5,
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF00D9FF),
-        unselectedItemColor: theme.brightness == Brightness.dark
-            ? Colors.grey[400]
-            : Colors.grey,
-        backgroundColor: theme.brightness == Brightness.dark
-            ? theme.bottomNavigationBarTheme.backgroundColor
-              : Colors.white,
-          elevation: 0,
-          selectedFontSize: 12,
-          unselectedFontSize: 11,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
           ),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.note_alt_rounded),
-              label: 'Notes',
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_rounded, 'Home', isDark),
+                _buildNavItem(1, Icons.note_alt_rounded, 'Notes', isDark),
+                _buildNavItem(2, Icons.people_rounded, 'Friends', isDark),
+                _buildNavItem(3, Icons.person_rounded, 'Profile', isDark),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_rounded),
-              label: 'Friends',
-            ),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-                  ),
-                ],
-              ),
+          ),
+        ),
       ),
       floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CreateNotes()),
-                  );
-                },
-              backgroundColor: const Color(0xFF00D9FF),
-              elevation: 8,
-                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateNotes()),
+                );
+              },
+              backgroundColor: const Color(0xFF0C3C2B),
+              elevation: 4,
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
             )
           : null,
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label, bool isDark) {
+    final isSelected = _selectedIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF0C3C2B).withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? const Color(0xFF0C3C2B)
+                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? const Color(0xFF0C3C2B)
+                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -401,9 +381,6 @@ class _NotesViewState extends State<NotesView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.black.withOpacity(0.8)
-          : const Color.fromARGB(255, 235, 222, 222),
       builder: (context) {
         return Center(
           child: SizedBox(
@@ -428,7 +405,7 @@ class _NotesViewState extends State<NotesView> {
   }
 }
 
-// Enhanced Professional Dashboard with Modern Design
+// Professional Dashboard Screen
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -462,10 +439,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _scrollController.addListener(_onScroll);
     _controller.forward();
@@ -493,12 +467,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF8F9FA),
       body: CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern Header with Gradient
+          // Original Header with Green Gradient
           SliverAppBar(
             expandedHeight: _headerHeight,
             floating: false,
@@ -521,14 +497,15 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: SlideTransition(
                 position: _slideAnimation,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                   child: Text(
                     'Welcome back! Here\'s your overview',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: isDark ? Colors.grey[400] : Colors.grey[700],
-                      letterSpacing: 0.2,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -536,76 +513,28 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
 
-          // Statistics Cards
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-          children: [
-                      Expanded(
-                        child: _ModernStatCard(
-                          icon: Icons.note_alt_rounded,
-                          title: 'Total Notes',
-                          value: '24',
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                          ),
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _ModernStatCard(
-                          icon: Icons.local_fire_department_rounded,
-                          title: 'Day Streak',
-                          value: '7',
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-                          ),
-                          isDark: isDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Section Header
+          // Stats Row
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
               child: Row(
                 children: [
-            Container(
-                    width: 4,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                      ),
-                      borderRadius: BorderRadius.circular(2),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.note_alt_outlined,
+                      value: '24',
+                      label: 'Notes',
+                      isDark: isDark,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Quick Actions',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF2D3748),
-                      letterSpacing: 0.3,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.people_outline,
+                      value: '12',
+                      label: 'Friends',
+                      isDark: isDark,
                     ),
                   ),
                 ],
@@ -613,164 +542,236 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
 
-          // Feature Cards Grid
+          // Quick Actions Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+              child: Text(
+                'Quick Actions',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+          ),
+
+          // Action Cards Grid
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.9,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
               ),
               delegate: SliverChildListDelegate([
-                _PremiumFeatureCard(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
-                  ),
+                _buildActionCard(
+                  icon: Icons.edit_note_rounded,
                   title: 'Create Note',
                   subtitle: 'Start writing',
-                  icon: Icons.edit_note_rounded,
-                  delay: 0,
+                  isDark: isDark,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CreateNotes()),
                   ),
                 ),
-                _PremiumFeatureCard(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFFFB75E), Color(0xFFED8F03)],
-                  ),
-                  title: 'Streaks',
-                  subtitle: 'Keep it up',
-                  icon: Icons.local_fire_department_rounded,
-                  delay: 100,
-                  onTap: () => _showComingSoon(context, 'Streaks'),
+                _buildActionCard(
+                  icon: Icons.checklist_rounded,
+                  title: 'To-Do List',
+                  subtitle: 'Stay organized',
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('To-Do List'),
                 ),
-                _PremiumFeatureCard(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
-                  ),
+                _buildActionCard(
+                  icon: Icons.spa_outlined,
                   title: 'Bloom',
                   subtitle: 'Track growth',
-                  icon: Icons.spa_rounded,
-                  delay: 200,
-                  onTap: () => _showComingSoon(context, 'Bloom Counter'),
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('Bloom Counter'),
                 ),
-                _PremiumFeatureCard(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  ),
-                  title: 'To-Do',
-                  subtitle: 'Get organized',
-                  icon: Icons.checklist_rounded,
-                  delay: 300,
-                  onTap: () => _showComingSoon(context, 'To-Do List'),
+                _buildActionCard(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'Analytics',
+                  subtitle: 'View insights',
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('Analytics'),
                 ),
               ]),
             ),
           ),
 
-          // Special Moments Section Header
+          // Special Moments Section
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Special Moments',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF2D3748),
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+              child: Text(
+                'Special Moments',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ),
           ),
 
-          // Birthday Countdown Widget
+          // Birthday Widget with Professional Style
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: _ProfessionalWidgetWrapper(
                 child: const DashboardBirthdayWidget(),
+                isDark: isDark,
               ),
             ),
           ),
 
-          // Special Friend Interaction Widget
+          // Interaction Widget with Professional Style
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: _ProfessionalWidgetWrapper(
                 child: const DashboardInteractionWidget(),
+                isDark: isDark,
               ),
             ),
           ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required bool isDark,
+    bool isSpecial = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: isSpecial
+            ? const Color(0xFF0C3C2B)
+            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+        borderRadius: BorderRadius.circular(16),
+        border: !isSpecial && !isDark
+            ? Border.all(color: Colors.grey.shade200, width: 1)
+            : null,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 24,
+            color: isSpecial
+                ? Colors.white
+                : (isDark ? Colors.white70 : const Color(0xFF0C3C2B)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: isSpecial
+                  ? Colors.white
+                  : (isDark ? Colors.white : Colors.black87),
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: isSpecial
+                  ? Colors.white.withOpacity(0.9)
+                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: !isDark
+              ? Border.all(color: Colors.grey.shade200, width: 1)
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.info_outline, color: Colors.white),
-            const SizedBox(width: 12),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: const Color(0xFF0C3C2B), size: 24),
+            ),
+            const Spacer(),
             Text(
-              '$feature coming soon!',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF667EEA),
+      ),
+    );
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature coming soon!'),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF0C3C2B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 }
 
-// Modern Dashboard Header
+// Original Header with Green Gradient
 class _ModernDashboardHeader extends StatefulWidget {
   final Animation<double> fadeAnimation;
   final double headerOpacity;
   final bool isDark;
 
   const _ModernDashboardHeader({
-    super.key,
     required this.fadeAnimation,
     required this.headerOpacity,
     required this.isDark,
@@ -819,8 +820,8 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: widget.isDark
-                ? [const Color(0xFF1E293B), const Color(0xFF334155)]
-                : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+                ? [const Color(0xFF0C3C2B), const Color(0xFF1A5C42)]
+                : [const Color(0xFF0C3C2B), const Color(0xFF1A5C42)],
           ),
         ),
         child: Stack(
@@ -833,7 +834,7 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                  shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.05),
                 ),
               ),
@@ -852,7 +853,7 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -883,53 +884,53 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
                                         offset: const Offset(0, 8),
                                       ),
                                     ],
-                    ),
-                    child: ClipOval(
+                                  ),
+                                  child: ClipOval(
                                     child: Lottie.asset(
                                       'assets/animations/avatar_animation.json',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Opacity(
                                       opacity: widget.headerOpacity,
                                       child: Text(
                                         'Hello,',
-                                        style: GoogleFonts.poppins(
+                                        style: GoogleFonts.inter(
                                           color: Colors.white.withOpacity(0.9),
                                           fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                                          fontWeight: FontWeight.w400,
                                           letterSpacing: 0.5,
-                          ),
-                        ),
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      _isLoading 
-                                        ? 'Loading...' 
-                                        : '${_currentUser?.displayName ?? 'User'} 👋',
-                                      style: GoogleFonts.poppins(
+                                      _isLoading
+                                          ? 'Loading...'
+                                          : '${_currentUser?.displayName ?? 'User'} 👋',
+                                      style: GoogleFonts.inter(
                                         color: Colors.white,
-                                        fontSize: 24,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 0.3,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         // Notification button
-            Container(
+                        Container(
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
@@ -954,8 +955,8 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
                                 child: Container(
                                   width: 8,
                                   height: 8,
-              decoration: const BoxDecoration(
-                                    color: Color(0xFFFF6B6B),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -983,310 +984,63 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                children: [
+                          children: [
                             Container(
                               width: 6,
                               height: 6,
                               decoration: const BoxDecoration(
-                                color: Color(0xFF38EF7D),
+                                color: Colors.white,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              _isLoading 
-                                ? 'Loading...' 
-                                : _currentUser?.bio ?? 'Welcome to your dashboard',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                            Flexible(
+                              child: Text(
+                                _isLoading
+                                    ? 'Loading...'
+                                    : _currentUser?.bio ??
+                                          'Welcome to your dashboard',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        ),
                       ),
-                    ],
-                  ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Modern Stat Card
-class _ModernStatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final LinearGradient gradient;
-  final bool isDark;
-
-  const _ModernStatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.gradient,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.first.withOpacity(0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-        ],
-        border: isDark
-            ? Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              )
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF2D3748),
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Premium Feature Card
-class _PremiumFeatureCard extends StatefulWidget {
-  final LinearGradient gradient;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final int delay;
-
-  const _PremiumFeatureCard({
-    required this.gradient,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-    required this.delay,
-  });
-
-  @override
-  State<_PremiumFeatureCard> createState() => _PremiumFeatureCardState();
-}
-
-class _PremiumFeatureCardState extends State<_PremiumFeatureCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _isPressed = true);
-        _controller.forward();
-      },
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        _controller.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () {
-        setState(() => _isPressed = false);
-        _controller.reverse();
-      },
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-      child: Container(
-        decoration: BoxDecoration(
-            gradient: widget.gradient,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-            BoxShadow(
-                color: widget.gradient.colors.first.withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-                spreadRadius: 0,
-            ),
-          ],
-        ),
-          child: Stack(
-          children: [
-              // Decorative pattern
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _CardPatternPainter(),
-                ),
-              ),
-              // Content
-            Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(widget.icon, color: Colors.white, size: 28),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.subtitle,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: 0.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Open',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// Card Pattern Painter
-class _CardPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
-      ..style = PaintingStyle.fill;
+// Professional Widget Wrapper to style the special moment widgets
+class _ProfessionalWidgetWrapper extends StatelessWidget {
+  final Widget child;
+  final bool isDark;
 
-    canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.15), 35, paint);
-    canvas.drawCircle(Offset(size.width * 0.92, size.height * 0.35), 25, paint);
-    canvas.drawCircle(Offset(-15, size.height * 0.75), 45, paint);
+  const _ProfessionalWidgetWrapper({required this.child, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: !isDark
+            ? Border.all(color: Colors.grey.shade200, width: 1)
+            : null,
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(16), child: child),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

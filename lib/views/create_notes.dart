@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/modern_text_field.dart';
@@ -20,11 +22,12 @@ class _CreateNotesState extends State<CreateNotes>
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _contentFocusNode = FocusNode();
 
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
   int _wordCount = 0;
   int _characterCount = 0;
 
@@ -32,18 +35,13 @@ class _CreateNotesState extends State<CreateNotes>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
 
     _contentController.addListener(_updateCounts);
     _animationController.forward();
@@ -53,6 +51,8 @@ class _CreateNotesState extends State<CreateNotes>
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _titleFocusNode.dispose();
+    _contentFocusNode.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -67,13 +67,10 @@ class _CreateNotesState extends State<CreateNotes>
     });
   }
 
-  // Function to save note to Firebase
   Future<void> _saveNote() async {
     if (_titleController.text.trim().isEmpty ||
         _contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill both title and content!')),
-      );
+      _showSnackBar('Please fill both title and content', isError: true);
       return;
     }
 
@@ -90,32 +87,118 @@ class _CreateNotesState extends State<CreateNotes>
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Show success message with tick icon
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 10),
-              Text('Note added successfully!'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar('Note saved successfully');
 
-      // Go back to MyNotes screen
-      Navigator.pop(context);
+      // Small delay for better UX
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving note: $e')));
+      _showSnackBar('Failed to save note', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFFF3B30) : Colors.black87,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showDiscardDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasContent =
+        _titleController.text.trim().isNotEmpty ||
+        _contentController.text.trim().isNotEmpty;
+
+    if (!hasContent) {
+      Navigator.pop(context);
+      return;
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Discard Note?',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+            letterSpacing: -0.5,
+          ),
+        ),
+        content: Text(
+          'Your note will not be saved.',
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close create notes screen
+            },
+            child: Text(
+              'Discard',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: const Color(0xFFFF3B30),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -123,177 +206,233 @@ class _CreateNotesState extends State<CreateNotes>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: AppColors.primaryGradient,
+      backgroundColor: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFFAFAFA),
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
+        leading: GestureDetector(
+          onTap: _showDiscardDialog,
+          child: Container(
+            margin: const EdgeInsets.only(left: 12),
+            child: Icon(
+              Icons.close_rounded,
+              color: isDark ? Colors.white : Colors.black,
+              size: 28,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
-          child: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              "Create Note",
-              style: AppTextStyles.heading2.copyWith(color: Colors.white),
-            ),
-            leading: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-            ),
-            actions: [
-              if (!_isLoading)
-                IconButton(
-                  onPressed: _saveNote,
-                  icon: const Icon(Icons.check, color: Colors.white),
-                )
-              else
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+        ),
+        title: Text(
+          "New Note",
+          style: GoogleFonts.inter(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            letterSpacing: -0.5,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          if (_isLoading)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? Colors.white : const Color(0xFF0C3C2B),
                     ),
                   ),
                 ),
-              const SizedBox(width: 8),
-            ],
-          ),
-        ),
-      ),
-      body: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title field
-                    ModernTextField(
-                      controller: _titleController,
-                      label: 'Note Title',
-                      hint: 'Enter your note title...',
-                      prefixIcon: Icons.title,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Content field label and stats
-                    Row(
-                      children: [
-                        Text(
-                          'Content',
-                          style: isDark
-                              ? AppTextStyles.labelDark
-                              : AppTextStyles.label,
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$_wordCount words • $_characterCount chars',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Content field (expandable)
-                    Expanded(
-                      child: ModernTextField(
-                        controller: _contentController,
-                        label: 'Note Content',
-                        hint: 'Write your note here...',
-                        prefixIcon: Icons.edit_note,
-                        maxLines: null,
-                        expands: true,
-                        onChanged: (value) => _updateCounts(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Save button
-                    ModernButton(
-                      text: 'Save Note',
-                      icon: Icons.save,
-                      onPressed: _isLoading ? null : _saveNote,
-                      isLoading: _isLoading,
-                      width: double.infinity,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Tips section
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surfaceDark.withOpacity(0.5)
-                            : AppColors.secondary.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.secondary.withOpacity(0.1),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.tips_and_updates_outlined,
-                            color: AppColors.secondary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Tip: Your notes are automatically synced across all your devices',
-                              style: AppTextStyles.body2.copyWith(
-                                color: AppColors.secondary,
-                              ),
-                              overflow: TextOverflow.visible,
-                              softWrap: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _saveNote,
+              child: Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0C3C2B),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Save',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
             ),
-          );
-        },
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 0.5,
+            color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+          ),
+        ),
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title field
+                      TextField(
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        autofocus: true,
+                        maxLines: null,
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                          letterSpacing: -0.5,
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Title',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade400,
+                            letterSpacing: -0.5,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Content field
+                      TextField(
+                        controller: _contentController,
+                        focusNode: _contentFocusNode,
+                        maxLines: null,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          height: 1.6,
+                          color: isDark
+                              ? Colors.grey.shade300
+                              : const Color(0xFF3C3C43),
+                          letterSpacing: -0.2,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Start writing...',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade400,
+                            letterSpacing: -0.2,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom stats bar
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? Colors.grey.shade900
+                          : Colors.grey.shade200,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 16,
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$_wordCount words',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade500,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade400,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        '$_characterCount characters',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade500,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

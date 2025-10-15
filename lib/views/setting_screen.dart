@@ -1,4 +1,4 @@
-// views/settings_screen.dart - Fixed Version
+// views/settings_screen.dart - Updated with Green Theme
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -57,8 +57,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() {
           currentUser = user;
           activityStatus = user.isOnline;
-          showOnlineStatus = user.showOnlineStatus; // Load actual value from user data
-          showBirthDate = user.showBirthDate; // Load actual value from user data
+          showOnlineStatus = user.showOnlineStatus;
+          showBirthDate = user.showBirthDate;
         });
       }
     } catch (e) {
@@ -89,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: Text(
           'Settings',
@@ -110,10 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF68EAFF),
-                Color(0xFF4FD1C7),
-              ],
+              colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
             ),
           ),
         ),
@@ -290,7 +287,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Logout Button
             Card(
+              elevation: 0,
               color: Colors.red[50],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.red.shade200, width: 1),
+              ),
               child: ListTile(
                 leading: const Icon(Icons.logout_rounded, color: Colors.red),
                 title: Text(
@@ -298,12 +300,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: GoogleFonts.inter(
                     color: Colors.red,
                     fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
                 subtitle: Text(
                   'Sign out of your account',
                   style: GoogleFonts.inter(
                     color: Colors.red.withOpacity(0.7),
+                    fontSize: 13,
                   ),
                 ),
                 onTap: () => _showLogoutDialog(context),
@@ -318,10 +322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileAvatar() {
-    return Hero(
-      tag: 'profile_picture',
-      child: _buildAvatarContent(50),
-    );
+    return Hero(tag: 'profile_picture', child: _buildAvatarContent(50));
   }
 
   Widget _buildFullScreenAvatar() {
@@ -343,9 +344,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     }
-    
+
     // Check if user has a predefined avatar
-    if (currentUser?.predefinedAvatar != null && 
+    if (currentUser?.predefinedAvatar != null &&
         AvatarManager.isPredefinedAvatar(currentUser!.predefinedAvatar)) {
       return Container(
         width: radius * 2,
@@ -359,10 +360,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     }
-    
+
     // Default to gender-based avatar or icon
     if (currentUser?.gender != null) {
-      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(currentUser!.gender);
+      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(
+        currentUser!.gender,
+      );
       return Container(
         width: radius * 2,
         height: radius * 2,
@@ -375,12 +378,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     }
-    
+
     // Final fallback to icon
     return CircleAvatar(
       radius: radius,
-      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-      child: Icon(Icons.person, size: radius, color: Colors.white),
+      backgroundColor: const Color(0xFF0C3C2B).withOpacity(0.1),
+      child: Icon(Icons.person, size: radius, color: const Color(0xFF0C3C2B)),
     );
   }
 
@@ -400,9 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
                 ),
@@ -418,10 +419,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(left: 8, bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.nunito(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: color ?? Colors.grey[600],
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: color ?? Colors.grey.shade600,
           letterSpacing: 0.5,
         ),
       ),
@@ -436,19 +437,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color? color,
   }) {
     return Card(
-      elevation: 1,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
+      ),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: color ?? const Color.fromARGB(255, 104, 234, 243),
-        ),
+        leading: Icon(icon, color: color ?? const Color(0xFF0C3C2B)),
         title: Text(
           title,
-          style: GoogleFonts.nunito(fontWeight: FontWeight.w600, color: color),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: color),
         ),
-        subtitle: Text(subtitle, style: GoogleFonts.nunito(fontSize: 14)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        subtitle: Text(subtitle, style: GoogleFonts.inter(fontSize: 13)),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
         onTap: onTap,
       ),
     );
@@ -462,19 +464,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ValueChanged<bool> onChanged,
   ) {
     return Card(
-      elevation: 1,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
+      ),
       child: ListTile(
-        leading: Icon(icon, color: const Color.fromARGB(255, 104, 234, 243)),
+        leading: Icon(icon, color: const Color(0xFF0C3C2B)),
         title: Text(
           title,
-          style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
-        subtitle: Text(subtitle, style: GoogleFonts.nunito(fontSize: 14)),
+        subtitle: Text(subtitle, style: GoogleFonts.inter(fontSize: 13)),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color.fromARGB(255, 104, 234, 243),
+          activeColor: const Color(0xFF0C3C2B),
         ),
       ),
     );
@@ -523,9 +529,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
-                    child: ClipOval(
-                      child: _buildFullScreenAvatar(),
-                    ),
+                    child: ClipOval(child: _buildFullScreenAvatar()),
                   ),
                 ),
               ),
@@ -542,11 +546,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: Colors.black.withOpacity(0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ),
             ),
@@ -562,13 +562,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _openEditProfile();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 104, 234, 243),
+                      color: const Color(0xFF0C3C2B),
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: const Color(0xFF0C3C2B).withOpacity(0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -577,15 +580,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        const Icon(Icons.edit, color: Colors.white, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           'Edit Profile Picture',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.inter(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -617,11 +616,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
-
-
-
-
   // Privacy Settings
   Future<void> _updateShowOnlineStatus(bool value) async {
     setState(() {
@@ -632,7 +626,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // Update the user's showOnlineStatus in Firestore
       await _userService.updateUserProfile(showOnlineStatus: value);
-      
+
       // If turning off online status, also set isOnline to false
       if (!value) {
         await _userService.updateOnlineStatus(false);
@@ -659,7 +653,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         showOnlineStatus = !value;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -693,7 +687,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
   }
-
 
   Future<void> _updateDisplayName(String newDisplayName) async {
     if (newDisplayName.trim().isEmpty) {
@@ -816,7 +809,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Edit $field',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: TextField(
           controller: controller,
@@ -853,7 +846,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Edit Bio',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: TextField(
           controller: controller,
@@ -920,7 +913,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Change Email',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1026,7 +1019,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Change Password',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1149,7 +1142,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
   void _showNotificationSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -1171,9 +1163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showBlockedUsers() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const BlockedUsersScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const BlockedUsersScreen()),
     );
   }
 
@@ -1193,7 +1183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Report a Bug',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: TextField(
           controller: controller,
@@ -1232,7 +1222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Send Suggestion',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: TextField(
           controller: controller,
@@ -1287,8 +1277,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Delete Account',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
             color: Colors.red,
           ),
         ),
@@ -1321,8 +1311,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Final Confirmation',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
             color: Colors.red,
           ),
         ),
@@ -1426,7 +1416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Logout',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: const Text('Are you sure you want to logout?'),
         actions: [
@@ -1513,9 +1503,9 @@ class _NotificationSettingsScreenState
       appBar: AppBar(
         title: Text(
           'Notification Settings',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 20),
         ),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+        backgroundColor: const Color(0xFF0C3C2B),
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -1525,10 +1515,10 @@ class _NotificationSettingsScreenState
           children: [
             Text(
               'GENERAL',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade600,
                 letterSpacing: 0.5,
               ),
             ),
@@ -1541,7 +1531,7 @@ class _NotificationSettingsScreenState
                 setState(() => pushNotifications = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
             SwitchListTile(
               title: const Text('Email Notifications'),
@@ -1551,17 +1541,17 @@ class _NotificationSettingsScreenState
                 setState(() => emailNotifications = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
 
             const SizedBox(height: 24),
 
             Text(
               'ACTIVITY',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade600,
                 letterSpacing: 0.5,
               ),
             ),
@@ -1576,7 +1566,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
             SwitchListTile(
               title: const Text('Messages'),
@@ -1588,7 +1578,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
             SwitchListTile(
               title: const Text('Notes'),
@@ -1600,17 +1590,17 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
 
             const SizedBox(height: 24),
 
             Text(
               'APP UPDATES',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade600,
                 letterSpacing: 0.5,
               ),
             ),
@@ -1623,7 +1613,7 @@ class _NotificationSettingsScreenState
                 setState(() => appUpdates = value);
                 _saveNotificationSettings();
               },
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
             SwitchListTile(
               title: const Text('Marketing Emails'),
@@ -1635,7 +1625,7 @@ class _NotificationSettingsScreenState
                       _saveNotificationSettings();
                     }
                   : null,
-              activeColor: const Color(0xFF68EAFF),
+              activeColor: const Color(0xFF0C3C2B),
             ),
 
             const Spacer(),
@@ -1655,7 +1645,7 @@ class _NotificationSettingsScreenState
                     Expanded(
                       child: Text(
                         'Push notifications are disabled. Enable them to receive activity notifications.',
-                        style: GoogleFonts.nunito(color: Colors.orange),
+                        style: GoogleFonts.inter(color: Colors.orange),
                       ),
                     ),
                   ],

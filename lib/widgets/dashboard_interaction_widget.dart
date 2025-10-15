@@ -1,9 +1,10 @@
-// widgets/dashboard_birthday_widget.dart
+// widgets/dashboard_interaction_widget.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tutortyper_app/widgets/special_friend_interaction_widget.dart';
 
-class DashboardBirthdayWidget extends StatelessWidget {
-  const DashboardBirthdayWidget({super.key});
+class DashboardInteractionWidget extends StatelessWidget {
+  const DashboardInteractionWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,7 @@ class DashboardBirthdayWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.cake_rounded,
+                  Icons.favorite_rounded,
                   color: Color(0xFF0C3C2B),
                   size: 24,
                 ),
@@ -36,7 +37,7 @@ class DashboardBirthdayWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Upcoming Birthdays',
+                      'Special Friends',
                       style: GoogleFonts.inter(
                         color: isDark ? Colors.white : Colors.black87,
                         fontSize: 18,
@@ -45,7 +46,7 @@ class DashboardBirthdayWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Celebrate with friends',
+                      'Heart connections',
                       style: GoogleFonts.inter(
                         color: isDark
                             ? Colors.grey.shade400
@@ -61,42 +62,8 @@ class DashboardBirthdayWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Birthday content
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.celebration_outlined,
-                    size: 48,
-                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No upcoming birthdays',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: isDark
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Add friends to see their birthdays',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: isDark
-                          ? Colors.grey.shade500
-                          : Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Original widget content
+          const SpecialFriendInteractionWidget(),
         ],
       ),
     );

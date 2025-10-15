@@ -22,7 +22,8 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   List<UserModel> _mutualFriendSuggestions = [];
   bool _isSearching = false;
   bool _isLoadingSuggestions = true;
-  Set<String> _sentRequestUserIds = {}; // Track users to whom requests have been sent
+  Set<String> _sentRequestUserIds =
+      {}; // Track users to whom requests have been sent
   Set<String> _currentFriendIds = {}; // Track current user's friends
 
   @override
@@ -122,7 +123,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: Text(
           'Add Friends',
@@ -146,10 +147,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF68EAFF),
-                Color(0xFF4FD1C7),
-              ],
+              colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
             ),
           ),
         ),
@@ -172,17 +170,21 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: _searchUsers,
+              onChanged: (value) {
+                _searchUsers(value);
+                setState(() {}); // Rebuild to show/hide clear button
+              },
               decoration: InputDecoration(
                 hintText: 'Search for people...',
                 hintStyle: GoogleFonts.inter(
@@ -190,10 +192,24 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
                   fontSize: 14,
                 ),
                 prefixIcon: const Icon(
-                  Icons.search,
-                  color: Color(0xFF64748B),
+                  Icons.search_rounded,
+                  color: Color(0xFF0C3C2B),
                   size: 20,
                 ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: Color(0xFF64748B),
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchUsers('');
+                          setState(() {});
+                        },
+                      )
+                    : null,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -216,12 +232,13 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
     if (_isLoadingSuggestions) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF68EAFF)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
         ),
       );
     }
 
     return RefreshIndicator(
+      color: const Color(0xFF0C3C2B),
       onRefresh: _loadMutualFriendSuggestions,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -235,7 +252,9 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
               'We couldn\'t find any mutual friends to suggest',
             )
           else
-            ..._mutualFriendSuggestions.map((user) => _buildSuggestionCard(user)),
+            ..._mutualFriendSuggestions.map(
+              (user) => _buildSuggestionCard(user),
+            ),
         ],
       ),
     );
@@ -265,11 +284,12 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -283,7 +303,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
               child: UserAvatarWidget(
                 user: user,
                 radius: 28,
-                backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
+                backgroundColor: const Color(0xFF0C3C2B).withOpacity(0.1),
               ),
             ),
             const SizedBox(width: 16),
@@ -324,17 +344,20 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
                   // Mutual friends indicator
                   if (!_isSearching)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF68EAFF).withOpacity(0.1),
+                        color: const Color(0xFF0C3C2B).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         'Mutual friends',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF68EAFF),
-                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF0C3C2B),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -365,40 +388,39 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
 
   Widget _buildEmptyState(String title, IconData icon, String subtitle) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF68EAFF).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(50),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Icon(icon, size: 48, color: const Color(0xFF0C3C2B)),
             ),
-            child: Icon(
-              icon,
-              size: 48,
-              color: const Color(0xFF68EAFF),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: const Color(0xFF1E293B),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: const Color(0xFF1E293B),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -406,44 +428,48 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   Widget _buildAddButton(UserModel user) {
     final isRequestSent = _sentRequestUserIds.contains(user.id);
     final isAlreadyFriend = _currentFriendIds.contains(user.id);
-    
+
     // Determine button state
     String buttonText;
     Color buttonColor;
+    Color textColor;
     VoidCallback? onTap;
-    
+
     if (isAlreadyFriend) {
-      buttonText = 'Added';
-      buttonColor = Colors.green;
+      buttonText = 'Friends';
+      buttonColor = const Color(0xFF10B981).withOpacity(0.1);
+      textColor = const Color(0xFF10B981);
       onTap = null; // Disabled
     } else if (isRequestSent) {
       buttonText = 'Sent';
-      buttonColor = Colors.grey[400]!;
+      buttonColor = const Color(0xFF0C3C2B).withOpacity(0.1);
+      textColor = const Color(0xFF0C3C2B);
       onTap = null; // Disabled
     } else {
       buttonText = 'Add';
-      buttonColor = const Color(0xFF68EAFF);
+      buttonColor = const Color(0xFF0C3C2B);
+      textColor = Colors.white;
       onTap = () => _sendFriendRequest(user);
     }
-    
+
     return Container(
       decoration: BoxDecoration(
         color: buttonColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Text(
               buttonText,
-              style: TextStyle(
-                color: Colors.white,
+              style: GoogleFonts.inter(
+                color: textColor,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 13,
               ),
             ),
           ),
@@ -457,18 +483,20 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
     try {
       HapticFeedback.lightImpact();
       await _userService.sendFriendRequest(user.username);
-      
+
       // Add user to sent requests set
       setState(() {
         _sentRequestUserIds.add(user.id);
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Friend request sent to ${user.displayName}'),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -478,7 +506,9 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
           content: Text('Error sending request: $e'),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );

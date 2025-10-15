@@ -40,7 +40,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   String _generateChatId(String friendId) {
     final currentUserId = UserService.currentUserId;
     if (currentUserId == null) return '';
-    
+
     final participants = [currentUserId, friendId]..sort();
     return participants.join('_');
   }
@@ -51,12 +51,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       if (currentUser == null) return;
 
       final nicknames = <String, String>{};
-      
+
       // Load nicknames for all friends
       for (final friendId in currentUser.friends) {
         final chatId = _generateChatId(friendId);
         final chatSettings = await _chatSettingsService.getChatSettings(chatId);
-        if (chatSettings?.nickname != null && chatSettings!.nickname!.isNotEmpty) {
+        if (chatSettings?.nickname != null &&
+            chatSettings!.nickname!.isNotEmpty) {
           nicknames[friendId] = chatSettings.nickname!;
         }
       }
@@ -112,23 +113,23 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       body: SafeArea(
         child: Column(
           children: [
-              // Header Section with Gradient Background
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF68EAFF),
-                      Color(0xFF4FD1C7),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+            // Header Section with Gradient Background
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF0C3C2B), // Changed from Color(0xFF68EAFF)
+                    Color(0xFF1A5C42), // Changed from Color(0xFF4FD1C7)
+                  ],
                 ),
-                child: Column(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: Column(
                 children: [
                   // Top Bar with Title and Icons
                   Padding(
@@ -142,7 +143,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                             StreamBuilder<UserModel?>(
                               stream: _userService.getCurrentUserStream(),
                               builder: (context, userSnapshot) {
-                                final userName = userSnapshot.data?.displayName ?? 'User';
+                                final userName =
+                                    userSnapshot.data?.displayName ?? 'User';
                                 return Text(
                                   'Hi, $userName!',
                                   style: GoogleFonts.inter(
@@ -155,7 +157,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                             ),
                             const SizedBox(height: 4),
                             StreamBuilder<int>(
-                              stream: _userService.getTotalUnreadMessageCountStream(),
+                              stream: _userService
+                                  .getTotalUnreadMessageCountStream(),
                               builder: (context, snapshot) {
                                 final messageCount = snapshot.data ?? 0;
                                 return Text(
@@ -173,71 +176,76 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                         ),
                         Row(
                           children: [
-          // Friend Requests Button with Badge
-          StreamBuilder<int>(
-            stream: _userService.getPendingRequestsCountStream(),
-            builder: (context, snapshot) {
-              final pendingCount = snapshot.data ?? 0;
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.mail_outline),
+                            // Friend Requests Button with Badge
+                            StreamBuilder<int>(
+                              stream: _userService
+                                  .getPendingRequestsCountStream(),
+                              builder: (context, snapshot) {
+                                final pendingCount = snapshot.data ?? 0;
+                                return Stack(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.mail_outline),
                                       color: Colors.white,
                                       iconSize: 26,
-                    onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FriendRequestsScreen(),
-              ),
-            );
-                    },
-                  ),
-                  if (pendingCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$pendingCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const FriendRequestsScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    if (pendingCount > 0)
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Text(
+                                            '$pendingCount',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
                             const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.person_add),
+                            IconButton(
+                              icon: const Icon(Icons.person_add),
                               color: Colors.white,
                               iconSize: 26,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddFriendsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AddFriendsScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -246,15 +254,19 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   StreamBuilder<UserModel?>(
                     stream: _userService.getCurrentUserStream(),
                     builder: (context, userSnapshot) {
-                      if (!userSnapshot.hasData || userSnapshot.data?.friends.isEmpty == true) {
+                      if (!userSnapshot.hasData ||
+                          userSnapshot.data?.friends.isEmpty == true) {
                         return const SizedBox.shrink();
                       }
 
                       final currentUser = userSnapshot.data!;
                       return StreamBuilder<List<UserModel>>(
-                        stream: _userService.getFriendsStream(currentUser.friends),
+                        stream: _userService.getFriendsStream(
+                          currentUser.friends,
+                        ),
                         builder: (context, friendsSnapshot) {
-                          if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
+                          if (!friendsSnapshot.hasData ||
+                              friendsSnapshot.data!.isEmpty) {
                             return const SizedBox.shrink();
                           }
 
@@ -271,9 +283,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                            children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
                                 child: Row(
                                   children: [
                                     Text(
@@ -285,8 +299,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-          Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.white.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(12),
@@ -308,7 +325,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                                 height: 90,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
                                   itemCount: activeFriends.length,
                                   itemBuilder: (context, index) {
                                     final friend = activeFriends[index];
@@ -333,28 +352,32 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: Colors.white, // Changed from Color(0xFFF5F5F5)
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.grey.shade300, // Add border
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
                     const SizedBox(width: 16),
                     const Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF9E9E9E),
-                      size: 22,
+                      color: Color(0xFF0C3C2B), // Changed to theme color
+                      size: 20, // Smaller icon
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: GoogleFonts.inter(
+                      child: TextField(
+                        controller: _searchController,
+                        style: GoogleFonts.inter(
                           fontSize: 15,
-                color: const Color(0xFF1E293B),
-              ),
-              decoration: InputDecoration(
-                hintText: 'Search friends...',
-                hintStyle: GoogleFonts.inter(
+                          color: const Color(0xFF1E293B),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search friends...',
+                          hintStyle: GoogleFonts.inter(
                             color: const Color(0xFF9E9E9E),
                             fontSize: 15,
                           ),
@@ -384,61 +407,83 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             ),
 
             // Messages List
-          Expanded(
-            child: StreamBuilder<UserModel?>(
-              stream: _userService.getCurrentUserStream(),
-              builder: (context, userSnapshot) {
-                if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            Expanded(
+              child: StreamBuilder<UserModel?>(
+                stream: _userService.getCurrentUserStream(),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  if (!userSnapshot.hasData || userSnapshot.data?.friends.isEmpty == true) {
-                  return _buildEmptyState();
-                }
+                  if (!userSnapshot.hasData ||
+                      userSnapshot.data?.friends.isEmpty == true) {
+                    return _buildEmptyState();
+                  }
 
-                final currentUser = userSnapshot.data!;
-                return StreamBuilder<List<UserModel>>(
-                  stream: _userService.getFriendsStream(currentUser.friends),
-                  builder: (context, friendsSnapshot) {
-                      if (friendsSnapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                  final currentUser = userSnapshot.data!;
+                  return StreamBuilder<List<UserModel>>(
+                    stream: _userService.getFriendsStream(currentUser.friends),
+                    builder: (context, friendsSnapshot) {
+                      if (friendsSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                      if (!friendsSnapshot.hasData || friendsSnapshot.data!.isEmpty) {
-                      return _buildEmptyState();
-                    }
+                      if (!friendsSnapshot.hasData ||
+                          friendsSnapshot.data!.isEmpty) {
+                        return _buildEmptyState();
+                      }
 
-                    List<UserModel> friends = friendsSnapshot.data!;
+                      List<UserModel> friends = friendsSnapshot.data!;
 
-                    // Filter friends based on search
-                    if (_searchController.text.isNotEmpty) {
+                      // Filter friends based on search
+                      if (_searchController.text.isNotEmpty) {
                         friends = friends.where((friend) {
-                          final searchTerm = _searchController.text.toLowerCase();
-                          final displayName = _getFriendDisplayName(friend).toLowerCase();
+                          final searchTerm = _searchController.text
+                              .toLowerCase();
+                          final displayName = _getFriendDisplayName(
+                            friend,
+                          ).toLowerCase();
                           return displayName.contains(searchTerm) ||
-                                 friend.username.toLowerCase().contains(searchTerm);
+                              friend.username.toLowerCase().contains(
+                                searchTerm,
+                              );
                         }).toList();
                       }
 
                       // Separate pinned and regular friends
-                      final pinnedFriends = friends.where((f) => currentUser.specialFriends.contains(f.id)).toList();
-                      final regularFriends = friends.where((f) => !currentUser.specialFriends.contains(f.id)).toList();
+                      final pinnedFriends = friends
+                          .where(
+                            (f) => currentUser.specialFriends.contains(f.id),
+                          )
+                          .toList();
+                      final regularFriends = friends
+                          .where(
+                            (f) => !currentUser.specialFriends.contains(f.id),
+                          )
+                          .toList();
 
                       return ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         children: [
                           // Close Friends Section
                           if (pinnedFriends.isNotEmpty) ...[
+                            // For "Close Friends" and "All Messages" sections
                             Text(
                               'Close Friends (${pinnedFriends.length})',
                               style: GoogleFonts.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 14, // Changed from 15
+                                fontWeight:
+                                    FontWeight.w700, // Changed from w600
                                 color: const Color(0xFF1E293B),
+                                letterSpacing: -0.3, // Add letter spacing
                               ),
                             ),
                             const SizedBox(height: 12),
-                            ...pinnedFriends.map((friend) => _buildMessageCard(friend, isPinned: true)),
+                            ...pinnedFriends.map(
+                              (friend) =>
+                                  _buildMessageCard(friend, isPinned: true),
+                            ),
                             const SizedBox(height: 24),
                           ],
 
@@ -452,16 +497,19 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ...regularFriends.map((friend) => _buildMessageCard(friend, isPinned: false)),
+                          ...regularFriends.map(
+                            (friend) =>
+                                _buildMessageCard(friend, isPinned: false),
+                          ),
                           const SizedBox(height: 80),
                         ],
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -472,8 +520,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       padding: const EdgeInsets.only(right: 20),
       child: GestureDetector(
         onTap: () => _startChat(friend),
-      child: Column(
-        children: [
+        child: Column(
+          children: [
             Stack(
               children: [
                 Container(
@@ -481,15 +529,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: UserAvatarWidget(
                     user: friend,
-                    radius: 26,
-                    backgroundColor: Colors.white,
+                    radius: 20,
+                    backgroundColor: const Color(
+                      0xFF0C3C2B,
+                    ).withOpacity(0.1), // Changed
                   ),
                 ),
                 if (friend.isOnline)
@@ -502,10 +549,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF4CAF50),
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF68EAFF), width: 2),
-              ),
-            ),
-          ),
+                        border: Border.all(
+                          color: const Color(
+                            0xFF0C3C2B,
+                          ), // Changed from Color(0xFF68EAFF)
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Birthday cake emoji for friends with birthdays today
                 if (_isFriendBirthdayToday(friend.id))
                   Positioned(
@@ -517,17 +569,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFFF9800), width: 1),
+                        border: Border.all(
+                          color: const Color(0xFFFF9800),
+                          width: 1,
+                        ),
                       ),
                       child: const Center(
-                        child: Text(
-                          '🎂',
-                          style: TextStyle(fontSize: 10),
-                        ),
+                        child: Text('🎂', style: TextStyle(fontSize: 10)),
                       ),
                     ),
                   ),
-        ],
+              ],
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -556,27 +608,31 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200, // Add subtle border
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.02), // Changed from 0.04 to 0.02
+            offset: const Offset(0, 1), // Changed from Offset(0, 2)
+            blurRadius: 4, // Changed from 8
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-      child: InkWell(
+        child: InkWell(
           onTap: () => _startChat(friend),
-        onLongPress: () => _showFriendOptions(friend),
+          onLongPress: () => _showFriendOptions(friend),
           borderRadius: BorderRadius.circular(16),
-        child: Padding(
+          child: Padding(
             padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
+            child: Row(
+              children: [
                 // Avatar
-              Stack(
-                children: [
+                Stack(
+                  children: [
                     UserAvatarWidget(
                       user: friend,
                       radius: 28,
@@ -589,13 +645,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                         child: Container(
                           width: 14,
                           height: 14,
-                    decoration: BoxDecoration(
+                          decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50),
-                      shape: BoxShape.circle,
+                            shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
                           ),
                         ),
-                  ),
+                      ),
                     // Birthday cake emoji for friends with birthdays today
                     if (_isFriendBirthdayToday(friend.id))
                       Positioned(
@@ -607,105 +663,120 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFFF9800), width: 1),
+                            border: Border.all(
+                              color: const Color(0xFFFF9800),
+                              width: 1,
+                            ),
                           ),
                           child: const Center(
-                            child: Text(
-                              '🎂',
-                              style: TextStyle(fontSize: 12),
-                            ),
+                            child: Text('🎂', style: TextStyle(fontSize: 12)),
                           ),
                         ),
                       ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
 
                 // Message Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _getFriendDisplayName(friend),
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: const Color(0xFF1E293B),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _getFriendDisplayName(friend),
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: const Color(0xFF1E293B),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
                           if (friend.isVerified) ...[
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.verified_rounded,
-                            color: Color(0xFF3B82F6),
-                            size: 16,
-                          ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.verified_rounded,
+                              color: Color(0xFF3B82F6),
+                              size: 16,
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
+                      ),
+                      const SizedBox(height: 4),
                       StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('chats')
                             .doc(_generateChatId(friend.id))
                             .snapshots(),
                         builder: (context, chatSnapshot) {
-                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                          final currentUserId =
+                              FirebaseAuth.instance.currentUser?.uid;
                           bool hasUnreadMessages = false;
-                          
-                          if (chatSnapshot.hasData && chatSnapshot.data!.exists) {
-                            final chatData = chatSnapshot.data!.data() as Map<String, dynamic>;
-                            final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
-                            final myUnreadCount = unreadCount?[currentUserId] as int? ?? 0;
+
+                          if (chatSnapshot.hasData &&
+                              chatSnapshot.data!.exists) {
+                            final chatData =
+                                chatSnapshot.data!.data()
+                                    as Map<String, dynamic>;
+                            final unreadCount =
+                                chatData['unreadCount']
+                                    as Map<String, dynamic>?;
+                            final myUnreadCount =
+                                unreadCount?[currentUserId] as int? ?? 0;
                             hasUnreadMessages = myUnreadCount > 0;
                           }
-                          
+
                           return FutureBuilder<Map<String, dynamic>?>(
                             future: _getLastMessageSimple(friend.id),
                             builder: (context, messageSnapshot) {
-                              if (messageSnapshot.connectionState == ConnectionState.waiting) {
-                          return Text(
-                            'Loading...',
-                            style: GoogleFonts.inter(
+                              if (messageSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Text(
+                                  'Loading...',
+                                  style: GoogleFonts.inter(
                                     color: const Color(0xFF9E9E9E),
-                              fontSize: 14,
-                            ),
-                          );
-                        }
+                                    fontSize: 14,
+                                  ),
+                                );
+                              }
 
                               final lastMessage = messageSnapshot.data;
-                        if (lastMessage == null || lastMessage['text'].toString().isEmpty) {
-                          return Text(
+                              if (lastMessage == null ||
+                                  lastMessage['text'].toString().isEmpty) {
+                                return Text(
                                   'Start a conversation',
-                            style: GoogleFonts.inter(
+                                  style: GoogleFonts.inter(
                                     color: const Color(0xFF9E9E9E),
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        }
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              }
 
-                        final messageText = lastMessage['text'].toString();
-                        final senderId = lastMessage['senderId'].toString();
-                        final isFromCurrentUser = senderId == currentUserId;
+                              final messageText = lastMessage['text']
+                                  .toString();
+                              final senderId = lastMessage['senderId']
+                                  .toString();
+                              final isFromCurrentUser =
+                                  senderId == currentUserId;
 
                               return Text(
-                                isFromCurrentUser ? 'You: $messageText' : messageText,
+                                isFromCurrentUser
+                                    ? 'You: $messageText'
+                                    : messageText,
                                 style: GoogleFonts.inter(
-                                  color: hasUnreadMessages && !isFromCurrentUser 
-                                      ? const Color(0xFF1E293B) 
+                                  color: hasUnreadMessages && !isFromCurrentUser
+                                      ? const Color(0xFF1E293B)
                                       : const Color(0xFF9E9E9E),
                                   fontSize: 14,
-                                  fontWeight: hasUnreadMessages && !isFromCurrentUser 
-                                      ? FontWeight.w600 
+                                  fontWeight:
+                                      hasUnreadMessages && !isFromCurrentUser
+                                      ? FontWeight.w600
                                       : FontWeight.normal,
                                 ),
                                 maxLines: 1,
@@ -715,17 +786,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           );
                         },
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
                 const SizedBox(width: 12),
 
                 // Time and Badge
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
+                  children: [
+                    Text(
                       '10:50 am',
                       style: GoogleFonts.inter(
                         fontSize: 12,
@@ -742,63 +813,81 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                         if (!snapshot.hasData || !snapshot.data!.exists) {
                           return const SizedBox.shrink();
                         }
-                        
-                        final chatData = snapshot.data!.data() as Map<String, dynamic>;
-                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                        final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
-                        final myUnreadCount = unreadCount?[currentUserId] as int? ?? 0;
-                        
-                        print('DEBUG: ${friend.displayName} - myUnreadCount: $myUnreadCount');
-                        
+
+                        final chatData =
+                            snapshot.data!.data() as Map<String, dynamic>;
+                        final currentUserId =
+                            FirebaseAuth.instance.currentUser?.uid;
+                        final unreadCount =
+                            chatData['unreadCount'] as Map<String, dynamic>?;
+                        final myUnreadCount =
+                            unreadCount?[currentUserId] as int? ?? 0;
+
+                        print(
+                          'DEBUG: ${friend.displayName} - myUnreadCount: $myUnreadCount',
+                        );
+
                         // Show unread badge if there are unread messages
+                        // In message card unread badge
                         if (myUnreadCount > 0) {
                           return Container(
-                            width: 20,
-                            height: 20,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE91E63),
-                              shape: BoxShape.circle,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 20,
+                              minHeight: 20,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF0C3C2B,
+                              ), // Changed from Color(0xFFE91E63)
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Center(
-                  child: Text(
+                              child: Text(
                                 myUnreadCount > 9 ? '9+' : '$myUnreadCount',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                                  fontSize: 10, // Slightly smaller
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                           );
                         }
-                        
+
                         // Show read receipts for sent messages
                         return FutureBuilder<Map<String, dynamic>?>(
                           future: _getLastMessageSimple(friend.id),
                           builder: (context, messageSnapshot) {
                             final lastMessage = messageSnapshot.data;
-                            if (lastMessage == null) return const SizedBox.shrink();
-                            
+                            if (lastMessage == null)
+                              return const SizedBox.shrink();
+
                             final senderId = lastMessage['senderId'].toString();
                             final isRead = lastMessage['isRead'] ?? false;
                             final isFromCurrentUser = senderId == currentUserId;
-                            
+
                             if (isFromCurrentUser) {
                               return Icon(
                                 isRead ? Icons.done_all : Icons.done,
                                 size: 16,
-                                color: isRead ? const Color(0xFF4CAF50) : const Color(0xFF9E9E9E),
+                                color: isRead
+                                    ? const Color(0xFF4CAF50)
+                                    : const Color(0xFF9E9E9E),
                               );
                             }
-                            
+
                             return const SizedBox.shrink();
                           },
                         );
                       },
-                  ),
-                ],
-              ),
-            ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -808,41 +897,37 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-        child: Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        children: [
           Icon(Icons.people_outline, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
+          const SizedBox(height: 16),
+          Text(
             'No friends yet',
             style: GoogleFonts.inter(
-                fontSize: 20,
+              fontSize: 20,
               fontWeight: FontWeight.w600,
               color: Colors.grey[600],
-              ),
             ),
-            const SizedBox(height: 8),
-            Text(
+          ),
+          const SizedBox(height: 8),
+          Text(
             'Send friend requests to start connecting!',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
-
 
   // Keep all your existing helper methods
   void _startChat(UserModel friend) async {
     try {
       final chatId = await _userService.createOrGetPrivateChat(friend.id);
-      
+
       // Mark messages as read when opening the chat
       await _userService.markMessagesAsRead(chatId);
-      
+
       if (mounted) {
         Navigator.push(
           context,
@@ -960,7 +1045,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     Color? color,
     bool isHighlighted = false,
   }) {
-    final optionColor = isHighlighted ? const Color(0xFF68EAFF) : (color ?? Colors.grey[700]);
+    final optionColor = isHighlighted
+        ? const Color(0xFF0C3C2B) // Changed from Color(0xFF68EAFF)
+        : (color ?? Colors.grey[700]);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -972,13 +1059,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isHighlighted 
-                  ? const Color(0xFF68EAFF).withOpacity(0.1)
+              color: isHighlighted
+                  ? const Color(0xFF0C3C2B).withOpacity(
+                      0.05,
+                    ) // Changed from 0.1
                   : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isHighlighted 
-                    ? const Color(0xFF68EAFF).withOpacity(0.3)
+                color: isHighlighted
+                    ? const Color(0xFF0C3C2B).withOpacity(0.3)
                     : const Color(0xFFE2E8F0),
               ),
             ),
@@ -988,16 +1077,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isHighlighted 
+                    color: isHighlighted
                         ? const Color(0xFF68EAFF).withOpacity(0.2)
                         : const Color(0xFF68EAFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    color: optionColor,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: optionColor, size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1039,7 +1124,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       dialogType: DialogType.warning,
       animType: AnimType.scale,
       title: 'Mute ${friend.displayName}',
-      desc: 'You will stop receiving notifications from ${friend.displayName}. You can unmute them anytime.',
+      desc:
+          'You will stop receiving notifications from ${friend.displayName}. You can unmute them anytime.',
       btnCancelOnPress: () {},
       btnOkOnPress: () {
         _muteFriend(friend);
@@ -1053,10 +1139,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     try {
       await _userService.muteFriend(friend.id);
       if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text('${friend.displayName} has been muted'),
-            backgroundColor: const Color(0xFF68EAFF),
+            backgroundColor: const Color(0xFF0C3C2B),
             action: SnackBarAction(
               label: 'Undo',
               textColor: Colors.white,
@@ -1078,7 +1164,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       dialogType: DialogType.warning,
       animType: AnimType.scale,
       title: 'Unfriend ${friend.displayName}',
-      desc: 'Are you sure you want to remove ${friend.displayName} from your friends list?',
+      desc:
+          'Are you sure you want to remove ${friend.displayName} from your friends list?',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
         await _userService.removeFriend(friend.id);
@@ -1100,52 +1187,56 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ).show();
   }
 
-
   Future<Map<String, dynamic>?> _getLastMessageSimple(String friendId) async {
     final chatId = _generateChatId(friendId);
     if (chatId.isEmpty) return null;
-    
+
     try {
       final chatDoc = await FirebaseFirestore.instance
           .collection('chats')
           .doc(chatId)
           .get();
-      
+
       if (!chatDoc.exists) return null;
-      
+
       final chatData = chatDoc.data()!;
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       final unreadCount = chatData['unreadCount'] as Map<String, dynamic>?;
-      final hasUnreadMessages = unreadCount != null && 
-          currentUserId != null && 
+      final hasUnreadMessages =
+          unreadCount != null &&
+          currentUserId != null &&
           (unreadCount[currentUserId] as int? ?? 0) > 0;
-      
+
       final messagesSnapshot = await FirebaseFirestore.instance
           .collection('chats')
           .doc(chatId)
           .collection('messages')
           .orderBy('timestamp', descending: true)
-          .limit(10) // Get more messages to find one not deleted by current user
+          .limit(
+            10,
+          ) // Get more messages to find one not deleted by current user
           .get();
-      
+
       // Find the first message not deleted by current user
       for (final doc in messagesSnapshot.docs) {
         final messageData = doc.data();
         final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
-        
+
         // Skip if current user has deleted this message
         if (deletedBy.contains(currentUserId)) continue;
-        
+
         final senderId = messageData['senderId'] ?? '';
         final isFromCurrentUser = senderId == currentUserId;
-        
+
         return {
           'text': messageData['text'] ?? '',
           'senderId': senderId,
           'timestamp': messageData['timestamp'],
           'isRead': messageData['isRead'] ?? false,
           'hasUnreadMessages': hasUnreadMessages && !isFromCurrentUser,
-          'unreadCount': hasUnreadMessages ? (unreadCount![currentUserId!] as int? ?? 0) : 0,
+          'unreadCount': hasUnreadMessages
+              ? (unreadCount![currentUserId!] as int? ?? 0)
+              : 0,
         };
       }
       return null;

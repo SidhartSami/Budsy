@@ -33,12 +33,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     super.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: Text(
           'Find Friends',
@@ -63,8 +61,8 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF68EAFF),
-                Color(0xFF4FD1C7),
+                Color(0xFF0C3C2B), // Changed from Color(0xFF68EAFF)
+                Color(0xFF1A5C42), // Changed from Color(0xFF4FD1C7)
               ],
             ),
           ),
@@ -91,14 +89,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildIncomingRequests(),
-          _buildOutgoingRequests(),
-        ],
+        children: [_buildIncomingRequests(), _buildOutgoingRequests()],
       ),
     );
   }
-
 
   Widget _buildIncomingRequests() {
     return StreamBuilder<List<Map<String, dynamic>>>(
@@ -107,7 +101,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF68EAFF)),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Color(0xFF0C3C2B),
+              ), // Changed
             ),
           );
         }
@@ -141,7 +137,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     if (fromUserData == null) {
       return const SizedBox.shrink(); // Skip this request if user data is null
     }
-    
+
     final user = UserModel.fromMap(fromUserData);
     final requestId = request['id'] as String;
 
@@ -150,11 +146,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200, // Add border
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.02), // Changed from 0.05
+            blurRadius: 4, // Changed from 10
+            offset: const Offset(0, 1), // Changed from Offset(0, 2)
           ),
         ],
       ),
@@ -166,7 +166,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             UserAvatarWidget(
               user: user,
               radius: 28,
-              backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
+              backgroundColor: const Color(
+                0xFF0C3C2B,
+              ).withOpacity(0.1), // Changed
             ),
             const SizedBox(width: 16),
             // User Info
@@ -204,46 +206,46 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             // Action Buttons
             Row(
               children: [
-                // Accept Button
+                // Accept Button - keep green
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10), // Changed from 8
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       onTap: () => _acceptFriendRequest(requestId),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.all(10), // Changed from symmetric
                         child: Icon(
-                          Icons.check,
+                          Icons.check_rounded, // Changed to rounded
                           color: Colors.white,
-                          size: 18,
+                          size: 20, // Changed from 18
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Decline Button
+
+                // Decline Button - keep red but adjust
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10), // Changed from 8
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       onTap: () => _declineFriendRequest(requestId),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.all(10), // Changed from symmetric
                         child: Icon(
-                          Icons.close,
+                          Icons.close_rounded, // Changed to rounded
                           color: Colors.white,
-                          size: 18,
+                          size: 20, // Changed from 18
                         ),
                       ),
                     ),
@@ -264,7 +266,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF68EAFF)),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Color(0xFF0C3C2B),
+              ), // Changed
             ),
           );
         }
@@ -298,23 +302,30 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     if (toUserData == null) {
       return const SizedBox.shrink(); // Skip this request if user data is null
     }
-    
+
     final user = UserModel.fromMap(toUserData);
     final requestId = request['id'] as String;
 
+    // In both _buildIncomingRequestCard and _buildOutgoingRequestCard
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200, // Add border
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.02), // Changed from 0.05
+            blurRadius: 4, // Changed from 10
+            offset: const Offset(0, 1), // Changed from Offset(0, 2)
           ),
         ],
       ),
+
+      // ... rest of code
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -352,8 +363,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     'Request sent',
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF10B981),
-                      fontWeight: FontWeight.w500,
+                      color: const Color(
+                        0xFF0C3C2B,
+                      ), // Changed from Color(0xFF10B981)
+                      fontWeight: FontWeight.w600, // Changed from w500
                     ),
                   ),
                 ],
@@ -362,22 +375,27 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             // Cancel Button
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF64748B),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(
+                  0xFF0C3C2B,
+                ).withOpacity(0.1), // Changed color
+                borderRadius: BorderRadius.circular(10), // Changed from 8
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   onTap: () => _cancelFriendRequest(requestId),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     child: Text(
                       'Cancel',
-                      style: TextStyle(
-                        color: Colors.white,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF0C3C2B), // Changed from white
                         fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                        fontSize: 13, // Changed from 12
                       ),
                     ),
                   ),
@@ -412,13 +430,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF68EAFF).withOpacity(0.1),
+              color: const Color(0xFF0C3C2B).withOpacity(0.1), // Changed
               borderRadius: BorderRadius.circular(50),
             ),
             child: Icon(
               icon,
               size: 48,
-              color: const Color(0xFF68EAFF),
+              color: const Color(0xFF0C3C2B), // Changed
             ),
           ),
           const SizedBox(height: 16),
@@ -449,11 +467,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Color(0xFFEF4444),
-          ),
+          const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
           const SizedBox(height: 16),
           Text(
             'Something went wrong',
@@ -476,15 +490,23 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           ElevatedButton(
             onPressed: () => setState(() {}),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF68EAFF),
+              backgroundColor: const Color(0xFF0C3C2B), // Changed
               foregroundColor: Colors.white,
+              elevation: 0, // Add this
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12), // Changed from 8
               ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ), // Add this
             ),
             child: Text(
               'Try Again',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 14, // Add this
+              ),
             ),
           ),
         ],
@@ -498,20 +520,25 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     try {
       HapticFeedback.lightImpact();
       // Get the sender ID from the request
-      final requestDoc = await _firestore.collection('friendRequests').doc(requestId).get();
+      final requestDoc = await _firestore
+          .collection('friendRequests')
+          .doc(requestId)
+          .get();
       if (requestDoc.exists) {
         final senderId = requestDoc.data()?['senderId'] as String?;
         if (senderId != null) {
           await _userService.acceptFriendRequest(requestId, senderId);
         }
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Friend request accepted'),
           backgroundColor: Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: EdgeInsets.all(16),
         ),
       );
@@ -521,7 +548,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           content: Text('Error accepting request: $e'),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -532,13 +561,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     try {
       HapticFeedback.lightImpact();
       await _userService.declineFriendRequest(requestId);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Friend request declined'),
           backgroundColor: Color(0xFF64748B),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: EdgeInsets.all(16),
         ),
       );
@@ -548,7 +579,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           content: Text('Error declining request: $e'),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -559,13 +592,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     try {
       HapticFeedback.lightImpact();
       await _userService.cancelFriendRequest(requestId);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Friend request cancelled'),
           backgroundColor: Color(0xFF64748B),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: EdgeInsets.all(16),
         ),
       );
@@ -575,7 +610,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           content: Text('Error cancelling request: $e'),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );

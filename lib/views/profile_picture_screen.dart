@@ -30,17 +30,21 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   String? _selectedAvatar;
   bool _useCustomPhoto = false;
 
+  static const Color _primaryGreen = Color(0xFF0C3C2B);
+
   @override
   void initState() {
     super.initState();
     _selectedAvatar = widget.currentUser.predefinedAvatar;
-    _useCustomPhoto = widget.currentUser.photoUrl != null && 
-                     widget.currentUser.predefinedAvatar == null;
+    _useCustomPhoto =
+        widget.currentUser.photoUrl != null &&
+        widget.currentUser.predefinedAvatar == null;
   }
 
   void _onFieldChanged() {
     final hasImageChanges = _selectedImage != null || _removeImage;
-    final hasAvatarChanges = _selectedAvatar != widget.currentUser.predefinedAvatar;
+    final hasAvatarChanges =
+        _selectedAvatar != widget.currentUser.predefinedAvatar;
 
     setState(() {
       _hasChanges = hasImageChanges || hasAvatarChanges;
@@ -48,65 +52,62 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Profile Picture',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 24),
+          'Profile Photo',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Colors.black,
+          ),
         ),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: _primaryGreen,
         elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 24),
+          onPressed: () => Navigator.pop(context),
+          splashRadius: 24,
+        ),
         actions: [
           if (_hasChanges)
             TextButton(
               onPressed: _isLoading ? null : _saveChanges,
               child: _isLoading
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _primaryGreen,
+                        ),
                       ),
                     )
                   : Text(
-                      'Save',
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                      'Done',
+                      style: GoogleFonts.inter(
+                        color: _primaryGreen,
+                        fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
                     ),
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Profile Picture Section
-            _buildProfilePictureSection(),
-
-            const SizedBox(height: 30),
-
-            // Form Fields
-            _buildFormFields(),
-
-            const SizedBox(height: 30),
-
-            // Action Buttons
-            _buildActionButtons(),
-          ],
-        ),
+      body: ListView(
+        physics: const BouncingScrollPhysics(),
+        children: [
+          const SizedBox(height: 32),
+          _buildProfilePictureSection(),
+          const SizedBox(height: 40),
+          _buildAvatarSection(),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -114,79 +115,70 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   Widget _buildProfilePictureSection() {
     return Column(
       children: [
-        Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color.fromARGB(255, 104, 234, 243),
-                  width: 4,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: _buildProfileImage(),
-            ),
-
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
+        GestureDetector(
+          onTap: _showImagePickerOptions,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 104, 234, 243),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: Colors.grey.shade200, width: 1),
                 ),
-                child: IconButton(
-                  onPressed: _showImagePickerOptions,
-                  icon: const Icon(
+                child: ClipOval(child: _buildProfileImage()),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _primaryGreen,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: const Icon(
                     Icons.camera_alt,
                     color: Colors.white,
-                    size: 20,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
+                    size: 18,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        Text(
-          'Tap camera to change photo',
-          style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[600]),
-        ),
-
-        if (_selectedImage != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'New photo selected',
-            style: GoogleFonts.nunito(
-              fontSize: 12,
-              color: const Color.fromARGB(255, 104, 234, 243),
-              fontWeight: FontWeight.w600,
-            ),
+            ],
           ),
-        ],
-
-        if (_removeImage && _selectedImage == null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Photo will be removed',
-            style: GoogleFonts.nunito(
-              fontSize: 12,
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          widget.currentUser.displayName,
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '@${widget.currentUser.username}',
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+        ),
+        if (_selectedImage != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'New photo selected',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: _primaryGreen,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -195,319 +187,193 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   }
 
   Widget _buildProfileImage() {
-    // If removing image and no new image selected
     if (_removeImage && _selectedImage == null) {
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
+      return Container(
+        color: Colors.grey.shade200,
+        child: Center(
+          child: Text(
+            widget.currentUser.displayName.isNotEmpty
+                ? widget.currentUser.displayName[0].toUpperCase()
+                : 'U',
+            style: GoogleFonts.inter(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+              fontSize: 40,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_selectedImage != null) {
+      return Image.file(
+        _selectedImage!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    }
+
+    if (_selectedAvatar != null &&
+        _selectedAvatar != 'custom' &&
+        AvatarManager.isPredefinedAvatar(_selectedAvatar)) {
+      return Image.asset(
+        _selectedAvatar!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    }
+
+    if (widget.currentUser.photoUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: widget.currentUser.photoUrl!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        placeholder: (context, url) => Container(
+          color: Colors.grey.shade200,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.error),
+        ),
+      );
+    }
+
+    if (widget.currentUser.gender != null) {
+      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(
+        widget.currentUser.gender,
+      );
+      return Image.asset(
+        defaultAvatar,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    }
+
+    return Container(
+      color: Colors.grey.shade200,
+      child: Center(
         child: Text(
           widget.currentUser.displayName.isNotEmpty
               ? widget.currentUser.displayName[0].toUpperCase()
               : 'U',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 48,
+          style: GoogleFonts.inter(
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+            fontSize: 40,
           ),
-        ),
-      );
-    }
-
-    // If new image selected
-    if (_selectedImage != null) {
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-        backgroundImage: FileImage(_selectedImage!),
-      );
-    }
-
-    // If using predefined avatar
-    if (_selectedAvatar != null && _selectedAvatar != 'custom' && 
-        AvatarManager.isPredefinedAvatar(_selectedAvatar)) {
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor: Colors.transparent,
-        backgroundImage: AssetImage(_selectedAvatar!),
-      );
-    }
-
-    // If user has existing photo URL
-    if (widget.currentUser.photoUrl != null) {
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-        backgroundImage: CachedNetworkImageProvider(widget.currentUser.photoUrl!),
-      );
-    }
-
-    // If user has gender, use gender-based default avatar
-    if (widget.currentUser.gender != null) {
-      final defaultAvatar = AvatarManager.getDefaultAvatarForGender(widget.currentUser.gender);
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor: Colors.transparent,
-        backgroundImage: AssetImage(defaultAvatar),
-      );
-    }
-
-    // Default to initials
-    return CircleAvatar(
-      radius: 60,
-      backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-      child: Text(
-        widget.currentUser.displayName.isNotEmpty
-            ? widget.currentUser.displayName[0].toUpperCase()
-            : 'U',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 48,
         ),
       ),
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildAvatarSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Avatar Selection - Show avatar based on user's gender
-        AvatarSelectionWidget(
-          selectedAvatar: _selectedAvatar,
-          gender: widget.currentUser.gender, // Use user's gender for appropriate default
-          onAvatarSelected: (avatar) {
-            setState(() {
-              _selectedAvatar = avatar;
-              _useCustomPhoto = avatar == 'custom';
-              if (_useCustomPhoto) {
-                _selectedImage = null;
-                _removeImage = false;
-              }
-            });
-            _onFieldChanged();
-          },
-        ),
-      ],
-    );
-  }
-
-
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    int maxLines = 1,
-    int? maxLength,
-    String? hintText,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-            color: Colors.grey[700],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Choose Avatar',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          maxLength: maxLength,
-          inputFormatters: inputFormatters,
-          decoration: InputDecoration(
-            hintText: hintText,
-            prefixIcon: Icon(
-              icon,
-              color: const Color.fromARGB(255, 104, 234, 243),
+        const SizedBox(height: 12),
+        Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: _primaryGreen,
+              secondary: _primaryGreen,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color.fromARGB(255, 104, 234, 243),
-                width: 2,
-              ),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+          ),
+          child: AvatarSelectionWidget(
+            selectedAvatar: _selectedAvatar,
+            gender: widget.currentUser.gender,
+            onAvatarSelected: (avatar) {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _selectedAvatar = avatar;
+                _useCustomPhoto = avatar == 'custom';
+                if (_useCustomPhoto) {
+                  _selectedImage = null;
+                  _removeImage = false;
+                }
+              });
+              _onFieldChanged();
+            },
           ),
         ),
       ],
     );
   }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        if (_hasChanges) ...[
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _saveChanges,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      'Save Changes',
-                      style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _isLoading ? null : _resetChanges,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey[600],
-                side: BorderSide(color: Colors.grey[300]!),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Reset Changes',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
-
-      ],
-    );
-  }
-
-
 
   void _showImagePickerOptions() {
+    HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
+        return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Select Profile Photo',
-                style: GoogleFonts.nunito(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImagePickerOption(
-                    icon: Icons.camera_alt,
-                    label: 'Camera',
-                    onTap: () => _pickImage(ImageSource.camera),
-                  ),
-
-                  _buildImagePickerOption(
-                    icon: Icons.photo_library,
-                    label: 'Gallery',
-                    onTap: () => _pickImage(ImageSource.gallery),
-                  ),
-
-                  if (widget.currentUser.photoUrl != null)
-                    _buildImagePickerOption(
-                      icon: Icons.delete,
-                      label: 'Remove',
-                      color: Colors.red,
-                      onTap: _removeCurrentImage,
-                    ),
-                ],
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: _primaryGreen),
+                title: Text('Take Photo', style: GoogleFonts.inter()),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
               ),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: _primaryGreen),
+                title: Text('Choose from Library', style: GoogleFonts.inter()),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              if (widget.currentUser.photoUrl != null ||
+                  _selectedImage != null) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text(
+                    'Remove Photo',
+                    style: GoogleFonts.inter(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeCurrentImage();
+                  },
+                ),
+              ],
+              const SizedBox(height: 8),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _buildImagePickerOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: (color ?? const Color.fromARGB(255, 104, 234, 243))
-                  .withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color ?? const Color.fromARGB(255, 104, 234, 243),
-              size: 30,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontWeight: FontWeight.w600,
-              color: color ?? Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -541,80 +407,71 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
     _onFieldChanged();
   }
 
-  void _resetChanges() {
-    setState(() {
-      _selectedImage = null;
-      _removeImage = false;
-      _selectedAvatar = widget.currentUser.predefinedAvatar;
-      _useCustomPhoto = widget.currentUser.photoUrl != null && 
-                       widget.currentUser.predefinedAvatar == null;
-      _hasChanges = false;
-    });
-  }
-
   Future<void> _saveChanges() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Update user profile - only avatar
       await _userService.updateUserProfile(
         profileImage: _useCustomPhoto ? _selectedImage : null,
         removeImage: _removeImage,
         predefinedAvatar: _useCustomPhoto ? null : _selectedAvatar,
       );
 
-      _showSuccessDialog('Profile updated successfully!');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile updated'),
+            backgroundColor: _primaryGreen,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+          ),
+        );
 
-      setState(() {
-        _hasChanges = false;
-        _selectedImage = null;
-        _removeImage = false;
-      });
+        setState(() {
+          _hasChanges = false;
+          _selectedImage = null;
+          _removeImage = false;
+        });
 
-      // Refresh the current user data
-      Navigator.of(context).pop(true); // Return true to indicate success
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       _showErrorDialog('Failed to update profile: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _showComingSoonDialog(String feature) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.info,
-      animType: AnimType.scale,
-      title: 'Coming Soon',
-      desc: '$feature will be available in a future update!',
-      btnOkOnPress: () {},
-    ).show();
-  }
-
-
-  void _showSuccessDialog(String message) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.success,
-      animType: AnimType.scale,
-      title: 'Success',
-      desc: message,
-      btnOkOnPress: () {},
-    ).show();
-  }
-
   void _showErrorDialog(String message) {
-    AwesomeDialog(
+    showDialog(
       context: context,
-      dialogType: DialogType.error,
-      animType: AnimType.scale,
-      title: 'Error',
-      desc: message,
-      btnOkOnPress: () {},
-    ).show();
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Error',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+        ),
+        content: Text(message, style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK',
+              style: GoogleFonts.inter(
+                color: _primaryGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

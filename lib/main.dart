@@ -8,6 +8,7 @@ import 'package:tutortyper_app/views/welcome_screen.dart';
 import 'package:tutortyper_app/views/onboarding_screen.dart';
 import 'package:tutortyper_app/views/profile_completion_screen.dart';
 import 'package:tutortyper_app/services/user_service.dart';
+import 'package:tutortyper_app/services/streak_service.dart';
 import 'package:tutortyper_app/views/friends_list_screen.dart';
 import 'package:tutortyper_app/views/mynotes.dart';
 import 'package:tutortyper_app/views/create_notes.dart';
@@ -32,13 +33,64 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _loadThemePreference();
+
+    // Add observer for app lifecycle
+    WidgetsBinding.instance.addObserver(this);
+
+    // Initialize app services after a short delay
+    _initializeAppServices();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Check streaks when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _checkStreaksOnResume();
+    }
+  }
+
+  Future<void> _initializeAppServices() async {
+    // Wait for Firebase Auth to initialize
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Check if user is authenticated
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.emailVerified) {
+      try {
+        print('DEBUG: Initializing app services for authenticated user');
+        await StreakService().checkAndExpireStreaks();
+        print('DEBUG: App services initialized successfully');
+      } catch (e) {
+        print('ERROR: Failed to initialize app services: $e');
+      }
+    }
+  }
+
+  Future<void> _checkStreaksOnResume() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.emailVerified) {
+      try {
+        print('DEBUG: Checking streaks on app resume');
+        await StreakService().checkAndExpireStreaks();
+      } catch (e) {
+        print('ERROR: Failed to check streaks on resume: $e');
+      }
+    }
   }
 
   Future<void> _loadThemePreference() async {
@@ -188,12 +240,23 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
 
         if (snapshot.hasData && snapshot.data!.emailVerified) {
+          // Initialize streak checking when user is authenticated
+          _initializeStreakCheckingForUser();
           return const ProfileCheckWrapper();
         }
 
         return const WelcomeScreen();
       },
     );
+  }
+
+  Future<void> _initializeStreakCheckingForUser() async {
+    try {
+      print('DEBUG: User authenticated, checking streaks...');
+      await StreakService().checkAndExpireStreaks();
+    } catch (e) {
+      print('ERROR: Failed to check streaks for authenticated user: $e');
+    }
   }
 }
 
@@ -203,6 +266,7 @@ class ProfileCheckWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserService userService = UserService();
+    final user = FirebaseAuth.instance.currentUser;
 
     return FutureBuilder<bool>(
       future: userService.isProfileCompleted(),
@@ -223,28 +287,17 @@ class ProfileCheckWrapper extends StatelessWidget {
         }
 
         if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error loading profile: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      (context as Element).reassemble();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
+          print('ERROR: Profile check error: ${snapshot.error}');
+          // On error, assume profile is NOT completed to be safe
+          return const ProfileCompletionScreen();
         }
 
+        // If data is null or false, show profile completion
         final isProfileCompleted = snapshot.data ?? false;
+
+        print(
+          'DEBUG: Profile completed status: $isProfileCompleted for user: ${user?.uid}',
+        );
 
         if (!isProfileCompleted) {
           return const ProfileCompletionScreen();
@@ -271,6 +324,18 @@ class _NotesViewState extends State<NotesView> {
   void initState() {
     super.initState();
     _userService.updateOnlineStatus(true);
+
+    // Check streaks when entering the main app view
+    _checkStreaksOnEntry();
+  }
+
+  Future<void> _checkStreaksOnEntry() async {
+    try {
+      print('DEBUG: Checking streaks on NotesView entry');
+      await StreakService().checkAndExpireStreaks();
+    } catch (e) {
+      print('ERROR: Failed to check streaks on entry: $e');
+    }
   }
 
   @override

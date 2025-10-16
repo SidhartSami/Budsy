@@ -19,11 +19,7 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final UserModel otherUser;
 
-  const ChatScreen({
-    super.key,
-    required this.chatId,
-    required this.otherUser,
-  });
+  const ChatScreen({super.key, required this.chatId, required this.otherUser});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -47,6 +43,9 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadChatSettings();
     _checkPendingSpecialFriendRequest();
+    _messageController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -88,187 +87,294 @@ class _ChatScreenState extends State<ChatScreen> {
     final backgroundColor = Color(themeColors['backgroundColor']);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.dark,
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          color: const Color(0xFF1E293B),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: widget.otherUser.isOnline
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFE2E8F0),
-                      width: 2,
-                    ),
-                  ),
-                  child: UserAvatarWidget(
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfileScreen(
+                  user: widget.otherUser,
+                  chatId: widget.chatId,
+                ),
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  UserAvatarWidget(
                     user: widget.otherUser,
                     radius: 18,
-                    backgroundColor: const Color(0xFF68EAFF),
+                    backgroundColor: primaryColor.withOpacity(0.1),
                   ),
-                ),
-                if (widget.otherUser.isOnline)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                  if (widget.otherUser.isOnline)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  // Directly open user profile
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserProfileScreen(
-                        user: widget.otherUser,
-                        chatId: widget.chatId,
-                      ),
-                    ),
-                  );
-                },
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _nickname ?? widget.otherUser.displayName,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: const Color(0xFF1E293B),
-                      ),
-                    ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: widget.otherUser.isOnline
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFF94A3B8),
-                          shape: BoxShape.circle,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _nickname ?? widget.otherUser.displayName,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
+                        if (widget.otherUser.isVerified) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFF3B82F6),
+                            size: 14,
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (widget.otherUser.isOnline)
                       Text(
-                        widget.otherUser.isOnline ? 'Online' : 'Offline',
+                        'Active now',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: widget.otherUser.isOnline 
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFF64748B),
+                          color: const Color(0xFF4CAF50),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (_isMuted) ...[
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.volume_off_rounded,
-                          size: 14,
-                          color: Color(0xFF64748B),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
-          // Special Friend Request Button (only show if user doesn't already have a special friend)
-          StreamBuilder<Map<String, bool>>(
-            stream: _getSpecialFriendAndRequestStatusStream(),
-            builder: (context, snapshot) {
-              final data = snapshot.data ?? {
-                'isSpecialFriend': false, 
-                'hasPendingRequest': false,
-                'hasIncomingRequest': false,
-                'hasExistingSpecialFriend': false,
-              };
-              final isSpecialFriend = data['isSpecialFriend'] ?? false;
-              final hasPendingRequest = data['hasPendingRequest'] ?? false;
-              final hasIncomingRequest = data['hasIncomingRequest'] ?? false;
-              final hasExistingSpecialFriend = data['hasExistingSpecialFriend'] ?? false;
-              
-              // Hide button if user already has a special friend (and this isn't it)
-              if (hasExistingSpecialFriend) {
-                return const SizedBox.shrink();
+          PopupMenuButton<String>(
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: Color(0xFF1E293B),
+              size: 22,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            offset: const Offset(0, 50),
+            onSelected: (value) {
+              switch (value) {
+                case 'nickname':
+                  _showNicknameDialog();
+                  break;
+                case 'theme':
+                  _openThemeSelector();
+                  break;
+                case 'mute':
+                  _toggleMute();
+                  break;
+                case 'search':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MessageSearchScreen(
+                        chatId: widget.chatId,
+                        otherUser: widget.otherUser,
+                      ),
+                    ),
+                  );
+                  break;
+                case 'stats':
+                  _showChatStats();
+                  break;
+                case 'clear':
+                  _showClearChatDialog();
+                  break;
+                case 'special':
+                  _handleSpecialFriendRequest();
+                  break;
               }
-              
-              // Determine the visual state
-              Color buttonColor;
-              Color iconColor;
-              IconData iconData;
-              
-              if (hasIncomingRequest) {
-                // Orange for incoming request
-                buttonColor = Colors.orange.withOpacity(0.1);
-                iconColor = Colors.orange;
-                iconData = Icons.favorite_border_rounded;
-              } else if (hasPendingRequest) {
-                // Orange for outgoing request
-                buttonColor = Colors.orange.withOpacity(0.1);
-                iconColor = Colors.orange;
-                iconData = Icons.favorite_border_rounded;
-              } else if (isSpecialFriend) {
-                // Purple for special friends
-                buttonColor = Colors.purple.withOpacity(0.1);
-                iconColor = Colors.purple;
-                iconData = Icons.favorite_rounded;
-              } else {
-                // Blue for regular friends
-                buttonColor = const Color(0xFF68EAFF).withOpacity(0.1);
-                iconColor = const Color(0xFF68EAFF);
-                iconData = Icons.favorite_border_rounded;
-              }
-              
-              return Container(
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: buttonColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    iconData,
-                    size: 20,
-                    color: iconColor,
-                  ),
-                  onPressed: () => _handleSpecialFriendRequest(),
-                ),
-              );
             },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'special',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.favorite_rounded,
+                        size: 18,
+                        color: Colors.purple,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Special Friend',
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'nickname',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 18,
+                        color: primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Set Nickname',
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'theme',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.palette_rounded,
+                        size: 18,
+                        color: primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Change Theme',
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'search',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: Color(0xFF3B82F6),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Search Messages',
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'mute',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAB308).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _isMuted
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        size: 18,
+                        color: const Color(0xFFEAB308),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _isMuted ? 'Unmute' : 'Mute',
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Clear Chat',
+                      style: GoogleFonts.inter(fontSize: 14, color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -279,7 +385,11 @@ class _ChatScreenState extends State<ChatScreen> {
               stream: _messageService.getMessagesStream(widget.chatId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
@@ -287,17 +397,21 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error, size: 48, color: Colors.grey),
+                        Icon(Icons.error, size: 48, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading messages',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             color: Colors.grey[600],
                           ),
                         ),
+                        const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => setState(() {}),
+                          style: TextButton.styleFrom(
+                            foregroundColor: primaryColor,
+                          ),
                           child: const Text('Retry'),
                         ),
                       ],
@@ -308,7 +422,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 final messages = snapshot.data ?? [];
 
                 if (messages.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(primaryColor);
                 }
 
                 return ListView.builder(
@@ -319,19 +433,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final items = _buildMessageItems(messages);
                     final item = items[index];
-                    
+
                     if (item['type'] == 'date_separator') {
                       return _buildDateSeparator(item['date'] as DateTime);
                     } else {
                       final message = item['message'] as MessageModel;
-                      final isMe = message.senderId == UserService.currentUserId;
+                      final isMe =
+                          message.senderId == UserService.currentUserId;
                       final showTimestamp = item['showTimestamp'] as bool;
                       final isGrouped = item['isGrouped'] as bool;
-                      
+
                       return _buildMessageBubble(
-                        message, 
-                        isMe, 
-                        primaryColor, 
+                        message,
+                        isMe,
+                        primaryColor,
                         showTimestamp: showTimestamp,
                         isGrouped: isGrouped,
                       );
@@ -343,110 +458,128 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // Message Input Area
-          _buildMessageInput(),
+          _buildMessageInput(primaryColor),
         ],
       ),
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(Color primaryColor) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFFE2E8F0),
-            width: 1,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, -2),
+            blurRadius: 8,
           ),
-        ),
+        ],
       ),
       child: SafeArea(
         child: Row(
           children: [
-            // Attachment Button
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF68EAFF).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.add_rounded,
-                  color: Color(0xFF68EAFF),
-                  size: 24,
-                ),
-                onPressed: _showAttachmentOptions,
-              ),
-            ),
-            const SizedBox(width: 12),
-            
-            // Message Input Field
+            // Expanded message input
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1,
-                  ),
                 ),
-                child: TextField(
-                  controller: _messageController,
-                  maxLines: null,
-                  textInputAction: TextInputAction.newline,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: const Color(0xFF1E293B),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: GoogleFonts.inter(
-                      color: const Color(0xFF64748B),
-                      fontSize: 16,
+                child: Row(
+                  children: [
+                    // Attachment button inside input
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: primaryColor,
+                        size: 22,
+                      ),
+                      onPressed: _showAttachmentOptions,
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                    // Text field
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        maxLines: null,
+                        textInputAction: TextInputAction.newline,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          color: const Color(0xFF1E293B),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Message...',
+                          hintStyle: GoogleFonts.inter(
+                            color: const Color(0xFF64748B),
+                            fontSize: 15,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 10,
+                          ),
+                        ),
+                        onSubmitted: (text) {
+                          if (text.trim().isNotEmpty) {
+                            _sendMessage();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  onSubmitted: (text) {
-                    if (text.trim().isNotEmpty) {
-                      _sendMessage();
-                    }
-                  },
+                    // Emoji/Sticker button
+                    IconButton(
+                      icon: Icon(
+                        Icons.emoji_emotions_outlined,
+                        color: primaryColor,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        // Add emoji picker later
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            
-            // Send Button
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF68EAFF),
-                    Color(0xFF4FD1C7),
-                  ],
-                ),
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {
-                  if (_messageController.text.trim().isNotEmpty) {
-                    _sendMessage();
-                  }
-                },
-              ),
+            const SizedBox(width: 8),
+
+            // Send button - only show when text is not empty
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: _messageController.text.trim().isNotEmpty
+                  ? Container(
+                      key: const ValueKey('send-button'),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: _sendMessage,
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
             ),
           ],
         ),
@@ -454,7 +587,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Color primaryColor) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -462,12 +595,12 @@ class _ChatScreenState extends State<ChatScreen> {
           UserAvatarWidget(
             user: widget.otherUser,
             radius: 40,
-            backgroundColor: Color(_getThemeColors()['primaryColor']),
+            backgroundColor: primaryColor.withOpacity(0.1),
           ),
           const SizedBox(height: 16),
           Text(
             'Start chatting with ${_nickname ?? widget.otherUser.displayName}!',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: Colors.grey[600],
@@ -476,7 +609,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 8),
           Text(
             'Messages will appear here once you start the conversation.',
-            style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[500]),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -486,12 +619,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   List<Map<String, dynamic>> _buildMessageItems(List<MessageModel> messages) {
     final items = <Map<String, dynamic>>[];
-    
+
     for (int i = 0; i < messages.length; i++) {
       final message = messages[i];
       final previousMessage = i > 0 ? messages[i - 1] : null;
       final nextMessage = i < messages.length - 1 ? messages[i + 1] : null;
-      
+
       // Check if we need a date separator
       if (previousMessage != null) {
         final currentDate = DateTime(
@@ -504,29 +637,25 @@ class _ChatScreenState extends State<ChatScreen> {
           previousMessage.timestamp.month,
           previousMessage.timestamp.day,
         );
-        
+
         if (currentDate != previousDate) {
-          items.add({
-            'type': 'date_separator',
-            'date': message.timestamp,
-          });
+          items.add({'type': 'date_separator', 'date': message.timestamp});
         }
       } else {
         // First message, always show date separator
-        items.add({
-          'type': 'date_separator',
-          'date': message.timestamp,
-        });
+        items.add({'type': 'date_separator', 'date': message.timestamp});
       }
-      
+
       // Determine if we should show timestamp and if message is grouped
       bool showTimestamp = false;
       bool isGrouped = false;
-      
+
       if (nextMessage != null) {
-        final timeDifference = message.timestamp.difference(nextMessage.timestamp).inMinutes;
+        final timeDifference = message.timestamp
+            .difference(nextMessage.timestamp)
+            .inMinutes;
         final isSameSender = message.senderId == nextMessage.senderId;
-        
+
         // Group messages from same sender within 2 minutes
         if (isSameSender && timeDifference <= 2) {
           isGrouped = true;
@@ -537,15 +666,17 @@ class _ChatScreenState extends State<ChatScreen> {
         // Last message, always show timestamp
         showTimestamp = true;
       }
-      
+
       // Show timestamp if there's a significant time gap (>15 minutes)
       if (nextMessage != null) {
-        final timeDifference = message.timestamp.difference(nextMessage.timestamp).inMinutes;
+        final timeDifference = message.timestamp
+            .difference(nextMessage.timestamp)
+            .inMinutes;
         if (timeDifference > 15) {
           showTimestamp = true;
         }
       }
-      
+
       items.add({
         'type': 'message',
         'message': message,
@@ -553,7 +684,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'isGrouped': isGrouped,
       });
     }
-    
+
     return items;
   }
 
@@ -608,7 +739,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 UserAvatarWidget(
                   user: widget.otherUser,
                   radius: 16,
-                  backgroundColor: primaryColor,
+                  backgroundColor: primaryColor.withOpacity(0.1),
                 ),
                 const SizedBox(width: 8),
               ] else if (!isMe && isGrouped) ...[
@@ -616,11 +747,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: isMe 
-                        ? const Color(0xFF68EAFF)
-                        : Colors.white,
+                    color: isMe ? primaryColor : Colors.white,
                     borderRadius: _getBubbleBorderRadius(isMe, isGrouped),
                     boxShadow: [
                       BoxShadow(
@@ -630,12 +762,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         spreadRadius: 0,
                       ),
                     ],
-                    border: isMe 
-                        ? null 
-                        : Border.all(
-                            color: const Color(0xFFE2E8F0),
-                            width: 1,
-                          ),
+                    border: isMe
+                        ? null
+                        : Border.all(color: const Color(0xFFE2E8F0), width: 1),
                   ),
                   child: Text(
                     message.text,
@@ -654,8 +783,8 @@ class _ChatScreenState extends State<ChatScreen> {
           if (showTimestamp) ...[
             const SizedBox(height: 4),
             Row(
-              mainAxisAlignment: isMe 
-                  ? MainAxisAlignment.end 
+              mainAxisAlignment: isMe
+                  ? MainAxisAlignment.end
                   : MainAxisAlignment.start,
               children: [
                 if (!isMe) const SizedBox(width: 48),
@@ -717,28 +846,41 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-
   void _showNicknameDialog() {
     final controller = TextEditingController(text: _nickname ?? '');
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             'Set Nickname',
-            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Set a custom nickname for ${widget.otherUser.displayName}'),
+              Text(
+                'Set a custom nickname for ${widget.otherUser.displayName}',
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Enter nickname...',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryColor, width: 2),
+                  ),
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
@@ -747,9 +889,12 @@ class _ChatScreenState extends State<ChatScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: Colors.grey[600]),
+              ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 final nickname = controller.text.trim();
                 Navigator.pop(context);
@@ -759,9 +904,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     _nickname = nickname.isEmpty ? null : nickname;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nickname updated successfully!'),
-                      backgroundColor: Color.fromARGB(255, 104, 234, 243),
+                    SnackBar(
+                      content: const Text('Nickname updated successfully!'),
+                      backgroundColor: primaryColor,
                     ),
                   );
                 } catch (e) {
@@ -773,6 +918,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Save'),
             ),
           ],
@@ -799,6 +951,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _toggleMute() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       await _settingsService.toggleMute(widget.chatId);
       setState(() {
@@ -807,13 +962,13 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_isMuted ? 'Chat muted' : 'Chat unmuted'),
-          backgroundColor: Color(_getThemeColors()['primaryColor']),
+          backgroundColor: primaryColor,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to ${_isMuted ? 'mute' : 'unmute'} chat: $e'),
+          content: Text('Failed to load chat stats: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -821,6 +976,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _showChatStats() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       final stats = await _settingsService.getChatStats(widget.chatId);
       if (!mounted) return;
@@ -829,9 +987,12 @@ class _ChatScreenState extends State<ChatScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Text(
               'Chat Statistics',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -859,8 +1020,15 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
             actions: [
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 child: const Text('Close'),
               ),
             ],
@@ -883,24 +1051,27 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.nunito()),
-          Text(value, style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+          Text(label, style: GoogleFonts.inter()),
+          Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   void _showClearChatDialog() {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
             'Clear Chat',
-            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
           ),
           content: const Text(
             'Are you sure you want to clear this chat? This action cannot be undone.',
@@ -908,17 +1079,20 @@ class _ChatScreenState extends State<ChatScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: Colors.grey[600]),
+              ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
                 try {
                   await _messageService.clearChatMessages(widget.chatId);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chat cleared successfully!'),
-                      backgroundColor: Color.fromARGB(255, 104, 234, 243),
+                    SnackBar(
+                      content: const Text('Chat cleared successfully!'),
+                      backgroundColor: primaryColor,
                     ),
                   );
                 } catch (e) {
@@ -930,7 +1104,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Clear'),
             ),
           ],
@@ -940,7 +1120,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showAttachmentOptions() {
-    final primaryColor = Color(_getThemeColors()['primaryColor']);
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
 
     showModalBottomSheet(
       context: context,
@@ -955,7 +1136,7 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Text(
                 'Share',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1029,18 +1210,21 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.nunito(fontSize: 12)),
+          Text(label, style: GoogleFonts.inter(fontSize: 12)),
         ],
       ),
     );
   }
 
   void _handleAttachment(String type) {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$type sharing coming soon!'),
-        backgroundColor: Color(_getThemeColors()['primaryColor']),
+        backgroundColor: primaryColor,
       ),
     );
   }
@@ -1068,7 +1252,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _formatRelativeTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
@@ -1090,17 +1274,37 @@ class _ChatScreenState extends State<ChatScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final messageDate = DateTime(date.year, date.month, date.day);
-    
+
     if (messageDate == today) {
       return 'Today';
     } else if (messageDate == yesterday) {
       return 'Yesterday';
     } else if (now.difference(messageDate).inDays < 7) {
-      final weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final weekdays = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ];
       return weekdays[date.weekday - 1];
     } else if (date.year == now.year) {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[date.month - 1]} ${date.day}';
     } else {
       return '${date.day}/${date.month}/${date.year}';
@@ -1130,18 +1334,20 @@ class _ChatScreenState extends State<ChatScreen> {
   // Special Friend Request Methods
   Stream<Map<String, bool>> _getSpecialFriendAndRequestStatusStream() {
     return UserService().getCurrentUserStream().asyncMap((user) async {
-      if (user == null) return {
-        'isSpecialFriend': false, 
-        'hasPendingRequest': false,
-        'hasIncomingRequest': false,
-        'hasExistingSpecialFriend': false,
-      };
-      
+      if (user == null)
+        return {
+          'isSpecialFriend': false,
+          'hasPendingRequest': false,
+          'hasIncomingRequest': false,
+          'hasExistingSpecialFriend': false,
+        };
+
       final isSpecialFriend = user.specialFriends.contains(widget.otherUser.id);
       final hasPendingRequest = await _checkPendingSpecialFriendRequest();
       final hasIncomingRequest = await _checkIncomingSpecialFriendRequest();
-      final hasExistingSpecialFriend = user.specialFriends.isNotEmpty && !isSpecialFriend;
-      
+      final hasExistingSpecialFriend =
+          user.specialFriends.isNotEmpty && !isSpecialFriend;
+
       return {
         'isSpecialFriend': isSpecialFriend,
         'hasPendingRequest': hasPendingRequest,
@@ -1152,14 +1358,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _handleSpecialFriendRequest() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       final userService = UserService();
-      
+
       // Check current status
-      final isSpecialFriend = await userService.isSpecialFriend(widget.otherUser.id);
+      final isSpecialFriend = await userService.isSpecialFriend(
+        widget.otherUser.id,
+      );
       final hasPendingRequest = await _checkPendingSpecialFriendRequest();
       final hasIncomingRequest = await _checkIncomingSpecialFriendRequest();
-      
+
       if (isSpecialFriend) {
         _showSpecialFriendDialog();
         return;
@@ -1177,15 +1388,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // Send special friend request
       await userService.sendSpecialFriendRequest(widget.otherUser.id);
-      
+
       setState(() {
         _hasPendingSpecialFriendRequest = true;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Special friend request sent to ${widget.otherUser.displayName}!'),
-          backgroundColor: const Color(0xFF68EAFF),
+          content: Text(
+            'Special friend request sent to ${widget.otherUser.displayName}!',
+          ),
+          backgroundColor: primaryColor,
         ),
       );
     } catch (e) {
@@ -1210,7 +1423,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .where('receiverId', isEqualTo: widget.otherUser.id)
           .where('status', isEqualTo: 'pending')
           .get();
-      
+
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       print('Error checking pending special friend request: $e');
@@ -1230,7 +1443,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .where('receiverId', isEqualTo: currentUserId)
           .where('status', isEqualTo: 'pending')
           .get();
-      
+
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       print('Error checking incoming special friend request: $e');
@@ -1239,6 +1452,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showIncomingRequestDialog() {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     showDialog(
       context: context,
       builder: (context) {
@@ -1248,7 +1464,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.favorite_border_rounded,
                 color: Colors.orange,
                 size: 24,
@@ -1256,7 +1472,7 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(width: 8),
               Text(
                 'Special Friend Request',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -1274,7 +1490,7 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(height: 16),
               Text(
                 '${widget.otherUser.displayName} wants to be your special friend! 💜',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1283,34 +1499,27 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
           actions: [
-            // Back button
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Back',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.inter(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            // Reject button
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
                 await _rejectIncomingSpecialFriendRequest();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: Text(
                 'Reject',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
               ),
             ),
-            // Accept button
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
@@ -1322,13 +1531,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: Text(
                 'Accept',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -1338,22 +1548,31 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showSpecialFriendDialog() {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             'Special Friends',
-            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
           ),
           content: Text(
             'You and ${widget.otherUser.displayName} are special friends! 💜',
-            style: GoogleFonts.nunito(),
+            style: GoogleFonts.inter(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(
+                'Close',
+                style: GoogleFonts.inter(color: Colors.grey[600]),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -1370,22 +1589,31 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showPendingRequestDialog() {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             'Pending Request',
-            style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
           ),
           content: Text(
             'You have already sent a special friend request to ${widget.otherUser.displayName}. Please wait for their response.',
-            style: GoogleFonts.nunito(),
+            style: GoogleFonts.inter(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(
+                'Close',
+                style: GoogleFonts.inter(color: Colors.grey[600]),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -1402,26 +1630,33 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _acceptIncomingSpecialFriendRequest() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       final currentUserId = UserService.currentUserId;
       if (currentUserId == null) return;
 
-      // Find the incoming request
       final querySnapshot = await FirebaseFirestore.instance
           .collection('specialFriendRequests')
           .where('senderId', isEqualTo: widget.otherUser.id)
           .where('receiverId', isEqualTo: currentUserId)
           .where('status', isEqualTo: 'pending')
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final requestId = querySnapshot.docs.first.id;
         final userService = UserService();
-        await userService.acceptSpecialFriendRequest(requestId, widget.otherUser.id);
-        
+        await userService.acceptSpecialFriendRequest(
+          requestId,
+          widget.otherUser.id,
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('You and ${widget.otherUser.displayName} are now special friends! 💜'),
+            content: Text(
+              'You and ${widget.otherUser.displayName} are now special friends! 💜',
+            ),
             backgroundColor: Colors.purple,
           ),
         );
@@ -1441,21 +1676,20 @@ class _ChatScreenState extends State<ChatScreen> {
       final currentUserId = UserService.currentUserId;
       if (currentUserId == null) return;
 
-      // Find the incoming request
       final querySnapshot = await FirebaseFirestore.instance
           .collection('specialFriendRequests')
           .where('senderId', isEqualTo: widget.otherUser.id)
           .where('receiverId', isEqualTo: currentUserId)
           .where('status', isEqualTo: 'pending')
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final requestId = querySnapshot.docs.first.id;
         final userService = UserService();
         await userService.rejectSpecialFriendRequest(requestId);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Special friend request rejected'),
             backgroundColor: Colors.grey,
           ),
@@ -1472,14 +1706,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _removeSpecialFriend() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       final userService = UserService();
       await userService.removeSpecialFriend(widget.otherUser.id);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed ${widget.otherUser.displayName} from special friends'),
-          backgroundColor: const Color(0xFF68EAFF),
+          content: Text(
+            'Removed ${widget.otherUser.displayName} from special friends',
+          ),
+          backgroundColor: primaryColor,
         ),
       );
     } catch (e) {
@@ -1493,33 +1732,35 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _cancelSpecialFriendRequest() async {
+    final themeColors = _getThemeColors();
+    final primaryColor = Color(themeColors['primaryColor']);
+
     try {
       final currentUserId = UserService.currentUserId;
       if (currentUserId == null) return;
 
-      // Find the request document
       final querySnapshot = await FirebaseFirestore.instance
           .collection('specialFriendRequests')
           .where('senderId', isEqualTo: currentUserId)
           .where('receiverId', isEqualTo: widget.otherUser.id)
           .where('status', isEqualTo: 'pending')
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final requestId = querySnapshot.docs.first.id;
         await FirebaseFirestore.instance
             .collection('specialFriendRequests')
             .doc(requestId)
             .delete();
-        
+
         setState(() {
           _hasPendingSpecialFriendRequest = false;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Special friend request cancelled'),
-            backgroundColor: const Color(0xFF68EAFF),
+            content: const Text('Special friend request cancelled'),
+            backgroundColor: primaryColor,
           ),
         );
       }
@@ -1532,5 +1773,4 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
   }
-
 }

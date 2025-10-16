@@ -6,13 +6,15 @@ import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/models/friend_request_model.dart';
 import 'package:tutortyper_app/models/special_friend_request_model.dart';
 import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
+import 'package:tutortyper_app/services/streak_service.dart';
+
 import 'dart:io';
 
 class UserService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseStorage _storage = FirebaseStorage.instance;
-
+  static final StreakService _streakService = StreakService();
   // Get current user ID and email
   static String? get currentUserId => _auth.currentUser?.uid;
   static String? get currentUserEmail => _auth.currentUser?.email;
@@ -397,6 +399,7 @@ class UserService {
     String? bio,
     String? gender,
     String? predefinedAvatar,
+    bool profileCompleted = false, // ⚠️ ADD THIS PARAMETER with default false
   }) async {
     try {
       final normalizedUsername = username.toLowerCase().trim();
@@ -411,15 +414,12 @@ class UserService {
       if (!isAvailable) {
         throw Exception('Username is not available');
       }
-
-      // Validate age if birth date is provided
-      bool profileCompleted = false;
+      // Validate age if birth date is provided, but don't change profileCompleted
       if (birthDate != null) {
         final age = _calculateAge(birthDate);
         if (age < 16) {
           throw Exception('You must be at least 16 years old to use this app');
         }
-        profileCompleted = true;
       }
 
       // Assign default avatar based on gender if no custom photo or predefined avatar is provided
@@ -440,7 +440,7 @@ class UserService {
         birthDate: birthDate,
         showBirthDate: false,
         showOnlineStatus: true,
-        profileCompleted: profileCompleted,
+        profileCompleted: profileCompleted, // ⚠️ Use the parameter value
         bio: bio?.trim(),
         gender: gender,
         predefinedAvatar: finalPredefinedAvatar,
@@ -456,7 +456,6 @@ class UserService {
       rethrow;
     }
   }
-
   // ============================================================================
   // USER STATUS AND ACTIVITY METHODS
   // ============================================================================
@@ -1343,6 +1342,7 @@ class UserService {
   // ============================================================================
 
   /// Remove friend (complete unfriend - removes from both sides)
+
   Future<void> removeFriend(String friendId) async {
     if (currentUserId == null) return;
 
@@ -1368,6 +1368,10 @@ class UserService {
           ]), // Also remove from special friends
         });
       });
+
+      // Delete streak after successful unfriend
+      await _streakService.deleteStreak(currentUserId!, friendId);
+      print('DEBUG: Streak deleted after unfriending');
     } catch (e) {
       print('Error removing friend: $e');
       rethrow;
@@ -1425,6 +1429,10 @@ class UserService {
           });
         }
       });
+
+      // Delete streak after successful unfriend
+      await _streakService.deleteStreak(currentUserId!, friendId);
+      print('DEBUG: Streak deleted after unfriending user');
     } catch (e) {
       print('Error unfriending user: $e');
       rethrow;
@@ -1533,6 +1541,10 @@ class UserService {
           userId,
         );
       });
+
+      // Delete streak after blocking
+      await _streakService.deleteStreak(currentUserId!, userId);
+      print('DEBUG: Streak deleted after blocking user');
     } catch (e) {
       print('Error blocking user: $e');
       rethrow;

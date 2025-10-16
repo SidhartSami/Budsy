@@ -2,16 +2,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutortyper_app/models/message_model.dart';
+import 'package:tutortyper_app/services/streak_service.dart';
+import 'package:tutortyper_app/services/chat_settings_service.dart';
 
 class MessageService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final StreakService _streakService = StreakService();
+  static final ChatSettingsService _chatSettingsService = ChatSettingsService();
 
   static String? get currentUserId => _auth.currentUser?.uid;
 
   // Send a text message
   Future<void> sendMessage({
     required String chatId,
+    String? receiverId, // Made optional - will be fetched if not provided
     required String text,
     String? imageUrl,
     String? fileUrl,
@@ -26,9 +31,20 @@ class MessageService {
     }
 
     try {
-      print('DEBUG: Sending message to chat: $chatId');
-      print('DEBUG: Message text: $text');
-      print('DEBUG: Sender ID: $currentUserId');
+      print('📤 DEBUG: Sending message to chat: $chatId');
+      print('📤 DEBUG: Message text: $text');
+      print('📤 DEBUG: Sender ID: $currentUserId');
+
+      final messageTime = DateTime.now();
+
+      // Fetch receiverId if not provided
+      String? effectiveReceiverId = receiverId;
+      if (effectiveReceiverId == null) {
+        effectiveReceiverId = await getOtherParticipant(chatId);
+        print('📤 DEBUG: Fetched receiver ID: $effectiveReceiverId');
+      } else {
+        print('📤 DEBUG: Receiver ID: $effectiveReceiverId');
+      }
 
       // Generate message ID
       final messageId = _firestore
@@ -43,7 +59,7 @@ class MessageService {
         chatId: chatId,
         senderId: currentUserId!,
         text: text.trim(),
-        timestamp: DateTime.now(),
+        timestamp: messageTime,
         isRead: false,
         imageUrl: imageUrl,
         fileUrl: fileUrl,
@@ -71,16 +87,43 @@ class MessageService {
         });
       });
 
-      print('DEBUG: Message sent successfully');
+      print('✅ DEBUG: Message sent successfully');
+
+      // Update streak AFTER message is successfully sent (only if receiver exists)
+      if (effectiveReceiverId != null && effectiveReceiverId.isNotEmpty) {
+        try {
+          await _streakService.handleMessageSent(
+            senderId: currentUserId!,
+            receiverId: effectiveReceiverId,
+            messageTime: messageTime,
+          );
+          print('🔥 DEBUG: Streak updated successfully');
+        } catch (streakError) {
+          print('⚠️  DEBUG: Error updating streak: $streakError');
+          // Don't throw - message was sent successfully
+        }
+      }
+
+      // Update chat statistics
+      try {
+        await _chatSettingsService.updateChatStats(
+          chatId: chatId,
+          isMessageSent: true,
+          messageTime: messageTime,
+        );
+        print('📊 DEBUG: Chat stats updated');
+      } catch (statsError) {
+        print('⚠️  DEBUG: Error updating chat stats: $statsError');
+      }
     } catch (e) {
-      print('DEBUG: Error sending message: $e');
+      print('❌ DEBUG: Error sending message: $e');
       rethrow;
     }
   }
 
   // Get messages stream for a chat
   Stream<List<MessageModel>> getMessagesStream(String chatId) {
-    print('DEBUG: Getting messages stream for chat: $chatId');
+    print('📥 DEBUG: Getting messages stream for chat: $chatId');
 
     return _firestore
         .collection('chats')
@@ -89,17 +132,19 @@ class MessageService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          print('DEBUG: Received ${snapshot.docs.length} messages');
+          print('📥 DEBUG: Received ${snapshot.docs.length} messages');
           final allMessages = snapshot.docs
               .map((doc) => MessageModel.fromMap(doc.data()))
               .toList();
-          
+
           // Filter out messages deleted by current user
           final visibleMessages = allMessages
               .where((message) => !message.deletedBy.contains(currentUserId))
               .toList();
-          
-          print('DEBUG: Filtered to ${visibleMessages.length} visible messages for user $currentUserId');
+
+          print(
+            '👁️  DEBUG: Filtered to ${visibleMessages.length} visible messages for user $currentUserId',
+          );
           return visibleMessages;
         });
   }
@@ -125,9 +170,9 @@ class MessageService {
       }
 
       await batch.commit();
-      print('DEBUG: Marked ${messageIds.length} messages as read');
+      print('✅ DEBUG: Marked ${messageIds.length} messages as read');
     } catch (e) {
-      print('DEBUG: Error marking messages as read: $e');
+      print('❌ DEBUG: Error marking messages as read: $e');
     }
   }
 
@@ -143,9 +188,9 @@ class MessageService {
           .doc(messageId)
           .delete();
 
-      print('DEBUG: Message deleted successfully');
+      print('🗑️  DEBUG: Message deleted successfully');
     } catch (e) {
-      print('DEBUG: Error deleting message: $e');
+      print('❌ DEBUG: Error deleting message: $e');
       rethrow;
     }
   }
@@ -168,7 +213,7 @@ class MessageService {
       for (final doc in messagesSnapshot.docs) {
         final messageData = doc.data();
         final deletedBy = List<String>.from(messageData['deletedBy'] ?? []);
-        
+
         // Add current user to deletedBy list if not already present
         if (!deletedBy.contains(currentUserId)) {
           deletedBy.add(currentUserId!);
@@ -178,10 +223,29 @@ class MessageService {
 
       await batch.commit();
 
-      print('DEBUG: Chat cleared successfully for user $currentUserId');
+      print('🧹 DEBUG: Chat cleared successfully for user $currentUserId');
     } catch (e) {
-      print('DEBUG: Error clearing chat: $e');
+      print('❌ DEBUG: Error clearing chat: $e');
       rethrow;
+    }
+  }
+
+  // Get the other participant in a private chat
+  Future<String?> getOtherParticipant(String chatId) async {
+    try {
+      final chatDoc = await _firestore.collection('chats').doc(chatId).get();
+      if (!chatDoc.exists) return null;
+
+      final participants = List<String>.from(
+        chatDoc.data()?['participants'] ?? [],
+      );
+      return participants.firstWhere(
+        (id) => id != currentUserId,
+        orElse: () => '',
+      );
+    } catch (e) {
+      print('❌ DEBUG: Error getting other participant: $e');
+      return null;
     }
   }
 }

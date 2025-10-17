@@ -36,60 +36,69 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(
-          'Find Friends',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0C3C2B), // Changed from Color(0xFF68EAFF)
-                Color(0xFF1A5C42), // Changed from Color(0xFF4FD1C7)
-              ],
+      backgroundColor: Colors.white,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF0C3C2B),
+              systemOverlayStyle: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
+                onPressed: () => Navigator.pop(context),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+                title: Text(
+                  'Friend Requests',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 28,
+                    color: const Color(0xFF0C3C2B),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: TabBar(
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickyTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF0C3C2B),
+                  unselectedLabelColor: const Color(0xFF94A3B8),
+                  indicatorColor: const Color(0xFF0C3C2B),
+                  indicatorWeight: 3,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelStyle: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  tabs: const [
+                    Tab(text: 'Received'),
+                    Tab(text: 'Sent'),
+                  ],
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-          tabs: const [
-            Tab(text: 'Requests'),
-            Tab(text: 'Sent'),
-          ],
+          children: [_buildIncomingRequests(), _buildOutgoingRequests()],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildIncomingRequests(), _buildOutgoingRequests()],
       ),
     );
   }
@@ -101,9 +110,8 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color(0xFF0C3C2B),
-              ), // Changed
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+              strokeWidth: 3,
             ),
           );
         }
@@ -115,14 +123,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState(
             'No friend requests',
-            Icons.inbox_outlined,
-            'When someone sends you a friend request, it will appear here',
+            Icons.inbox_rounded,
+            'When someone sends you a request,\nit will appear here',
           );
         }
 
-        return ListView.builder(
+        return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: snapshot.data!.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final request = snapshot.data![index];
             return _buildIncomingRequestCard(request);
@@ -135,42 +144,29 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
   Widget _buildIncomingRequestCard(Map<String, dynamic> request) {
     final fromUserData = request['fromUser'];
     if (fromUserData == null) {
-      return const SizedBox.shrink(); // Skip this request if user data is null
+      return const SizedBox.shrink();
     }
 
     final user = UserModel.fromMap(fromUserData);
     final requestId = request['id'] as String;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200, // Add border
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02), // Changed from 0.05
-            blurRadius: 4, // Changed from 10
-            offset: const Offset(0, 1), // Changed from Offset(0, 2)
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Profile Picture
+            // Avatar
             UserAvatarWidget(
               user: user,
               radius: 28,
-              backgroundColor: const Color(
-                0xFF0C3C2B,
-              ).withOpacity(0.1), // Changed
+              backgroundColor: const Color(0xFFF1F5F9),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             // User Info
             Expanded(
               child: Column(
@@ -180,78 +176,78 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     user.displayName,
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
+                      fontSize: 15,
+                      color: const Color(0xFF0F172A),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    '@${user.username}',
+                    user.username,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.w400,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Wants to be your friend',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF64748B),
-                    ),
+                  // Action Buttons Row
+                  Row(
+                    children: [
+                      // Accept Button
+                      Expanded(
+                        child: Material(
+                          color: const Color(0xFF0C3C2B),
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _acceptFriendRequest(requestId),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Accept',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Decline Button
+                      Expanded(
+                        child: Material(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _showDeclineDialog(requestId, user),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Decline',
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF0F172A),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-            // Action Buttons
-            Row(
-              children: [
-                // Accept Button - keep green
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981),
-                    borderRadius: BorderRadius.circular(10), // Changed from 8
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => _acceptFriendRequest(requestId),
-                      child: const Padding(
-                        padding: EdgeInsets.all(10), // Changed from symmetric
-                        child: Icon(
-                          Icons.check_rounded, // Changed to rounded
-                          color: Colors.white,
-                          size: 20, // Changed from 18
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Decline Button - keep red but adjust
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
-                    borderRadius: BorderRadius.circular(10), // Changed from 8
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => _declineFriendRequest(requestId),
-                      child: const Padding(
-                        padding: EdgeInsets.all(10), // Changed from symmetric
-                        child: Icon(
-                          Icons.close_rounded, // Changed to rounded
-                          color: Colors.white,
-                          size: 20, // Changed from 18
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -266,9 +262,8 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color(0xFF0C3C2B),
-              ), // Changed
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+              strokeWidth: 3,
             ),
           );
         }
@@ -280,14 +275,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState(
             'No sent requests',
-            Icons.send_outlined,
-            'Friend requests you send will appear here',
+            Icons.send_rounded,
+            'Requests you send will appear here',
           );
         }
 
-        return ListView.builder(
+        return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: snapshot.data!.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final request = snapshot.data![index];
             return _buildOutgoingRequestCard(request);
@@ -300,43 +296,29 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
   Widget _buildOutgoingRequestCard(Map<String, dynamic> request) {
     final toUserData = request['toUser'];
     if (toUserData == null) {
-      return const SizedBox.shrink(); // Skip this request if user data is null
+      return const SizedBox.shrink();
     }
 
     final user = UserModel.fromMap(toUserData);
     final requestId = request['id'] as String;
 
-    // In both _buildIncomingRequestCard and _buildOutgoingRequestCard
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200, // Add border
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02), // Changed from 0.05
-            blurRadius: 4, // Changed from 10
-            offset: const Offset(0, 1), // Changed from Offset(0, 2)
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
-
-      // ... rest of code
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Profile Picture
+            // Avatar
             UserAvatarWidget(
               user: user,
               radius: 28,
-              backgroundColor: const Color(0xFF68EAFF).withOpacity(0.1),
+              backgroundColor: const Color(0xFFF1F5F9),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             // User Info
             Expanded(
               child: Column(
@@ -346,57 +328,79 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     user.displayName,
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
+                      fontSize: 15,
+                      color: const Color(0xFF0F172A),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    '@${user.username}',
+                    user.username,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.w400,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Request sent',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(
-                        0xFF0C3C2B,
-                      ), // Changed from Color(0xFF10B981)
-                      fontWeight: FontWeight.w600, // Changed from w500
-                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0C3C2B).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 12,
+                              color: const Color(0xFF0C3C2B),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Pending',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF0C3C2B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 12),
             // Cancel Button
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(
-                  0xFF0C3C2B,
-                ).withOpacity(0.1), // Changed color
-                borderRadius: BorderRadius.circular(10), // Changed from 8
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () => _cancelFriendRequest(requestId),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF0C3C2B), // Changed from white
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13, // Changed from 12
-                      ),
+            Material(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showCancelDialog(requestId, user),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF0F172A),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -408,122 +412,360 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: 18,
-          color: const Color(0xFF1E293B),
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState(String title, IconData icon, String subtitle) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0C3C2B).withOpacity(0.1), // Changed
-              borderRadius: BorderRadius.circular(50),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(28),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 56, color: const Color(0xFF94A3B8)),
             ),
-            child: Icon(
-              icon,
-              size: 48,
-              color: const Color(0xFF0C3C2B), // Changed
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: const Color(0xFF0F172A),
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: const Color(0xFF1E293B),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorState(String message) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
-          const SizedBox(height: 16),
-          Text(
-            'Something went wrong',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: const Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => setState(() {}),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0C3C2B), // Changed
-              foregroundColor: Colors.white,
-              elevation: 0, // Add this
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // Changed from 8
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ), // Add this
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 56,
+                color: Color(0xFFEF4444),
+              ),
             ),
-            child: Text(
-              'Try Again',
+            const SizedBox(height: 24),
+            Text(
+              'Something went wrong',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
-                fontSize: 14, // Add this
+                fontSize: 18,
+                color: const Color(0xFF0F172A),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please try again',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Material(
+              color: const Color(0xFF0C3C2B),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => setState(() {}),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  child: Text(
+                    'Try Again',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // Action Methods
+  void _showDeclineDialog(String requestId, UserModel user) {
+    HapticFeedback.lightImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    UserAvatarWidget(
+                      user: user,
+                      radius: 36,
+                      backgroundColor: const Color(0xFFF1F5F9),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Decline friend request?',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Decline request from ${user.displayName}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    // Decline Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _declineFriendRequest(requestId);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Decline Request',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Cancel Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCancelDialog(String requestId, UserModel user) {
+    HapticFeedback.lightImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    UserAvatarWidget(
+                      user: user,
+                      radius: 36,
+                      backgroundColor: const Color(0xFFF1F5F9),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Cancel friend request?',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cancel your request to ${user.displayName}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    // Cancel Request Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _cancelFriendRequest(requestId);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Cancel Request',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Keep Request Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Keep Request',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _acceptFriendRequest(String requestId) async {
     try {
-      HapticFeedback.lightImpact();
-      // Get the sender ID from the request
+      HapticFeedback.mediumImpact();
+
       final requestDoc = await _firestore
           .collection('friendRequests')
           .doc(requestId)
           .get();
+
       if (requestDoc.exists) {
         final senderId = requestDoc.data()?['senderId'] as String?;
         if (senderId != null) {
@@ -531,27 +773,69 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
         }
       }
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Friend request accepted'),
-          backgroundColor: Color(0xFF10B981),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Friend request accepted',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
           ),
-          margin: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error accepting request: $e'),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to accept request',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -559,30 +843,68 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
   Future<void> _declineFriendRequest(String requestId) async {
     try {
-      HapticFeedback.lightImpact();
+      HapticFeedback.mediumImpact();
       await _userService.declineFriendRequest(requestId);
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Friend request declined'),
-          backgroundColor: Color(0xFF64748B),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.block_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Request declined',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF64748B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
           ),
-          margin: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error declining request: $e'),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to decline request',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -590,32 +912,97 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
   Future<void> _cancelFriendRequest(String requestId) async {
     try {
-      HapticFeedback.lightImpact();
+      HapticFeedback.mediumImpact();
       await _userService.cancelFriendRequest(requestId);
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Friend request cancelled'),
-          backgroundColor: Color(0xFF64748B),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.undo_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Request cancelled',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF64748B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
           ),
-          margin: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error cancelling request: $e'),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to cancel request',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
+  }
+}
+
+// Custom SliverPersistentHeaderDelegate for sticky tab bar
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyTabBarDelegate(this.tabBar);
+
+  final TabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: Colors.white, child: tabBar);
+  }
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar;
   }
 }

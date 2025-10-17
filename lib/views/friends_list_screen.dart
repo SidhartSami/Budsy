@@ -1,4 +1,3 @@
-// views/friends_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,6 +30,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   final ChatSettingsService _chatSettingsService = ChatSettingsService();
   List<UserModel> _friendsWithBirthdaysToday = [];
   Map<String, String> _friendNicknames = {};
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -98,60 +98,26 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     return _friendsWithBirthdaysToday.any((friend) => friend.id == friendId);
   }
 
-  // Get plant stage based on streak count
   Map<String, dynamic> _getPlantStage(int streakCount, bool isEndingSoon) {
     if (isEndingSoon) {
-      return {
-        'emoji': '🥀', // Wilting flower
-        'name': 'Wilting',
-        'color': Color(0xFFB91C1C), // Red-700
-      };
+      return {'emoji': '🥀', 'name': 'Wilting', 'color': Color(0xFFEF4444)};
     } else if (streakCount >= 100) {
-      return {
-        'emoji': '🌺', // Tropical flower - legendary
-        'name': 'Blooming',
-        'color': Color(0xFF9333EA), // Purple-600
-      };
+      return {'emoji': '🌺', 'name': 'Blooming', 'color': Color(0xFF9333EA)};
     } else if (streakCount >= 50) {
-      return {
-        'emoji': '🌸', // Cherry blossom - master
-        'name': 'Flowering',
-        'color': Color(0xFFDB2777), // Pink-600
-      };
+      return {'emoji': '🌸', 'name': 'Flowering', 'color': Color(0xFFDB2777)};
     } else if (streakCount >= 30) {
-      return {
-        'emoji': '🌹', // Rose - expert
-        'name': 'Rose',
-        'color': Color(0xFFDC2626), // Red-600
-      };
+      return {'emoji': '🌹', 'name': 'Rose', 'color': Color(0xFFDC2626)};
     } else if (streakCount >= 14) {
-      return {
-        'emoji': '🌻', // Sunflower - advanced
-        'name': 'Sunflower',
-        'color': Color(0xFFEA580C), // Orange-600
-      };
+      return {'emoji': '🌻', 'name': 'Sunflower', 'color': Color(0xFFEA580C)};
     } else if (streakCount >= 7) {
-      return {
-        'emoji': '🌿', // Herb - growing
-        'name': 'Growing',
-        'color': Color(0xFF16A34A), // Green-600
-      };
+      return {'emoji': '🌿', 'name': 'Growing', 'color': Color(0xFF16A34A)};
     } else if (streakCount >= 3) {
-      return {
-        'emoji': '🌱', // Seedling - new growth
-        'name': 'Sprouting',
-        'color': Color(0xFF15803D), // Green-700
-      };
+      return {'emoji': '🌱', 'name': 'Sprouting', 'color': Color(0xFF15803D)};
     } else {
-      return {
-        'emoji': '🌰', // Seed - just started
-        'name': 'Seed',
-        'color': Color(0xFF92400E), // Amber-800
-      };
+      return {'emoji': '🌰', 'name': 'Seed', 'color': Color(0xFF92400E)};
     }
   }
 
-  // Main plant-based streak badge for message cards
   Widget _buildPlantStreakBadge(String friendId) {
     final currentUserId = UserService.currentUserId;
     if (currentUserId == null) return const SizedBox.shrink();
@@ -173,84 +139,40 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
           final streakCount = streakInfo['streakCount'] as int? ?? 0;
           final isEndingSoon = streakInfo['isEndingSoon'] as bool? ?? false;
-          final hoursLeft = streakInfo['hoursLeft'] as int? ?? 0;
 
           if (streakCount == 0) return const SizedBox.shrink();
 
           final plantStage = _getPlantStage(streakCount, isEndingSoon);
 
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isEndingSoon
-                    ? [Color(0xFFFEE2E2), Color(0xFFFFEBEB)]
-                    : [
-                        Colors.white,
-                        (plantStage['color'] as Color).withOpacity(0.05),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: (plantStage['color'] as Color).withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (plantStage['color'] as Color).withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: (plantStage['color'] as Color).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(plantStage['emoji'], style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
+                Text(plantStage['emoji'], style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 3),
                 Text(
                   '$streakCount',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: plantStage['color'],
                   ),
                 ),
-                if (isEndingSoon && hoursLeft > 0) ...[
-                  const SizedBox(width: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Color(0xFFB91C1C).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${hoursLeft}h',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB91C1C),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           );
         } catch (e) {
-          print('Error building plant streak badge: $e');
           return const SizedBox.shrink();
         }
       },
     );
   }
 
-  // Compact plant badge for active people section
   Widget _buildCompactPlantBadge(String friendId) {
     final currentUserId = UserService.currentUserId;
     if (currentUserId == null) return const SizedBox.shrink();
@@ -278,47 +200,32 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           final plantStage = _getPlantStage(streakCount, isEndingSoon);
 
           return Positioned(
-            right: 0,
-            top: 0,
+            right: -2,
+            top: -2,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                shape: BoxShape.circle,
                 border: Border.all(
-                  color: (plantStage['color'] as Color).withOpacity(0.4),
-                  width: 1.5,
+                  color: (plantStage['color'] as Color),
+                  width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    plantStage['emoji'],
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    '$streakCount',
-                    style: GoogleFonts.inter(
-                      color: plantStage['color'],
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+              child: Text(
+                plantStage['emoji'],
+                style: const TextStyle(fontSize: 10),
               ),
             ),
           );
         } catch (e) {
-          print('Error building compact plant badge: $e');
           return const SizedBox.shrink();
         }
       },
@@ -329,298 +236,261 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 0,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header Section with Gradient Background
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Colors.white,
+              systemOverlayStyle: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                title: Text(
+                  'Messages',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 32,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
               ),
-              child: Column(
-                children: [
-                  // Top Bar with Title and Icons
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              actions: [
+                StreamBuilder<int>(
+                  stream: _userService.getPendingRequestsCountStream(),
+                  builder: (context, snapshot) {
+                    final pendingCount = snapshot.data ?? 0;
+                    return Stack(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            StreamBuilder<UserModel?>(
-                              stream: _userService.getCurrentUserStream(),
-                              builder: (context, userSnapshot) {
-                                final userName =
-                                    userSnapshot.data?.displayName ?? 'User';
-                                return Text(
-                                  'Hi, $userName!',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withOpacity(0.9),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 4),
-                            StreamBuilder<int>(
-                              stream: _userService
-                                  .getTotalUnreadMessageCountStream(),
-                              builder: (context, snapshot) {
-                                final messageCount = snapshot.data ?? 0;
-                                return Text(
-                                  'You Received\n$messageCount Messages',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    height: 1.2,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(Icons.person_add_outlined),
+                          color: const Color(0xFF0F172A),
+                          iconSize: 26,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const FriendRequestsScreen(),
+                              ),
+                            );
+                          },
                         ),
-                        Row(
-                          children: [
-                            StreamBuilder<int>(
-                              stream: _userService
-                                  .getPendingRequestsCountStream(),
-                              builder: (context, snapshot) {
-                                final pendingCount = snapshot.data ?? 0;
-                                return Stack(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.mail_outline),
-                                      color: Colors.white,
-                                      iconSize: 26,
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const FriendRequestsScreen(),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    if (pendingCount > 0)
-                                      Positioned(
-                                        right: 8,
-                                        top: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 16,
-                                            minHeight: 16,
-                                          ),
-                                          child: Text(
-                                            '$pendingCount',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
+                        if (pendingCount > 0)
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                pendingCount > 9 ? '9+' : '$pendingCount',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.person_add),
-                              color: Colors.white,
-                              iconSize: 26,
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AddFriendsScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+                          ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.group_add_outlined),
+                  color: const Color(0xFF0F172A),
+                  iconSize: 26,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddFriendsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ];
+        },
+        body: Column(
+          children: [
+            // Active People Section
+            StreamBuilder<UserModel?>(
+              stream: _userService.getCurrentUserStream(),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData ||
+                    userSnapshot.data?.friends.isEmpty == true) {
+                  return const SizedBox.shrink();
+                }
 
-                  // Active People Section
-                  StreamBuilder<UserModel?>(
-                    stream: _userService.getCurrentUserStream(),
-                    builder: (context, userSnapshot) {
-                      if (!userSnapshot.hasData ||
-                          userSnapshot.data?.friends.isEmpty == true) {
-                        return const SizedBox.shrink();
-                      }
+                final currentUser = userSnapshot.data!;
+                return StreamBuilder<List<UserModel>>(
+                  stream: _userService.getFriendsStream(currentUser.friends),
+                  builder: (context, friendsSnapshot) {
+                    if (!friendsSnapshot.hasData ||
+                        friendsSnapshot.data!.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
 
-                      final currentUser = userSnapshot.data!;
-                      return StreamBuilder<List<UserModel>>(
-                        stream: _userService.getFriendsStream(
-                          currentUser.friends,
-                        ),
-                        builder: (context, friendsSnapshot) {
-                          if (!friendsSnapshot.hasData ||
-                              friendsSnapshot.data!.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
+                    final activeFriends = friendsSnapshot.data!
+                        .where((friend) => friend.isOnline)
+                        .take(10)
+                        .toList();
 
-                          final activeFriends = friendsSnapshot.data!
-                              .where((friend) => friend.isOnline)
-                              .take(10)
-                              .toList();
+                    if (activeFriends.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
 
-                          if (activeFriends.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                          child: Row(
                             children: [
-                              Padding(
+                              Container(
+                                width: 4,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Active Now',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'Active People',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white.withOpacity(0.9),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '${activeFriends.length}',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                height: 90,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
+                                child: Text(
+                                  '${activeFriends.length}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF10B981),
                                   ),
-                                  itemCount: activeFriends.length,
-                                  itemBuilder: (context, index) {
-                                    final friend = activeFriends[index];
-                                    return _buildActivePersonItem(friend);
-                                  },
                                 ),
                               ),
-                              const SizedBox(height: 24),
                             ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: activeFriends.length,
+                            itemBuilder: (context, index) {
+                              final friend = activeFriends[index];
+                              return _buildActivePersonItem(friend);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
 
             // Search Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Container(
-                height: 48,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isSearching
+                        ? const Color(0xFF0C3C2B)
+                        : Colors.transparent,
+                    width: 2,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    const Icon(
+                child: TextField(
+                  controller: _searchController,
+                  onTap: () => setState(() => _isSearching = true),
+                  onChanged: (value) => setState(() {}),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search',
+                    hintStyle: GoogleFonts.inter(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF0C3C2B),
-                      size: 20,
+                      color: _isSearching
+                          ? const Color(0xFF0C3C2B)
+                          : const Color(0xFF94A3B8),
+                      size: 22,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          color: const Color(0xFF1E293B),
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search friends...',
-                          hintStyle: GoogleFonts.inter(
-                            color: const Color(0xFF9E9E9E),
-                            fontSize: 15,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        onChanged: (value) {
-                          setState(() {});
-                        },
-                      ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF94A3B8),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
-                    if (_searchController.text.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(
-                          Icons.clear_rounded,
-                          color: Color(0xFF9E9E9E),
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -631,7 +501,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 stream: _userService.getCurrentUserStream(),
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF0C3C2B),
+                        ),
+                        strokeWidth: 3,
+                      ),
+                    );
                   }
 
                   if (!userSnapshot.hasData ||
@@ -645,7 +522,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                     builder: (context, friendsSnapshot) {
                       if (friendsSnapshot.connectionState ==
                           ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF0C3C2B),
+                            ),
+                            strokeWidth: 3,
+                          ),
+                        );
                       }
 
                       if (!friendsSnapshot.hasData ||
@@ -681,42 +565,51 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           .toList();
 
                       return ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
-                          // Close Friends Section
                           if (pinnedFriends.isNotEmpty) ...[
-                            Text(
-                              'Close Friends (${pinnedFriends.length})',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E293B),
-                                letterSpacing: -0.3,
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 4,
+                                bottom: 12,
+                              ),
+                              child: Text(
+                                'FAVORITES',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF64748B),
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
                             ...pinnedFriends.map(
                               (friend) =>
                                   _buildMessageCard(friend, isPinned: true),
                             ),
                             const SizedBox(height: 24),
                           ],
-
-                          // All Messages Section
-                          Text(
-                            'All Messages (${regularFriends.length})',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
-                              letterSpacing: -0.3,
+                          if (regularFriends.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 4,
+                                bottom: 12,
+                              ),
+                              child: Text(
+                                'ALL CHATS',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF64748B),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          ...regularFriends.map(
-                            (friend) =>
-                                _buildMessageCard(friend, isPinned: false),
-                          ),
+                            ...regularFriends.map(
+                              (friend) =>
+                                  _buildMessageCard(friend, isPinned: false),
+                            ),
+                          ],
                           const SizedBox(height: 80),
                         ],
                       );
@@ -733,7 +626,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildActivePersonItem(UserModel friend) {
     return Padding(
-      padding: const EdgeInsets.only(right: 20),
+      padding: const EdgeInsets.only(right: 16),
       child: GestureDetector(
         onTap: () => _startChat(friend),
         child: Column(
@@ -741,68 +634,57 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             Stack(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: UserAvatarWidget(
-                    user: friend,
-                    radius: 20,
-                    backgroundColor: const Color(0xFF0C3C2B).withOpacity(0.1),
-                  ),
-                ),
-                if (friend.isOnline)
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF0C3C2B),
-                          width: 2,
-                        ),
-                      ),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF10B981), Color(0xFF059669)],
                     ),
                   ),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: UserAvatarWidget(
+                      user: friend,
+                      radius: 26,
+                      backgroundColor: const Color(0xFFF1F5F9),
+                    ),
+                  ),
+                ),
                 if (_isFriendBirthdayToday(friend.id))
                   Positioned(
                     left: 0,
                     top: 0,
                     child: Container(
-                      width: 18,
-                      height: 18,
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFFF9800),
-                          width: 1,
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
-                      child: const Center(
-                        child: Text('🎂', style: TextStyle(fontSize: 10)),
-                      ),
+                      child: const Text('🎂', style: TextStyle(fontSize: 14)),
                     ),
                   ),
-                // Compact plant badge
                 _buildCompactPlantBadge(friend.id),
               ],
             ),
             const SizedBox(height: 8),
             SizedBox(
-              width: 60,
+              width: 70,
               child: Text(
                 _getFriendDisplayName(friend).split(' ')[0],
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: const Color(0xFF0F172A),
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -817,27 +699,20 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildMessageCard(UserModel friend, {required bool isPinned}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            offset: const Offset(0, 1),
-            blurRadius: 4,
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _startChat(friend),
           onLongPress: () => _showFriendOptions(friend),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Stack(
@@ -845,7 +720,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                     UserAvatarWidget(
                       user: friend,
                       radius: 28,
-                      backgroundColor: const Color(0xFFF5F5F5),
+                      backgroundColor: const Color(0xFFF1F5F9),
                     ),
                     if (friend.isOnline)
                       Positioned(
@@ -855,7 +730,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           width: 14,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50),
+                            color: const Color(0xFF10B981),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
                           ),
@@ -866,52 +741,60 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                         left: 0,
                         top: 0,
                         child: Container(
-                          width: 20,
-                          height: 20,
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFFF9800),
-                              width: 1,
-                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
-                          child: const Center(
-                            child: Text('🎂', style: TextStyle(fontSize: 12)),
+                          child: const Text(
+                            '🎂',
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
+                          if (isPinned)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.push_pin,
+                                size: 14,
+                                color: Color(0xFF0C3C2B),
+                              ),
+                            ),
                           Flexible(
                             child: Text(
                               _getFriendDisplayName(friend),
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: const Color(0xFF1E293B),
+                                fontSize: 15,
+                                color: const Color(0xFF0F172A),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (friend.isVerified) ...[
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             const Icon(
-                              Icons.verified_rounded,
+                              Icons.verified,
                               color: Color(0xFF3B82F6),
-                              size: 16,
+                              size: 14,
                             ),
                           ],
-                          const SizedBox(width: 8),
-                          // Plant-based streak badge
-                          _buildPlantStreakBadge(friend.id),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -946,8 +829,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                                 return Text(
                                   'Loading...',
                                   style: GoogleFonts.inter(
-                                    color: const Color(0xFF9E9E9E),
-                                    fontSize: 14,
+                                    color: const Color(0xFF94A3B8),
+                                    fontSize: 13,
                                   ),
                                 );
                               }
@@ -956,10 +839,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                               if (lastMessage == null ||
                                   lastMessage['text'].toString().isEmpty) {
                                 return Text(
-                                  'Start a conversation',
+                                  'Tap to chat',
                                   style: GoogleFonts.inter(
-                                    color: const Color(0xFF9E9E9E),
-                                    fontSize: 14,
+                                    color: const Color(0xFF94A3B8),
+                                    fontSize: 13,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -973,22 +856,33 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                               final isFromCurrentUser =
                                   senderId == currentUserId;
 
-                              return Text(
-                                isFromCurrentUser
-                                    ? 'You: $messageText'
-                                    : messageText,
-                                style: GoogleFonts.inter(
-                                  color: hasUnreadMessages && !isFromCurrentUser
-                                      ? const Color(0xFF1E293B)
-                                      : const Color(0xFF9E9E9E),
-                                  fontSize: 14,
-                                  fontWeight:
-                                      hasUnreadMessages && !isFromCurrentUser
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      isFromCurrentUser
+                                          ? 'You: $messageText'
+                                          : messageText,
+                                      style: GoogleFonts.inter(
+                                        color:
+                                            hasUnreadMessages &&
+                                                !isFromCurrentUser
+                                            ? const Color(0xFF0F172A)
+                                            : const Color(0xFF94A3B8),
+                                        fontSize: 13,
+                                        fontWeight:
+                                            hasUnreadMessages &&
+                                                !isFromCurrentUser
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildPlantStreakBadge(friend.id),
+                                ],
                               );
                             },
                           );
@@ -998,90 +892,78 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '10:50 am',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: const Color(0xFF9E9E9E),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('chats')
-                          .doc(_generateChatId(friend.id))
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || !snapshot.data!.exists) {
-                          return const SizedBox.shrink();
+                StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('chats')
+                      .doc(_generateChatId(friend.id))
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return const SizedBox(width: 20);
+                    }
+
+                    final chatData =
+                        snapshot.data!.data() as Map<String, dynamic>;
+                    final currentUserId =
+                        FirebaseAuth.instance.currentUser?.uid;
+                    final unreadCount =
+                        chatData['unreadCount'] as Map<String, dynamic>?;
+                    final myUnreadCount =
+                        unreadCount?[currentUserId] as int? ?? 0;
+
+                    if (myUnreadCount > 0) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF0C3C2B),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            myUnreadCount > 9 ? '9+' : '$myUnreadCount',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: _getLastMessageSimple(friend.id),
+                      builder: (context, messageSnapshot) {
+                        final lastMessage = messageSnapshot.data;
+                        if (lastMessage == null) {
+                          return const SizedBox(width: 20);
                         }
 
-                        final chatData =
-                            snapshot.data!.data() as Map<String, dynamic>;
-                        final currentUserId =
-                            FirebaseAuth.instance.currentUser?.uid;
-                        final unreadCount =
-                            chatData['unreadCount'] as Map<String, dynamic>?;
-                        final myUnreadCount =
-                            unreadCount?[currentUserId] as int? ?? 0;
+                        final senderId = lastMessage['senderId'].toString();
+                        final isRead = lastMessage['isRead'] ?? false;
+                        final isFromCurrentUser = senderId == currentUserId;
 
-                        if (myUnreadCount > 0) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0C3C2B),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                myUnreadCount > 9 ? '9+' : '$myUnreadCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                        if (isFromCurrentUser) {
+                          return Icon(
+                            isRead ? Icons.done_all : Icons.done,
+                            size: 16,
+                            color: isRead
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF94A3B8),
                           );
                         }
 
-                        return FutureBuilder<Map<String, dynamic>?>(
-                          future: _getLastMessageSimple(friend.id),
-                          builder: (context, messageSnapshot) {
-                            final lastMessage = messageSnapshot.data;
-                            if (lastMessage == null)
-                              return const SizedBox.shrink();
-
-                            final senderId = lastMessage['senderId'].toString();
-                            final isRead = lastMessage['isRead'] ?? false;
-                            final isFromCurrentUser = senderId == currentUserId;
-
-                            if (isFromCurrentUser) {
-                              return Icon(
-                                isRead ? Icons.done_all : Icons.done,
-                                size: 16,
-                                color: isRead
-                                    ? const Color(0xFF4CAF50)
-                                    : const Color(0xFF9E9E9E),
-                              );
-                            }
-
-                            return const SizedBox.shrink();
-                          },
-                        );
+                        return const SizedBox(width: 20);
                       },
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -1093,25 +975,84 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            'No friends yet',
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 64,
+                color: Color(0xFF94A3B8),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Send friend requests to start connecting!',
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'No messages yet',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add friends to start chatting',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Material(
+              color: const Color(0xFF0C3C2B),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddFriendsScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.person_add,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Add Friends',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1135,63 +1076,71 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   void _showFriendOptions(UserModel friend) {
+    HapticFeedback.mediumImpact();
+
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  UserAvatarWidget(
-                    user: friend,
-                    radius: 20,
-                    backgroundColor: const Color(0xFF68EAFF),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getFriendDisplayName(friend),
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          '@${friend.username}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    UserAvatarWidget(
+                      user: friend,
+                      radius: 24,
+                      backgroundColor: const Color(0xFFF1F5F9),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getFriendDisplayName(friend),
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            '@${friend.username}',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 10),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
               _buildOptionTile(
-                icon: Icons.message_outlined,
+                icon: Icons.chat_bubble_outline_rounded,
                 title: 'Message',
-                subtitle: 'Start a conversation',
                 onTap: () {
                   Navigator.pop(context);
                   _startChat(friend);
@@ -1200,8 +1149,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               ),
               _buildOptionTile(
                 icon: Icons.notifications_off_outlined,
-                title: 'Mute',
-                subtitle: 'Stop receiving notifications',
+                title: 'Mute notifications',
                 onTap: () {
                   Navigator.pop(context);
                   _showMuteConfirmation(friend);
@@ -1209,18 +1157,18 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               ),
               _buildOptionTile(
                 icon: Icons.person_remove_outlined,
-                title: 'Unfriend',
-                subtitle: 'Remove from friends list',
+                title: 'Remove friend',
                 onTap: () {
                   Navigator.pop(context);
                   _showUnfriendConfirmation(friend);
                 },
-                color: Colors.red[600],
+                color: const Color(0xFFEF4444),
               ),
+              const SizedBox(height: 16),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1228,16 +1176,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    String? subtitle,
     Color? color,
     bool isHighlighted = false,
   }) {
-    final optionColor = isHighlighted
-        ? const Color(0xFF0C3C2B)
-        : (color ?? Colors.grey[700]);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1248,13 +1191,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             decoration: BoxDecoration(
               color: isHighlighted
                   ? const Color(0xFF0C3C2B).withOpacity(0.05)
-                  : const Color(0xFFF8FAFC),
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isHighlighted
-                    ? const Color(0xFF0C3C2B).withOpacity(0.3)
-                    : const Color(0xFFE2E8F0),
-              ),
             ),
             child: Row(
               children: [
@@ -1263,37 +1201,35 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isHighlighted
-                        ? const Color(0xFF68EAFF).withOpacity(0.2)
-                        : const Color(0xFF68EAFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                        ? const Color(0xFF0C3C2B).withOpacity(0.1)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: optionColor, size: 20),
+                  child: Icon(
+                    icon,
+                    color:
+                        color ??
+                        (isHighlighted
+                            ? const Color(0xFF0C3C2B)
+                            : const Color(0xFF64748B)),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: optionColor,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: color ?? const Color(0xFF0F172A),
+                    ),
                   ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: const Color(0xFF94A3B8),
+                  size: 20,
                 ),
               ],
             ),
@@ -1309,8 +1245,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       dialogType: DialogType.warning,
       animType: AnimType.scale,
       title: 'Mute ${friend.displayName}',
-      desc:
-          'You will stop receiving notifications from ${friend.displayName}. You can unmute them anytime.',
+      desc: 'You will stop receiving notifications from ${friend.displayName}.',
       btnCancelOnPress: () {},
       btnOkOnPress: () {
         _muteFriend(friend);
@@ -1326,8 +1261,28 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${friend.displayName} has been muted'),
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${friend.displayName} muted',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: const Color(0xFF0C3C2B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
             action: SnackBarAction(
               label: 'Undo',
               textColor: Colors.white,
@@ -1348,14 +1303,14 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       context: context,
       dialogType: DialogType.warning,
       animType: AnimType.scale,
-      title: 'Unfriend ${friend.displayName}',
+      title: 'Remove ${friend.displayName}',
       desc:
-          'Are you sure you want to remove ${friend.displayName} from your friends list?',
+          'Are you sure you want to remove ${friend.displayName} from your friends?',
       btnCancelOnPress: () {},
       btnOkOnPress: () async {
         await _userService.removeFriend(friend.id);
       },
-      btnOkText: 'Unfriend',
+      btnOkText: 'Remove',
       btnCancelText: 'Cancel',
       btnOkColor: const Color(0xFFEF4444),
     ).show();

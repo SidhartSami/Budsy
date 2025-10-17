@@ -14,24 +14,33 @@ class AddFriendsScreen extends StatefulWidget {
   State<AddFriendsScreen> createState() => _AddFriendsScreenState();
 }
 
-class _AddFriendsScreenState extends State<AddFriendsScreen> {
+class _AddFriendsScreenState extends State<AddFriendsScreen>
+    with SingleTickerProviderStateMixin {
   final UserService _userService = UserService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   List<UserModel> _searchResults = [];
   List<UserModel> _mutualFriendSuggestions = [];
   bool _isSearching = false;
   bool _isLoadingSuggestions = true;
-  Set<String> _sentRequestUserIds =
-      {}; // Track users to whom requests have been sent
-  Set<String> _currentFriendIds = {}; // Track current user's friends
+  Set<String> _sentRequestUserIds = {};
+  Set<String> _currentFriendIds = {};
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     _loadMutualFriendSuggestions();
     _loadSentRequestsStatus();
     _loadCurrentUserFriends();
+    _searchFocusNode.addListener(() {
+      setState(() {});
+    });
   }
 
   Future<void> _loadSentRequestsStatus() async {
@@ -39,7 +48,6 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
       final currentUserId = UserService.currentUserId;
       if (currentUserId == null) return;
 
-      // Get all outgoing friend requests
       final querySnapshot = await _firestore
           .collection('friendRequests')
           .where('senderId', isEqualTo: currentUserId)
@@ -72,6 +80,8 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -123,264 +133,435 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(
-          'Add Friends',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Modern App Bar
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF0C3C2B),
+            systemOverlayStyle: const SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+              statusBarBrightness: Brightness.light,
             ),
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadMutualFriendSuggestions,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
+              onPressed: () => Navigator.pop(context),
             ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                _searchUsers(value);
-                setState(() {}); // Rebuild to show/hide clear button
-              },
-              decoration: InputDecoration(
-                hintText: 'Search for people...',
-                hintStyle: GoogleFonts.inter(
-                  color: const Color(0xFF64748B),
-                  fontSize: 14,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFF0C3C2B),
-                  size: 20,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.clear_rounded,
-                          color: Color(0xFF64748B),
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchUsers('');
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
+              title: Text(
+                'Add Friends',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 28,
+                  color: const Color(0xFF0C3C2B),
                 ),
               ),
-              style: GoogleFonts.inter(fontSize: 14),
+            ),
+          ),
+          // Search Bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: _buildModernSearchBar(),
             ),
           ),
           // Content
-          Expanded(
-            child: _isSearching ? _buildSearchResults() : _buildSuggestions(),
-          ),
+          _isSearching
+              ? _buildSearchResultsSliver()
+              : _buildSuggestionsSliver(),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestions() {
+  Widget _buildModernSearchBar() {
+    final isFocused = _searchFocusNode.hasFocus;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isFocused ? const Color(0xFF0C3C2B) : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: (value) {
+          _searchUsers(value);
+          setState(() {});
+        },
+        style: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF0F172A),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search',
+          hintStyle: GoogleFonts.inter(
+            color: const Color(0xFF94A3B8),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: isFocused
+                ? const Color(0xFF0C3C2B)
+                : const Color(0xFF94A3B8),
+            size: 24,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF94A3B8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchUsers('');
+                    setState(() {});
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsSliver() {
     if (_isLoadingSuggestions) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+      return const SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+            strokeWidth: 3,
+          ),
         ),
       );
     }
 
-    return RefreshIndicator(
-      color: const Color(0xFF0C3C2B),
-      onRefresh: _loadMutualFriendSuggestions,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Suggested for You'),
-          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Suggested for You',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 20,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _loadMutualFriendSuggestions,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: const Color(0xFF0C3C2B),
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (_mutualFriendSuggestions.isEmpty)
             _buildEmptyState(
-              'No suggestions available',
-              Icons.people_outline,
-              'We couldn\'t find any mutual friends to suggest',
+              'No suggestions yet',
+              Icons.people_outline_rounded,
+              'Check back later for friend suggestions',
             )
           else
-            ..._mutualFriendSuggestions.map(
-              (user) => _buildSuggestionCard(user),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _mutualFriendSuggestions.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) => _buildUserCard(
+                _mutualFriendSuggestions[index],
+                showMutualTag: true,
+              ),
             ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildSearchResults() {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        _buildSectionHeader('Search Results'),
-        const SizedBox(height: 12),
-        if (_searchResults.isEmpty)
-          _buildEmptyState(
-            'No users found',
-            Icons.search_off,
-            'Try searching with a different name or username',
-          )
-        else
-          ..._searchResults.map((user) => _buildSuggestionCard(user)),
-      ],
+  Widget _buildSearchResultsSliver() {
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Text(
+              _searchResults.isEmpty
+                  ? 'No Results'
+                  : '${_searchResults.length} ${_searchResults.length == 1 ? 'Result' : 'Results'}',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+          ),
+          if (_searchResults.isEmpty)
+            _buildEmptyState(
+              'No users found',
+              Icons.person_search_rounded,
+              'Try a different search term',
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _searchResults.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) =>
+                  _buildUserCard(_searchResults[index]),
+            ),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
-  Widget _buildSuggestionCard(UserModel user) {
+  Widget _buildUserCard(UserModel user, {bool showMutualTag = false}) {
+    final isRequestSent = _sentRequestUserIds.contains(user.id);
+    final isAlreadyFriend = _currentFriendIds.contains(user.id);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Profile Picture
-            Hero(
-              tag: 'profile_${user.id}',
-              child: UserAvatarWidget(
-                user: user,
-                radius: 28,
-                backgroundColor: const Color(0xFF0C3C2B).withOpacity(0.1),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // User Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.displayName,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: const Color(0xFF1E293B),
-                    ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            // Navigate to profile
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Avatar with story-like ring
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: showMutualTag
+                        ? const LinearGradient(
+                            colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                          )
+                        : null,
+                    border: !showMutualTag
+                        ? Border.all(color: const Color(0xFFF1F5F9), width: 2)
+                        : null,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '@${user.username}',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: const Color(0xFF64748B),
-                    ),
+                  child: UserAvatarWidget(
+                    user: user,
+                    radius: 28,
+                    backgroundColor: const Color(0xFFF1F5F9),
                   ),
-                  if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      user.bio!,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 12),
+                // User Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              user.displayName,
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (showMutualTag) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF0C3C2B,
+                                ).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'MUTUAL',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0C3C2B),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  // Mutual friends indicator
-                  if (!_isSearching)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0C3C2B).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Mutual friends',
+                      const SizedBox(height: 2),
+                      Text(
+                        user.username,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: const Color(0xFF0C3C2B),
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w400,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                ],
-              ),
+                      if (user.bio != null && user.bio!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          user.bio!,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: const Color(0xFF94A3B8),
+                            height: 1.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Action Button
+                _buildActionButton(user, isRequestSent, isAlreadyFriend),
+              ],
             ),
-            // Add Button
-            _buildAddButton(user),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: 18,
-          color: const Color(0xFF1E293B),
+  Widget _buildActionButton(
+    UserModel user,
+    bool isRequestSent,
+    bool isAlreadyFriend,
+  ) {
+    if (isAlreadyFriend) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_rounded, size: 16, color: Color(0xFF64748B)),
+            const SizedBox(width: 4),
+            Text(
+              'Friends',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isRequestSent) {
+      return Material(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _showUnsendDialog(user),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: const Color(0xFF0C3C2B).withOpacity(0.2),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Pending',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF0C3C2B),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: const Color(0xFF0C3C2B),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _sendFriendRequest(user),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Text(
+            'Add',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
         ),
       ),
     );
@@ -389,26 +570,27 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   Widget _buildEmptyState(String title, IconData icon, String subtitle) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: const Color(0xFF0C3C2B).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(50),
+                color: const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 48, color: const Color(0xFF0C3C2B)),
+              child: Icon(icon, size: 56, color: const Color(0xFF94A3B8)),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               title,
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF0F172A),
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
@@ -416,6 +598,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: const Color(0xFF64748B),
+                height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
@@ -425,99 +608,302 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
     );
   }
 
-  Widget _buildAddButton(UserModel user) {
-    final isRequestSent = _sentRequestUserIds.contains(user.id);
-    final isAlreadyFriend = _currentFriendIds.contains(user.id);
+  Future<void> _sendFriendRequest(UserModel user) async {
+    try {
+      HapticFeedback.mediumImpact();
 
-    // Determine button state
-    String buttonText;
-    Color buttonColor;
-    Color textColor;
-    VoidCallback? onTap;
+      setState(() {
+        _sentRequestUserIds.add(user.id);
+      });
 
-    if (isAlreadyFriend) {
-      buttonText = 'Friends';
-      buttonColor = const Color(0xFF10B981).withOpacity(0.1);
-      textColor = const Color(0xFF10B981);
-      onTap = null; // Disabled
-    } else if (isRequestSent) {
-      buttonText = 'Sent';
-      buttonColor = const Color(0xFF0C3C2B).withOpacity(0.1);
-      textColor = const Color(0xFF0C3C2B);
-      onTap = null; // Disabled
-    } else {
-      buttonText = 'Add';
-      buttonColor = const Color(0xFF0C3C2B);
-      textColor = Colors.white;
-      onTap = () => _sendFriendRequest(user);
-    }
+      await _userService.sendFriendRequest(user.username);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: buttonColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Text(
-              buttonText,
-              style: GoogleFonts.inter(
-                color: textColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Request sent to ${user.displayName}',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF0C3C2B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _sentRequestUserIds.remove(user.id);
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to send request',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _refreshFriendsList() async {
+    await _loadCurrentUserFriends();
+    await _loadSentRequestsStatus();
+  }
+
+  void _showUnsendDialog(UserModel user) {
+    HapticFeedback.lightImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    UserAvatarWidget(
+                      user: user,
+                      radius: 36,
+                      backgroundColor: const Color(0xFFF1F5F9),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Unsend friend request?',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cancel your request to ${user.displayName}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    // Unsend Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _unsendFriendRequest(user);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Unsend Request',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Cancel Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Action Methods
-  Future<void> _sendFriendRequest(UserModel user) async {
+  Future<void> _unsendFriendRequest(UserModel user) async {
     try {
-      HapticFeedback.lightImpact();
-      await _userService.sendFriendRequest(user.username);
+      HapticFeedback.mediumImpact();
 
-      // Add user to sent requests set
+      // Optimistically update UI
+      setState(() {
+        _sentRequestUserIds.remove(user.id);
+      });
+
+      final currentUserId = UserService.currentUserId;
+      if (currentUserId == null) throw Exception('Not authenticated');
+
+      // Find and delete the friend request
+      final querySnapshot = await _firestore
+          .collection('friendRequests')
+          .where('senderId', isEqualTo: currentUserId)
+          .where('receiverId', isEqualTo: user.id)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.undo_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Request unsent',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF64748B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Revert optimistic update on error
       setState(() {
         _sentRequestUserIds.add(user.id);
       });
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Friend request sent to ${user.displayName}'),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Failed to unsend request',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error sending request: $e'),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
           margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
         ),
       );
+      print('Error unsending friend request: $e');
     }
-  }
-
-  // Refresh friends list (call this when returning from other screens)
-  Future<void> _refreshFriendsList() async {
-    await _loadCurrentUserFriends();
-    await _loadSentRequestsStatus();
   }
 }

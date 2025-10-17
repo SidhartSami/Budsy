@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,17 @@ import 'package:google_fonts/google_fonts.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set system UI overlay style
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -40,11 +52,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _loadThemePreference();
-
-    // Add observer for app lifecycle
     WidgetsBinding.instance.addObserver(this);
-
-    // Initialize app services after a short delay
     _initializeAppServices();
   }
 
@@ -57,24 +65,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-
-    // Check streaks when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       _checkStreaksOnResume();
     }
   }
 
   Future<void> _initializeAppServices() async {
-    // Wait for Firebase Auth to initialize
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // Check if user is authenticated
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.emailVerified) {
       try {
-        print('DEBUG: Initializing app services for authenticated user');
         await StreakService().checkAndExpireStreaks();
-        print('DEBUG: App services initialized successfully');
       } catch (e) {
         print('ERROR: Failed to initialize app services: $e');
       }
@@ -85,7 +86,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.emailVerified) {
       try {
-        print('DEBUG: Checking streaks on app resume');
         await StreakService().checkAndExpireStreaks();
       } catch (e) {
         print('ERROR: Failed to check streaks on resume: $e');
@@ -110,6 +110,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LeafNotes',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0C3C2B),
@@ -117,22 +118,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           primary: const Color(0xFF0C3C2B),
           secondary: const Color(0xFF1A5C42),
           surface: Colors.white,
-          background: const Color(0xFFF8F9FA),
+          background: const Color(0xFFFAFAFA),
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF0C3C2B),
-          elevation: 0,
-          centerTitle: false,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
         ),
       ),
       darkTheme: ThemeData(
@@ -141,23 +135,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           brightness: Brightness.dark,
           primary: const Color(0xFF0C3C2B),
           secondary: const Color(0xFF1A5C42),
-          surface: const Color(0xFF1E1E1E),
-          background: const Color(0xFF121212),
+          surface: const Color(0xFF1C1C1E),
+          background: const Color(0xFF000000),
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          color: const Color(0xFF1E1E1E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+        scaffoldBackgroundColor: const Color(0xFF000000),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
         ),
       ),
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -240,7 +227,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
 
         if (snapshot.hasData && snapshot.data!.emailVerified) {
-          // Initialize streak checking when user is authenticated
           _initializeStreakCheckingForUser();
           return const ProfileCheckWrapper();
         }
@@ -252,7 +238,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _initializeStreakCheckingForUser() async {
     try {
-      print('DEBUG: User authenticated, checking streaks...');
       await StreakService().checkAndExpireStreaks();
     } catch (e) {
       print('ERROR: Failed to check streaks for authenticated user: $e');
@@ -266,40 +251,30 @@ class ProfileCheckWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserService userService = UserService();
-    final user = FirebaseAuth.instance.currentUser;
 
     return FutureBuilder<bool>(
       future: userService.isProfileCompleted(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.background,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading your profile...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading your profile...',
+                    style: GoogleFonts.inter(fontSize: 14),
+                  ),
                 ],
               ),
             ),
           );
         }
 
-        if (snapshot.hasError) {
-          print('ERROR: Profile check error: ${snapshot.error}');
-          // On error, assume profile is NOT completed to be safe
-          return const ProfileCompletionScreen();
-        }
-
-        // If data is null or false, show profile completion
-        final isProfileCompleted = snapshot.data ?? false;
-
-        print(
-          'DEBUG: Profile completed status: $isProfileCompleted for user: ${user?.uid}',
-        );
-
-        if (!isProfileCompleted) {
+        if (snapshot.hasError || !(snapshot.data ?? false)) {
           return const ProfileCompletionScreen();
         }
 
@@ -324,14 +299,11 @@ class _NotesViewState extends State<NotesView> {
   void initState() {
     super.initState();
     _userService.updateOnlineStatus(true);
-
-    // Check streaks when entering the main app view
     _checkStreaksOnEntry();
   }
 
   Future<void> _checkStreaksOnEntry() async {
     try {
-      print('DEBUG: Checking streaks on NotesView entry');
       await StreakService().checkAndExpireStreaks();
     } catch (e) {
       print('ERROR: Failed to check streaks on entry: $e');
@@ -356,88 +328,46 @@ class _NotesViewState extends State<NotesView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-              width: 0.5,
-            ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          HapticFeedback.lightImpact();
+          setState(() => _selectedIndex = index);
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1C1C1E)
+            : Colors.white,
+        selectedItemColor: const Color(0xFF0C3C2B),
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.home_rounded, 'Home', isDark),
-                _buildNavItem(1, Icons.note_alt_rounded, 'Notes', isDark),
-                _buildNavItem(2, Icons.people_rounded, 'Friends', isDark),
-                _buildNavItem(3, Icons.person_rounded, 'Profile', isDark),
-              ],
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.note_alt_rounded),
+            label: 'Notes',
           ),
-        ),
-      ),
-      floatingActionButton: _selectedIndex == 1
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateNotes()),
-                );
-              },
-              backgroundColor: const Color(0xFF0C3C2B),
-              elevation: 4,
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label, bool isDark) {
-    final isSelected = _selectedIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF0C3C2B).withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? const Color(0xFF0C3C2B)
-                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected
-                    ? const Color(0xFF0C3C2B)
-                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-              ),
-            ),
-          ],
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_rounded),
+            label: 'Friends',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
@@ -479,35 +409,25 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
-  static const _headerHeight = 220.0;
+  UserModel? _currentUser;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
     _scrollController.addListener(_onScroll);
     _controller.forward();
+    _loadCurrentUser();
   }
 
   void _onScroll() {
@@ -515,345 +435,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     if ((offset - _scrollOffset).abs() > 5) {
       setState(() => _scrollOffset = offset);
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final headerOpacity = (1 - (_scrollOffset / 120)).clamp(0.0, 1.0);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF8F9FA),
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Original Header with Green Gradient
-          SliverAppBar(
-            expandedHeight: _headerHeight,
-            floating: false,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _ModernDashboardHeader(
-                fadeAnimation: _fadeAnimation,
-                headerOpacity: headerOpacity,
-                isDark: isDark,
-              ),
-            ),
-          ),
-
-          // Welcome Message
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  child: Text(
-                    'Welcome back! Here\'s your overview',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: isDark
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Stats Row
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      icon: Icons.note_alt_outlined,
-                      value: '24',
-                      label: 'Notes',
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      icon: Icons.people_outline,
-                      value: '12',
-                      label: 'Friends',
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Quick Actions Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
-              child: Text(
-                'Quick Actions',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
-          ),
-
-          // Action Cards Grid
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              delegate: SliverChildListDelegate([
-                _buildActionCard(
-                  icon: Icons.edit_note_rounded,
-                  title: 'Create Note',
-                  subtitle: 'Start writing',
-                  isDark: isDark,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CreateNotes()),
-                  ),
-                ),
-                _buildActionCard(
-                  icon: Icons.checklist_rounded,
-                  title: 'To-Do List',
-                  subtitle: 'Stay organized',
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('To-Do List'),
-                ),
-                _buildActionCard(
-                  icon: Icons.spa_outlined,
-                  title: 'Bloom',
-                  subtitle: 'Track growth',
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('Bloom Counter'),
-                ),
-                _buildActionCard(
-                  icon: Icons.bar_chart_rounded,
-                  title: 'Analytics',
-                  subtitle: 'View insights',
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('Analytics'),
-                ),
-              ]),
-            ),
-          ),
-
-          // Special Moments Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
-              child: Text(
-                'Special Moments',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
-          ),
-
-          // Birthday Widget with Professional Style
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: _ProfessionalWidgetWrapper(
-                child: const DashboardBirthdayWidget(),
-                isDark: isDark,
-              ),
-            ),
-          ),
-
-          // Interaction Widget with Professional Style
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              child: _ProfessionalWidgetWrapper(
-                child: const DashboardInteractionWidget(),
-                isDark: isDark,
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required bool isDark,
-    bool isSpecial = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        color: isSpecial
-            ? const Color(0xFF0C3C2B)
-            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-        borderRadius: BorderRadius.circular(16),
-        border: !isSpecial && !isDark
-            ? Border.all(color: Colors.grey.shade200, width: 1)
-            : null,
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 24,
-            color: isSpecial
-                ? Colors.white
-                : (isDark ? Colors.white70 : const Color(0xFF0C3C2B)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: isSpecial
-                  ? Colors.white
-                  : (isDark ? Colors.white : Colors.black87),
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: isSpecial
-                  ? Colors.white.withOpacity(0.9)
-                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: !isDark
-              ? Border.all(color: Colors.grey.shade200, width: 1)
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0C3C2B).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: const Color(0xFF0C3C2B), size: 24),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon!'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF0C3C2B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-}
-
-// Original Header with Green Gradient
-class _ModernDashboardHeader extends StatefulWidget {
-  final Animation<double> fadeAnimation;
-  final double headerOpacity;
-  final bool isDark;
-
-  const _ModernDashboardHeader({
-    required this.fadeAnimation,
-    required this.headerOpacity,
-    required this.isDark,
-  });
-
-  @override
-  State<_ModernDashboardHeader> createState() => _ModernDashboardHeaderState();
-}
-
-class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
-  UserModel? _currentUser;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentUser();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -868,217 +449,406 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: widget.fadeAnimation,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFFAFAFA),
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Modern App Bar
+          SliverAppBar(
+            expandedHeight: 0,
+            floating: true,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: isDark
+                ? const Color(0xFF000000)
+                : const Color(0xFFFAFAFA),
+            title: _isLoading
+                ? _ShimmerBox(width: 120, height: 24)
+                : Text(
+                    'LeafNotes',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+            actions: [
+              _NotificationButton(isDark: isDark),
+              const SizedBox(width: 12),
+            ],
+          ),
+
+          // Stats Cards
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _ModernStatCard(
+                      icon: Icons.note_alt_outlined,
+                      value: '24',
+                      label: 'Notes',
+                      color: const Color(0xFF0C3C2B),
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ModernStatCard(
+                      icon: Icons.local_fire_department_rounded,
+                      value: '7',
+                      label: 'Day Streak',
+                      color: const Color(0xFFFF6B35),
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ModernStatCard(
+                      icon: Icons.people_outline,
+                      value: '12',
+                      label: 'Friends',
+                      color: const Color(0xFF6366F1),
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Quick Actions Header
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Quick Actions',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+          ),
+
+          // Quick Actions Grid
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.5,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              delegate: SliverChildListDelegate([
+                _ActionCard(
+                  icon: Icons.edit_note_rounded,
+                  title: 'Create Note',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                  ),
+                  isDark: isDark,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateNotes()),
+                    );
+                  },
+                ),
+                _ActionCard(
+                  icon: Icons.checklist_rounded,
+                  title: 'To-Do List',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  ),
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('To-Do List'),
+                ),
+                _ActionCard(
+                  icon: Icons.spa_outlined,
+                  title: 'Bloom',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFF7931E)],
+                  ),
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('Bloom Counter'),
+                ),
+                _ActionCard(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'Analytics',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
+                  ),
+                  isDark: isDark,
+                  onTap: () => _showComingSoon('Analytics'),
+                ),
+              ]),
+            ),
+          ),
+
+          // Special Moments Header
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Special Moments',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+          ),
+
+          // Birthday Widget
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: _ModernCard(
+                child: const DashboardBirthdayWidget(),
+                isDark: isDark,
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+          // Interaction Widget
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverToBoxAdapter(
+              child: _ModernCard(
+                child: const DashboardInteractionWidget(),
+                isDark: isDark,
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$feature coming soon!',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF0C3C2B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+}
+
+// Notification Button
+class _NotificationButton extends StatelessWidget {
+  final bool isDark;
+
+  const _NotificationButton({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            Icons.notifications_rounded,
+            size: 20,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B35),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF000000)
+                      : const Color(0xFFFAFAFA),
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Modern Stat Card
+class _ModernStatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  const _ModernStatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Action Card
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Gradient gradient;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.gradient,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: widget.isDark
-                ? [const Color(0xFF0C3C2B), const Color(0xFF1A5C42)]
-                : [const Color(0xFF0C3C2B), const Color(0xFF1A5C42)],
-          ),
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Stack(
           children: [
-            // Decorative circles
             Positioned(
-              right: -50,
-              top: -50,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
-                ),
-              ),
+              right: -20,
+              bottom: -20,
+              child: Icon(icon, size: 80, color: Colors.white.withOpacity(0.1)),
             ),
-            Positioned(
-              left: -30,
-              bottom: -30,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Avatar and greeting
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Hero(
-                                tag: 'user_avatar',
-                                child: Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 3,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipOval(
-                                    child: Lottie.asset(
-                                      'assets/animations/avatar_animation.json',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Opacity(
-                                      opacity: widget.headerOpacity,
-                                      child: Text(
-                                        'Hello,',
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _isLoading
-                                          ? 'Loading...'
-                                          : '${_currentUser?.displayName ?? 'User'} 👋',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.3,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Notification button
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(
-                                Icons.notifications_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                              Positioned(
-                                right: 10,
-                                top: 10,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(icon, color: Colors.white, size: 28),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 16),
-                    Opacity(
-                      opacity: widget.headerOpacity,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                _isLoading
-                                    ? 'Loading...'
-                                    : _currentUser?.bio ??
-                                          'Welcome to your dashboard',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1088,24 +858,99 @@ class _ModernDashboardHeaderState extends State<_ModernDashboardHeader> {
   }
 }
 
-// Professional Widget Wrapper to style the special moment widgets
-class _ProfessionalWidgetWrapper extends StatelessWidget {
+// Modern Card Wrapper
+class _ModernCard extends StatelessWidget {
   final Widget child;
   final bool isDark;
 
-  const _ProfessionalWidgetWrapper({required this.child, required this.isDark});
+  const _ModernCard({required this.child, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: !isDark
-            ? Border.all(color: Colors.grey.shade200, width: 1)
-            : null,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: ClipRRect(borderRadius: BorderRadius.circular(16), child: child),
+      child: ClipRRect(borderRadius: BorderRadius.circular(20), child: child),
+    );
+  }
+}
+
+// Shimmer Loading Effect
+class _ShimmerBox extends StatefulWidget {
+  final double width;
+  final double height;
+  final bool isCircle;
+
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    this.isCircle = false,
+  });
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            shape: widget.isCircle ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: widget.isCircle ? null : BorderRadius.circular(8),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1C1C1E),
+                      const Color(0xFF2C2C2E),
+                      const Color(0xFF1C1C1E),
+                    ]
+                  : [
+                      Colors.grey.shade300,
+                      Colors.grey.shade200,
+                      Colors.grey.shade300,
+                    ],
+              stops: [0.0, _controller.value, 1.0],
+            ),
+          ),
+        );
+      },
     );
   }
 }

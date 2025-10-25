@@ -20,12 +20,17 @@ import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/theme/app_colors.dart';
 import 'package:tutortyper_app/theme/app_text_styles.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Flutter bindings ONCE
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Preserve the splash screen
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -109,7 +114,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'LeafNotes',
+      title: 'Budsy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -195,6 +200,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _checkFirstTime();
+
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      FlutterNativeSplash.remove();
+    });
   }
 
   Future<void> _checkFirstTime() async {

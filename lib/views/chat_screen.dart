@@ -43,9 +43,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadChatSettings();
     _checkPendingSpecialFriendRequest();
-    _messageController.addListener(() {
-      setState(() {});
-    });
   }
 
   @override
@@ -550,36 +547,44 @@ class _ChatScreenState extends State<ChatScreen> {
               transitionBuilder: (child, animation) {
                 return ScaleTransition(scale: animation, child: child);
               },
-              child: _messageController.text.trim().isNotEmpty
-                  ? Container(
-                      key: const ValueKey('send-button'),
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [primaryColor, primaryColor.withOpacity(0.8)],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryColor.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _messageController,
+                builder: (context, value, child) {
+                  return value.text.trim().isNotEmpty
+                      ? Container(
+                          key: const ValueKey('send-button'),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                primaryColor,
+                                primaryColor.withOpacity(0.8),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: _sendMessage,
-                      ),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('empty')),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: _sendMessage,
+                          ),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty'));
+                },
+              ),
             ),
           ],
         ),

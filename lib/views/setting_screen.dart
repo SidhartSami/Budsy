@@ -112,11 +112,13 @@ class _SettingsScreenState extends State<SettingsScreen>
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.transparent,
             systemOverlayStyle: SystemUiOverlayStyle.dark,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-              onPressed: () => Navigator.pop(context),
-              color: Colors.black87,
-            ),
+            leading: Navigator.canPop(context)
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    color: Colors.black87,
+                  )
+                : null,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
               title: Text(

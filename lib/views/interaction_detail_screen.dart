@@ -8,13 +8,11 @@ import '../services/interaction_service.dart';
 class InteractionDetailScreen extends StatefulWidget {
   final UserModel friend;
 
-  const InteractionDetailScreen({
-    super.key,
-    required this.friend,
-  });
+  const InteractionDetailScreen({super.key, required this.friend});
 
   @override
-  State<InteractionDetailScreen> createState() => _InteractionDetailScreenState();
+  State<InteractionDetailScreen> createState() =>
+      _InteractionDetailScreenState();
 }
 
 class _InteractionDetailScreenState extends State<InteractionDetailScreen>
@@ -35,13 +33,12 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _heartAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _heartAnimationController,
-      curve: Curves.elasticOut,
-    ));
+    _heartAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _heartAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
     _loadTodaysCount();
   }
 
@@ -69,7 +66,10 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
     }
   }
 
-  Future<void> _sendInteraction(InteractionType type, {String? customMessage}) async {
+  Future<void> _sendInteraction(
+    InteractionType type, {
+    String? customMessage,
+  }) async {
     if (_isSending) return;
 
     setState(() {
@@ -94,11 +94,17 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${type.displayName} sent! ${type.emoji}'),
-            backgroundColor: const Color(0xFF60A5FA),
+            content: Text(
+              '${type.displayName} sent! ${type.emoji}',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: const Color(0xFF0C3C2B),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -106,10 +112,16 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send interaction: $e'),
+            content: Text(
+              'Failed to send interaction: $e',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -124,154 +136,270 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1E40AF)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            // Friend Avatar
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF60A5FA),
-                  width: 2,
+      backgroundColor: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFFAFAFA),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Modern App Bar
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: isDark
+                ? const Color(0xFF000000)
+                : const Color(0xFFFAFAFA),
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_rounded,
+                color: isDark ? Colors.white : const Color(0xFF0C3C2B),
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [const Color(0xFF0C3C2B), const Color(0xFF1A5C42)]
+                        : [
+                            const Color(0xFF0C3C2B).withOpacity(0.05),
+                            const Color(0xFF1A5C42).withOpacity(0.05),
+                          ],
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(60, 20, 20, 20),
+                    child: Row(
+                      children: [
+                        // Friend Avatar with glow effect
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF0C3C2B).withOpacity(0.3),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark
+                                  ? const Color(0xFF1C1C1E)
+                                  : Colors.white,
+                            ),
+                            child: ClipOval(
+                              child: widget.friend.predefinedAvatar != null
+                                  ? Image.asset(
+                                      widget.friend.predefinedAvatar!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return _buildDefaultAvatar(isDark);
+                                          },
+                                    )
+                                  : _buildDefaultAvatar(isDark),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                widget.friend.displayName,
+                                style: GoogleFonts.inter(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0C3C2B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF0C3C2B),
+                                      Color(0xFF1A5C42),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '✨ Special Friend',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              child: ClipOval(
-                child: widget.friend.predefinedAvatar != null
-                    ? Image.asset(
-                        widget.friend.predefinedAvatar!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildDefaultAvatar();
-                        },
-                      )
-                    : _buildDefaultAvatar(),
-              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.friend.displayName,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1E40AF),
-                    ),
-                  ),
-                  Text(
-                    '✨ Special Friend',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF60A5FA),
-                    ),
-                  ),
-                ],
-              ),
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                // Heart Competition Section
+                _buildHeartCompetitionSection(isDark),
+
+                // Quick Send Section
+                _buildQuickSendSection(isDark),
+
+                // History Section
+                _buildHistorySection(isDark),
+
+                const SizedBox(height: 100),
+              ],
             ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Heart Competition Section
-            _buildHeartCompetitionSection(),
-            
-            // Quick Send Section
-            _buildQuickSendSection(),
-            
-            // History Section
-            _buildHistorySection(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDefaultAvatar() {
+  Widget _buildDefaultAvatar(bool isDark) {
     return Container(
-      color: const Color(0xFF60A5FA).withOpacity(0.1),
-      child: const Icon(
-        Icons.person,
-        color: Color(0xFF60A5FA),
-        size: 20,
-      ),
+      color: isDark
+          ? const Color(0xFF1C1C1E)
+          : const Color(0xFF0C3C2B).withOpacity(0.1),
+      child: Icon(Icons.person, color: const Color(0xFF0C3C2B), size: 24),
     );
   }
 
-  Widget _buildHeartCompetitionSection() {
+  Widget _buildHeartCompetitionSection(bool isDark) {
     if (_isLoading) {
       return Container(
-        padding: const EdgeInsets.all(20),
-        child: const Center(child: CircularProgressIndicator()),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF0C3C2B)),
+        ),
       );
     }
 
-    final myCount = _todaysCount?.getCountForUser(_interactionService.currentUserId!) ?? 0;
+    final myCount =
+        _todaysCount?.getCountForUser(_interactionService.currentUserId!) ?? 0;
     final theirCount = _todaysCount?.getCountForUser(widget.friend.id) ?? 0;
-    
+
     // Heart fill levels (max 100 interactions to fill a heart)
     final maxHeartFill = 100;
     final myHeartFill = (myCount / maxHeartFill).clamp(0.0, 1.0);
     final theirHeartFill = (theirCount / maxHeartFill).clamp(0.0, 1.0);
 
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE8F4FD),
-            Color(0xFFD1E9F6),
-          ],
-        ),
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF0C3C2B).withOpacity(0.3)
+              : const Color(0xFF0C3C2B).withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 25,
-            offset: Offset(0, 4),
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          Text(
-            'Heart Competition 💕',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1E40AF),
-            ),
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('💕', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Heart Competition',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             'Fill your heart first to win today!',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey[600],
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
-          
+          const SizedBox(height: 32),
+
           // Hearts Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -281,57 +409,77 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                 'You',
                 myCount,
                 myHeartFill,
-                const Color(0xFF60A5FA),
+                const Color(0xFF0C3C2B),
                 true,
+                isDark,
               ),
-              
+
               // VS Text
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.8),
+                  color: isDark
+                      ? const Color(0xFF0C3C2B).withOpacity(0.2)
+                      : const Color(0xFF0C3C2B).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF0C3C2B).withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
                 child: Text(
                   'VS',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1E40AF),
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF0C3C2B),
+                    letterSpacing: 2,
                   ),
                 ),
               ),
-              
+
               // Their Heart
               _buildCompetitiveHeart(
                 widget.friend.displayName,
                 theirCount,
                 theirHeartFill,
-                const Color(0xFFEC4899),
+                const Color(0xFF1A5C42),
                 false,
+                isDark,
               ),
             ],
           ),
-          
         ],
       ),
     );
   }
 
-  Widget _buildCompetitiveHeart(String name, int count, double fillLevel, Color color, bool isMe) {
+  Widget _buildCompetitiveHeart(
+    String name,
+    int count,
+    double fillLevel,
+    Color color,
+    bool isMe,
+    bool isDark,
+  ) {
     return Column(
       children: [
         // Name
         Text(
           name,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E40AF),
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF0C3C2B),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 8),
-        
+        const SizedBox(height: 12),
+
         // Heart with fill animation
         AnimatedBuilder(
           animation: _heartAnimation,
@@ -339,71 +487,131 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
             return Transform.scale(
               scale: isMe ? _heartAnimation.value : 1.0,
               child: Container(
-                width: 80,
-                height: 80,
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     // Heart outline
                     Icon(
                       Icons.favorite_border,
-                      size: 80,
+                      size: 60,
                       color: color.withOpacity(0.3),
                     ),
-                    
+
                     // Heart fill
                     ClipPath(
                       clipper: HeartFillClipper(fillLevel),
-                      child: Icon(
-                        Icons.favorite,
-                        size: 80,
-                        color: color,
+                      child: Icon(Icons.favorite, size: 60, color: color),
+                    ),
+
+                    // Count badge
+                    Positioned(
+                      bottom: 5,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '$count',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                    
                   ],
                 ),
               ),
             );
           },
         ),
-        
       ],
     );
   }
 
-
-  Widget _buildQuickSendSection() {
+  Widget _buildQuickSendSection(bool isDark) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF0C3C2B).withOpacity(0.3)
+              : const Color(0xFF0C3C2B).withOpacity(0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Send Love ❤️',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1E40AF),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.favorite,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Send Love',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF0C3C2B),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          
+          const SizedBox(height: 20),
+
           // Quick Send Button
           GestureDetector(
-            onTap: _isSending ? null : () => _sendInteraction(InteractionType.missYou),
+            onTap: _isSending
+                ? null
+                : () => _sendInteraction(InteractionType.missYou),
             onLongPress: () {
               setState(() {
                 _showMoreOptions = !_showMoreOptions;
@@ -412,19 +620,23 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _isSending 
-                      ? [Colors.grey[300]!, Colors.grey[400]!]
-                      : [const Color(0xFF60A5FA), const Color(0xFF3B82F6)],
-                ),
+                gradient: _isSending
+                    ? LinearGradient(
+                        colors: [Colors.grey[400]!, Colors.grey[500]!],
+                      )
+                    : const LinearGradient(
+                        colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                      ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF60A5FA).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: _isSending
+                        ? Colors.grey.withOpacity(0.3)
+                        : const Color(0xFF0C3C2B).withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -444,39 +656,44 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                   ],
                   Text(
                     _isSending ? 'Sending...' : 'Miss You ❤️',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            'Tap to send • Long press for more options',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey[600],
+
+          const SizedBox(height: 12),
+
+          Center(
+            child: Text(
+              'Tap to send • Long press for more options',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
-          
+
           // More Options (shown on long press)
           if (_showMoreOptions) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
+                color: isDark
+                    ? const Color(0xFF0C3C2B).withOpacity(0.1)
+                    : const Color(0xFF0C3C2B).withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.grey[200]!,
+                  color: const Color(0xFF0C3C2B).withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -485,10 +702,10 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                 children: [
                   Text(
                     'More Options',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1E40AF),
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF0C3C2B),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -496,8 +713,12 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                     spacing: 8,
                     runSpacing: 8,
                     children: InteractionType.values
-                        .where((type) => type != InteractionType.missYou && type != InteractionType.custom)
-                        .map((type) => _buildQuickOptionChip(type))
+                        .where(
+                          (type) =>
+                              type != InteractionType.missYou &&
+                              type != InteractionType.custom,
+                        )
+                        .map((type) => _buildQuickOptionChip(type, isDark))
                         .toList(),
                   ),
                 ],
@@ -509,38 +730,45 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
     );
   }
 
-  Widget _buildQuickOptionChip(InteractionType type) {
+  Widget _buildQuickOptionChip(InteractionType type, bool isDark) {
     return GestureDetector(
-      onTap: _isSending ? null : () {
-        _sendInteraction(type);
-        setState(() {
-          _showMoreOptions = false;
-        });
-      },
+      onTap: _isSending
+          ? null
+          : () {
+              _sendInteraction(type);
+              setState(() {
+                _showMoreOptions = false;
+              });
+            },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFF60A5FA).withOpacity(0.3),
-            width: 1,
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF0C3C2B).withOpacity(0.8),
+              const Color(0xFF1A5C42).withOpacity(0.8),
+            ],
           ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0C3C2B).withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              type.emoji,
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(type.emoji, style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 6),
             Text(
               type.displayName,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF1E40AF),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
           ],
@@ -549,13 +777,13 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
     );
   }
 
-  Widget _buildHistorySection() {
+  Widget _buildHistorySection(bool isDark) {
     return StreamBuilder<List<InteractionModel>>(
       stream: _interactionService.getTodaysInteractions(widget.friend.id),
       builder: (context, snapshot) {
         final interactions = snapshot.data ?? [];
         final interactionCount = interactions.length;
-        
+
         return GestureDetector(
           onTap: () {
             setState(() {
@@ -564,16 +792,22 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF0C3C2B).withOpacity(0.3)
+                    : const Color(0xFF0C3C2B).withOpacity(0.1),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -584,47 +818,76 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(
-                          'Today\'s History',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1E40AF),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.history,
+                            color: Colors.white,
+                            size: 20,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$interactionCount interaction${interactionCount != 1 ? 's' : ''} today',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.grey[600],
-                          ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Today\'s History',
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0C3C2B),
+                              ),
+                            ),
+                            Text(
+                              '$interactionCount interaction${interactionCount != 1 ? 's' : ''}',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                     AnimatedRotation(
                       turns: _showHistory ? 0.5 : 0,
                       duration: const Duration(milliseconds: 300),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: const Color(0xFF1E40AF),
-                        size: 24,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: const Color(0xFF0C3C2B),
+                          size: 24,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 // Expandable content
                 if (_showHistory) ...[
                   const SizedBox(height: 20),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     height: interactions.isEmpty ? 150 : 300,
-                    child: _buildHistoryContent(snapshot),
+                    child: _buildHistoryContent(snapshot, isDark),
                   ),
                 ],
               ],
@@ -635,16 +898,24 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
     );
   }
 
-  Widget _buildHistoryContent(AsyncSnapshot<List<InteractionModel>> snapshot) {
+  Widget _buildHistoryContent(
+    AsyncSnapshot<List<InteractionModel>> snapshot,
+    bool isDark,
+  ) {
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF0C3C2B)),
+      );
     }
 
     if (snapshot.hasError) {
       return Center(
         child: Text(
           'Error loading interactions',
-          style: GoogleFonts.poppins(color: Colors.red),
+          style: GoogleFonts.inter(
+            color: Colors.red,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       );
     }
@@ -656,25 +927,34 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.favorite_outline,
-              size: 48,
-              color: Colors.grey[400],
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.favorite_outline,
+                size: 48,
+                color: const Color(0xFF0C3C2B).withOpacity(0.5),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'No interactions yet today',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.grey[400] : Colors.grey[700],
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               'Send your first interaction!',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
               ),
             ),
           ],
@@ -687,48 +967,92 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
       itemCount: interactions.length,
       itemBuilder: (context, index) {
         final interaction = interactions[index];
-        final isFromMe = interaction.senderId == _interactionService.currentUserId;
-        
-        return _buildInteractionItem(interaction, isFromMe);
+        final isFromMe =
+            interaction.senderId == _interactionService.currentUserId;
+
+        return _buildInteractionItem(interaction, isFromMe, isDark);
       },
     );
   }
 
-
-  Widget _buildInteractionItem(InteractionModel interaction, bool isFromMe) {
+  Widget _buildInteractionItem(
+    InteractionModel interaction,
+    bool isFromMe,
+    bool isDark,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isFromMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isFromMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isFromMe) ...[
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF60A5FA), width: 1),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0C3C2B).withOpacity(0.3),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
-              child: ClipOval(
-                child: widget.friend.predefinedAvatar != null
-                    ? Image.asset(
-                        widget.friend.predefinedAvatar!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildDefaultAvatar();
-                        },
-                      )
-                    : _buildDefaultAvatar(),
+              padding: const EdgeInsets.all(2),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                ),
+                child: ClipOval(
+                  child: widget.friend.predefinedAvatar != null
+                      ? Image.asset(
+                          widget.friend.predefinedAvatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultAvatar(isDark);
+                          },
+                        )
+                      : _buildDefaultAvatar(isDark),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isFromMe ? const Color(0xFF60A5FA) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
+                gradient: isFromMe
+                    ? const LinearGradient(
+                        colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                      )
+                    : null,
+                color: isFromMe
+                    ? null
+                    : (isDark
+                          ? const Color(0xFF0C3C2B).withOpacity(0.2)
+                          : const Color(0xFF0C3C2B).withOpacity(0.1)),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isFromMe ? 16 : 4),
+                  bottomRight: Radius.circular(isFromMe ? 4 : 16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isFromMe
+                        ? const Color(0xFF0C3C2B).withOpacity(0.3)
+                        : Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,29 +1060,45 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        interaction.displayEmoji,
-                        style: const TextStyle(fontSize: 16),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isFromMe
+                              ? Colors.white.withOpacity(0.2)
+                              : const Color(0xFF0C3C2B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          interaction.displayEmoji,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Flexible(
                         child: Text(
                           interaction.displayText,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: isFromMe ? Colors.white : const Color(0xFF1E40AF),
+                            color: isFromMe
+                                ? Colors.white
+                                : (isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0C3C2B)),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     _formatTime(interaction.createdAt),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: isFromMe ? Colors.white70 : Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                      color: isFromMe
+                          ? Colors.white.withOpacity(0.7)
+                          : (isDark ? Colors.grey[500] : Colors.grey[600]),
                     ),
                   ),
                 ],
@@ -766,19 +1106,23 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
             ),
           ),
           if (isFromMe) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF60A5FA).withOpacity(0.1),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0C3C2B).withOpacity(0.3),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.person,
-                color: Color(0xFF60A5FA),
-                size: 16,
-              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 18),
             ),
           ],
         ],
@@ -789,7 +1133,7 @@ class _InteractionDetailScreenState extends State<InteractionDetailScreen>
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inHours < 1) {
@@ -809,14 +1153,14 @@ class HeartFillClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    
+
     // Calculate the fill height (from bottom to top)
     final fillHeight = size.height * fillLevel;
     final startY = size.height - fillHeight;
-    
+
     // Create a rectangle that clips from the bottom up
     path.addRect(Rect.fromLTWH(0, startY, size.width, fillHeight));
-    
+
     return path;
   }
 

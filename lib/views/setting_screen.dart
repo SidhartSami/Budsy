@@ -9,7 +9,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:tutortyper_app/views/blocked_users_screen.dart';
+import 'package:tutortyper_app/views/user_profile_screen.dart';
 import 'package:tutortyper_app/views/profile_picture_screen.dart';
+import 'package:tutortyper_app/views/legal_document_screen.dart';
 import 'package:tutortyper_app/widgets/avatar_selection_widget.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -96,8 +98,12 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // We can use the persisted preference or system theme if not set
+    // But since this screen has a toggle, assume we rely on the passed isDarkMode or state
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: _backgroundGray,
+      backgroundColor: isDarkInfo ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
@@ -109,14 +115,14 @@ class _SettingsScreenState extends State<SettingsScreen>
             floating: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: Colors.white,
+            backgroundColor: isDarkInfo ? const Color(0xFF000000) : Colors.white,
             surfaceTintColor: Colors.transparent,
-            systemOverlayStyle: SystemUiOverlayStyle.dark,
+            systemOverlayStyle: isDarkInfo ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
             leading: Navigator.canPop(context)
                 ? IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
                     onPressed: () => Navigator.pop(context),
-                    color: Colors.black87,
+                    color: isDarkInfo ? Colors.white : Colors.black87,
                   )
                 : null,
             flexibleSpace: FlexibleSpaceBar(
@@ -126,11 +132,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black87,
+                  color: isDarkInfo ? Colors.white : Colors.black87,
                   letterSpacing: -0.5,
                 ),
               ),
-              background: Container(color: Colors.white),
+              background: Container(color: isDarkInfo ? const Color(0xFF000000) : Colors.white),
             ),
           ),
 
@@ -299,12 +305,13 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildProfileCard() {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: _showProfilePictureView,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkInfo ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -323,7 +330,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                   height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade200, width: 2),
+                    border: Border.all(
+                      color: isDarkInfo ? Colors.grey.shade800 : Colors.grey.shade200,
+                      width: 2,
+                    ),
                   ),
                   child: ClipOval(child: _buildProfileAvatar(36)),
                 ),
@@ -335,7 +345,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     decoration: BoxDecoration(
                       color: _primaryGreen,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(
+                        color: isDarkInfo ? const Color(0xFF1C1C1E) : Colors.white,
+                        width: 2,
+                      ),
                     ),
                     child: const Icon(
                       Icons.camera_alt,
@@ -356,7 +369,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black87,
+                      color: isDarkInfo ? Colors.white : Colors.black87,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -365,7 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     '@${currentUser?.username ?? 'username'}',
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: isDarkInfo ? Colors.grey.shade400 : Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -376,7 +389,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       currentUser!.bio!,
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: Colors.grey.shade700,
+                        color: isDarkInfo ? Colors.grey.shade300 : Colors.grey.shade700,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -393,6 +406,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildSettingsGroup(String title, List<Widget> children) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -403,14 +417,14 @@ class _SettingsScreenState extends State<SettingsScreen>
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Colors.grey.shade500,
+              color: isDarkInfo ? Colors.grey.shade400 : Colors.grey.shade500,
               letterSpacing: 0.8,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDarkInfo ? const Color(0xFF1C1C1E) : Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(children: children),
@@ -429,6 +443,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     bool showBadge = false,
     Color? iconColor,
   }) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -438,7 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: iconColor ?? Colors.black87, size: 22),
+              Icon(icon, color: iconColor ?? (isDarkInfo ? Colors.white : Colors.black87), size: 22),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -449,7 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: isDarkInfo ? Colors.white : Colors.black87,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -459,7 +474,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         subtitle,
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: isDarkInfo ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontWeight: FontWeight.w400,
                         ),
                         maxLines: 1,
@@ -475,7 +490,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Icon(
                   Icons.chevron_right,
                   size: 20,
-                  color: Colors.grey.shade400,
+                  color: isDarkInfo ? Colors.grey.shade500 : Colors.grey.shade400,
                 ),
             ],
           ),
@@ -492,11 +507,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     required ValueChanged<bool> onChanged,
     Color? iconColor,
   }) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Icon(icon, color: iconColor ?? Colors.black87, size: 22),
+          Icon(icon, color: iconColor ?? (isDarkInfo ? Colors.white : Colors.black87), size: 22),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -507,7 +523,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                    color: isDarkInfo ? Colors.white : Colors.black87,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -516,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   subtitle,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: isDarkInfo ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -541,17 +557,25 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildDivider() {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(left: 54),
-      child: Divider(height: 1, thickness: 0.5, color: Colors.grey.shade200),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: isDarkInfo ? Colors.grey.shade800 : Colors.grey.shade200,
+      ),
     );
   }
 
   Widget _buildStatusBadge(bool isActive) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? _primaryGreen.withOpacity(0.1) : Colors.grey.shade100,
+        color: isActive
+            ? _primaryGreen.withOpacity(0.1)
+            : (isDarkInfo ? Colors.grey.shade900 : Colors.grey.shade100),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -559,7 +583,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: isActive ? _primaryGreen : Colors.grey.shade600,
+          color: isActive
+              ? _primaryGreen
+              : (isDarkInfo ? Colors.grey.shade400 : Colors.grey.shade600),
         ),
       ),
     );
@@ -591,12 +617,22 @@ class _SettingsScreenState extends State<SettingsScreen>
     VoidCallback onTap, {
     bool isDestructive = false,
   }) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
+    
+    // For logout button (usually black in light mode), we should force it to white in dark mode
+    // unless it's already a specific color like red (destructive)
+    final effectiveColor = !isDestructive && isDarkInfo ? Colors.white : color;
+
     return Container(
       decoration: BoxDecoration(
-        color: isDestructive ? Colors.red.shade50 : Colors.white,
+        color: isDestructive 
+            ? (isDarkInfo ? const Color(0xFF2C1515) : Colors.red.shade50)
+            : (isDarkInfo ? const Color(0xFF1C1C1E) : Colors.white),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDestructive ? Colors.red.shade200 : Colors.grey.shade200,
+          color: isDestructive 
+              ? (isDarkInfo ? Colors.red.shade900 : Colors.red.shade200)
+              : (isDarkInfo ? Colors.grey.shade800 : Colors.grey.shade200),
           width: 1,
         ),
       ),
@@ -613,14 +649,14 @@ class _SettingsScreenState extends State<SettingsScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 20),
+                Icon(icon, color: effectiveColor, size: 20),
                 const SizedBox(width: 10),
                 Text(
                   text,
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    color: effectiveColor,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -633,6 +669,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildProfileAvatar(double radius) {
+    final isDarkInfo = Theme.of(context).brightness == Brightness.dark;
+    
     if (currentUser?.photoUrl != null) {
       return CachedNetworkImage(
         imageUrl: currentUser!.photoUrl!,
@@ -640,11 +678,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         height: radius * 2,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          color: Colors.grey.shade100,
+          color: isDarkInfo ? Colors.grey.shade900 : Colors.grey.shade100,
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) => Container(
-          color: Colors.grey.shade100,
+          color: isDarkInfo ? Colors.grey.shade900 : Colors.grey.shade100,
           child: Icon(Icons.person, size: radius, color: Colors.grey.shade400),
         ),
       );
@@ -675,7 +713,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Container(
       width: radius * 2,
       height: radius * 2,
-      color: Colors.grey.shade100,
+      color: isDarkInfo ? Colors.grey.shade900 : Colors.grey.shade100,
       child: Icon(Icons.person, size: radius, color: Colors.grey.shade400),
     );
   }
@@ -829,8 +867,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
@@ -856,6 +894,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 20),
@@ -863,13 +902,26 @@ class _SettingsScreenState extends State<SettingsScreen>
                 controller: controller,
                 autofocus: true,
                 maxLength: field == 'Username' ? 30 : 50,
-                style: GoogleFonts.inter(fontSize: 15),
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                ),
                 decoration: InputDecoration(
                   labelText: field,
-                  labelStyle: GoogleFonts.inter(),
+                  labelStyle: GoogleFonts.inter(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : null,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -879,7 +931,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.grey.shade50,
                 ),
               ),
               const SizedBox(height: 16),
@@ -944,8 +996,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
@@ -971,6 +1023,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 20),
@@ -979,15 +1032,28 @@ class _SettingsScreenState extends State<SettingsScreen>
                 autofocus: true,
                 maxLines: 4,
                 maxLength: 150,
-                style: GoogleFonts.inter(fontSize: 15),
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Bio',
                   hintText: 'Tell others about yourself...',
-                  labelStyle: GoogleFonts.inter(),
+                  labelStyle: GoogleFonts.inter(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : null,
+                  ),
                   hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -997,7 +1063,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.grey.shade50,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1070,8 +1136,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Padding(
@@ -1097,6 +1163,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1104,20 +1171,33 @@ class _SettingsScreenState extends State<SettingsScreen>
                   'Enter your current password and choose a new one',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(height: 24),
                 TextField(
                   controller: currentPasswordController,
                   obscureText: obscureCurrentPassword,
-                  style: GoogleFonts.inter(fontSize: 15),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Current Password',
-                    labelStyle: GoogleFonts.inter(),
+                    labelStyle: GoogleFonts.inter(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : null,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1127,7 +1207,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.grey.shade50,
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscureCurrentPassword
@@ -1148,10 +1228,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                 TextField(
                   controller: newPasswordController,
                   obscureText: obscureNewPassword,
-                  style: GoogleFonts.inter(fontSize: 15),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'New Password',
-                    labelStyle: GoogleFonts.inter(),
+                    labelStyle: GoogleFonts.inter(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : null,
+                    ),
                     hintText: 'At least 6 characters',
                     hintStyle: GoogleFonts.inter(
                       color: Colors.grey.shade400,
@@ -1159,7 +1244,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1169,7 +1262,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.grey.shade50,
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscureNewPassword
@@ -1190,13 +1283,26 @@ class _SettingsScreenState extends State<SettingsScreen>
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: obscureConfirmPassword,
-                  style: GoogleFonts.inter(fontSize: 15),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Confirm New Password',
-                    labelStyle: GoogleFonts.inter(),
+                    labelStyle: GoogleFonts.inter(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : null,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1206,7 +1312,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.grey.shade50,
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscureConfirmPassword
@@ -1386,8 +1492,29 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   void _setup2FA() => _showComingSoon('Two-Factor Authentication');
   void _openHelpCenter() => _showComingSoon('Help Center');
-  void _openPrivacyPolicy() => _showComingSoon('Privacy Policy');
-  void _openTermsOfService() => _showComingSoon('Terms of Service');
+  void _openPrivacyPolicy() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LegalDocumentScreen(
+          title: 'Privacy Policy',
+          assetPath: 'assets/legal/privacy_policy.md',
+        ),
+      ),
+    );
+  }
+
+  void _openTermsOfService() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LegalDocumentScreen(
+          title: 'Terms of Service',
+          assetPath: 'assets/legal/terms_and_conditions.md',
+        ),
+      ),
+    );
+  }
 
   void _reportBug() {
     final controller = TextEditingController();
@@ -1399,8 +1526,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
@@ -1423,6 +1550,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 20),
@@ -1492,8 +1620,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
@@ -1516,6 +1644,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 20),

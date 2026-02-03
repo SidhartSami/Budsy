@@ -35,8 +35,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -45,12 +46,12 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
               floating: false,
               pinned: true,
               elevation: 0,
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF0C3C2B),
-              systemOverlayStyle: const SystemUiOverlayStyle(
+              backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+              foregroundColor: isDark ? Colors.white : const Color(0xFF0C3C2B),
+              systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-                statusBarBrightness: Brightness.light,
+                statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+                statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
               ),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
@@ -63,7 +64,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 28,
-                    color: const Color(0xFF0C3C2B),
+                    color: isDark ? Colors.white : const Color(0xFF0C3C2B),
                   ),
                 ),
               ),
@@ -71,10 +72,11 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             SliverPersistentHeader(
               pinned: true,
               delegate: _StickyTabBarDelegate(
+                isDark,
                 TabBar(
                   controller: _tabController,
-                  labelColor: const Color(0xFF0C3C2B),
-                  unselectedLabelColor: const Color(0xFF94A3B8),
+                  labelColor: isDark ? Colors.white : const Color(0xFF0C3C2B),
+                  unselectedLabelColor: isDark ? Colors.grey.shade500 : const Color(0xFF94A3B8),
                   indicatorColor: const Color(0xFF0C3C2B),
                   indicatorWeight: 3,
                   indicatorSize: TabBarIndicatorSize.label,
@@ -149,12 +151,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
     final user = UserModel.fromMap(fromUserData);
     final requestId = request['id'] as String;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -164,7 +167,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             UserAvatarWidget(
               user: user,
               radius: 28,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
             ),
             const SizedBox(width: 12),
             // User Info
@@ -177,7 +180,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -224,7 +227,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                       // Decline Button
                       Expanded(
                         child: Material(
-                          color: const Color(0xFFF1F5F9),
+                          color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
@@ -235,7 +238,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                               child: Text(
                                 'Decline',
                                 style: GoogleFonts.inter(
-                                  color: const Color(0xFF0F172A),
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -301,12 +304,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
     final user = UserModel.fromMap(toUserData);
     final requestId = request['id'] as String;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -316,7 +320,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             UserAvatarWidget(
               user: user,
               radius: 28,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
             ),
             const SizedBox(width: 12),
             // User Info
@@ -329,7 +333,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -385,7 +389,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
             const SizedBox(width: 12),
             // Cancel Button
             Material(
-              color: const Color(0xFFF1F5F9),
+              color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
@@ -398,7 +402,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                   child: Text(
                     'Cancel',
                     style: GoogleFonts.inter(
-                      color: const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -413,6 +417,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
   }
 
   Widget _buildEmptyState(String title, IconData icon, String subtitle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 32),
@@ -421,11 +426,11 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
           children: [
             Container(
               padding: const EdgeInsets.all(28),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900.withOpacity(0.3) : const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 56, color: const Color(0xFF94A3B8)),
+              child: Icon(icon, size: 56, color: isDark ? Colors.grey.shade700 : const Color(0xFF94A3B8)),
             ),
             const SizedBox(height: 24),
             Text(
@@ -433,7 +438,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: const Color(0xFF0F172A),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
               ),
               textAlign: TextAlign.center,
             ),
@@ -478,7 +483,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: const Color(0xFF0F172A),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
               ),
               textAlign: TextAlign.center,
             ),
@@ -523,14 +528,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
   void _showDeclineDialog(String requestId, UserModel user) {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -541,7 +547,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -553,7 +559,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     UserAvatarWidget(
                       user: user,
                       radius: 36,
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -561,7 +567,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                       style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -608,7 +614,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     SizedBox(
                       width: double.infinity,
                       child: Material(
-                        color: const Color(0xFFF1F5F9),
+                        color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -621,7 +627,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0F172A),
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
                             ),
                           ),
@@ -641,14 +647,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
   void _showCancelDialog(String requestId, UserModel user) {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -659,7 +666,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -671,7 +678,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     UserAvatarWidget(
                       user: user,
                       radius: 36,
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -679,7 +686,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                       style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -726,7 +733,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                     SizedBox(
                       width: double.infinity,
                       child: Material(
-                        color: const Color(0xFFF1F5F9),
+                        color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -739,7 +746,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0F172A),
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
                             ),
                           ),
@@ -982,8 +989,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen>
 
 // Custom SliverPersistentHeaderDelegate for sticky tab bar
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _StickyTabBarDelegate(this.tabBar);
+  const _StickyTabBarDelegate(this.isDark, this.tabBar);
 
+  final bool isDark;
   final TabBar tabBar;
 
   @override
@@ -998,7 +1006,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(color: Colors.white, child: tabBar);
+    return Container(
+      color: isDark ? const Color(0xFF000000) : Colors.white,
+      child: tabBar,
+    );
   }
 
   @override

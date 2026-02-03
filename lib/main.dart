@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
@@ -10,6 +11,7 @@ import 'package:tutortyper_app/views/onboarding_screen.dart';
 import 'package:tutortyper_app/views/profile_completion_screen.dart';
 import 'package:tutortyper_app/services/user_service.dart';
 import 'package:tutortyper_app/services/streak_service.dart';
+import 'package:tutortyper_app/services/notification_service.dart';
 import 'package:tutortyper_app/views/friends_list_screen.dart';
 import 'package:tutortyper_app/views/mynotes.dart';
 import 'package:tutortyper_app/views/create_notes.dart';
@@ -81,6 +83,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (user != null && user.emailVerified) {
       try {
         await StreakService().checkAndExpireStreaks();
+        await NotificationService().initialize();
       } catch (e) {
         print('ERROR: Failed to initialize app services: $e');
       }
@@ -424,6 +427,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   double _scrollOffset = 0;
   UserModel? _currentUser;
   bool _isLoading = true;
+  int _notesCount = 0;
+  int _streakCount = 0;
 
   @override
   void initState() {
@@ -453,8 +458,40 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) {
         setState(() {
           _currentUser = user;
-          _isLoading = false;
         });
+
+        // Load other stats
+        if (user != null) {
+          final userId = user.id;
+          
+          // Get Notes Count
+          final notesSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('notes')
+              .get();
+          
+          // Get Active Streaks
+          final streaks = await StreakService().getUserStreaks();
+          // Calculate max streak or total active streaks. 
+          // Assuming "Day Streak" means the highest current streak with any friend.
+          int maxStreak = 0;
+          for (var streak in streaks) {
+            if (streak.streakCount > maxStreak) {
+              maxStreak = streak.streakCount;
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _notesCount = notesSnapshot.docs.length;
+              _streakCount = maxStreak;
+              _isLoading = false;
+            });
+          }
+        } else {
+             if (mounted) setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -488,21 +525,15 @@ class _DashboardScreenState extends State<DashboardScreen>
           SliverAppBar(
             expandedHeight: 0,
             floating: true,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: isDark
-                ? const Color(0xFF000000)
-                : const Color(0xFFFAFAFA),
-            title: _isLoading
-                ? _ShimmerBox(width: 120, height: 24)
-                : Text(
-                    'LeafNotes',
+            title: Text(
+                    'Budsy',
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
+            automaticallyImplyLeading: false,
             actions: [
               _NotificationButton(isDark: isDark),
               const SizedBox(width: 12),
@@ -518,7 +549,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Expanded(
                     child: _ModernStatCard(
                       icon: Icons.note_alt_outlined,
-                      value: '24',
+                      value: _notesCount.toString(),
                       label: 'Notes',
                       color: const Color(0xFF0C3C2B),
                       isDark: isDark,
@@ -528,7 +559,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Expanded(
                     child: _ModernStatCard(
                       icon: Icons.local_fire_department_rounded,
-                      value: '7',
+                      value: _streakCount.toString(),
                       label: 'Day Streak',
                       color: const Color(0xFFFF6B35),
                       isDark: isDark,
@@ -538,7 +569,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Expanded(
                     child: _ModernStatCard(
                       icon: Icons.people_outline,
-                      value: '12',
+                      value: _currentUser?.friends.length.toString() ?? '0',
                       label: 'Friends',
                       color: const Color(0xFF6366F1),
                       isDark: isDark,
@@ -564,60 +595,26 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
 
+
           // Quick Actions Grid
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+            sliver: SliverToBoxAdapter(
+              child: _ActionCard(
+                icon: Icons.edit_note_rounded,
+                title: 'Create Note',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
+                ),
+                isDark: isDark,
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateNotes()),
+                  );
+                },
               ),
-              delegate: SliverChildListDelegate([
-                _ActionCard(
-                  icon: Icons.edit_note_rounded,
-                  title: 'Create Note',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0C3C2B), Color(0xFF1A5C42)],
-                  ),
-                  isDark: isDark,
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CreateNotes()),
-                    );
-                  },
-                ),
-                _ActionCard(
-                  icon: Icons.checklist_rounded,
-                  title: 'To-Do List',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  ),
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('To-Do List'),
-                ),
-                _ActionCard(
-                  icon: Icons.spa_outlined,
-                  title: 'Bloom',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6B35), Color(0xFFF7931E)],
-                  ),
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('Bloom Counter'),
-                ),
-                _ActionCard(
-                  icon: Icons.bar_chart_rounded,
-                  title: 'Analytics',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
-                  ),
-                  isDark: isDark,
-                  onTap: () => _showComingSoon('Analytics'),
-                ),
-              ]),
             ),
           ),
 

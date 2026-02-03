@@ -108,11 +108,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildUserAvatar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (widget.user.photoUrl != null) {
       return CircleAvatar(
         radius: 44,
         backgroundImage: CachedNetworkImageProvider(widget.user.photoUrl!),
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
       );
     }
 
@@ -138,13 +140,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     return CircleAvatar(
       radius: 44,
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
       child: Text(
         widget.user.displayName.isNotEmpty
             ? widget.user.displayName[0].toUpperCase()
             : 'U',
         style: GoogleFonts.inter(
-          color: Colors.grey.shade700,
+          color: isDark ? Colors.white : Colors.grey.shade700,
           fontWeight: FontWeight.w600,
           fontSize: 32,
         ),
@@ -154,8 +156,9 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -172,13 +175,14 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildSliverAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SliverAppBar(
       expandedHeight: 0,
       pinned: false,
       elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: _primaryGreen,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+      foregroundColor: isDark ? Colors.white : _primaryGreen,
+      systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, size: 24),
         onPressed: () => Navigator.pop(context),
@@ -195,6 +199,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildProfileContent() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -210,13 +216,19 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           _buildMutualFriendsSection(),
         ],
         const SizedBox(height: 8),
-        const Divider(height: 1, thickness: 0.5),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
         if (!_isLoadingSettings) _buildSettingsList(),
       ],
     );
   }
 
   Widget _buildProfileHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         Stack(
@@ -245,7 +257,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF0095F6),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF000000) : Colors.white,
+                      width: 2,
+                    ),
                   ),
                   child: const Icon(
                     Icons.verified,
@@ -262,7 +277,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
             letterSpacing: -0.5,
           ),
         ),
@@ -337,8 +352,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     required bool isPrimary,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: isPrimary ? _primaryGreen : Colors.grey.shade100,
+      color: isPrimary 
+          ? _primaryGreen 
+          : (isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade100),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: () {
@@ -363,7 +381,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isPrimary ? Colors.white : _primaryGreen,
+                  color: isPrimary ? Colors.white : (isDark ? Colors.white : _primaryGreen),
                 ),
               ),
             ],
@@ -381,7 +399,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         textAlign: TextAlign.center,
         style: GoogleFonts.inter(
           fontSize: 14,
-          color: Colors.black,
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade300 : Colors.black,
           height: 1.5,
         ),
       ),
@@ -429,7 +447,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
                       ),
                     ),
                     Text(
@@ -451,6 +469,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildSettingsList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         _buildSettingsTile(
@@ -476,7 +496,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           onChanged: _toggleMute,
         ),
         const SizedBox(height: 8),
-        const Divider(height: 1, thickness: 8, color: Color(0xFFF5F5F5)),
+        Divider(
+          height: 1,
+          thickness: 8,
+          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+        ),
         const SizedBox(height: 8),
         _buildSettingsTile(
           icon: Icons.delete_outline,
@@ -513,8 +537,9 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF000000) : Colors.white,
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -539,7 +564,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDestructive ? Colors.red : Colors.black,
+                        color: isDestructive ? Colors.red : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -584,7 +609,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -607,7 +632,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   Widget _buildDivider() {
     return Padding(
       padding: const EdgeInsets.only(left: 54),
-      child: Divider(height: 1, thickness: 0.5, color: Colors.grey.shade200),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200,
+      ),
     );
   }
 
@@ -629,9 +658,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   void _showOptionsMenu() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -651,7 +681,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             const SizedBox(height: 8),
             ListTile(
               leading: Icon(Icons.share, color: _primaryGreen),
-              title: Text('Share Profile', style: GoogleFonts.inter()),
+              title: Text(
+                'Share Profile',
+                style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _showComingSoon('Share profile');
@@ -659,13 +692,16 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             ),
             ListTile(
               leading: Icon(Icons.content_copy, color: _primaryGreen),
-              title: Text('Copy Username', style: GoogleFonts.inter()),
+              title: Text(
+                'Copy Username',
+                style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _copyUsername();
               },
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
             ListTile(
               leading: const Icon(Icons.flag, color: Colors.red),
               title: Text(
@@ -709,17 +745,26 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   void _showUnfriendDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Unfriend ${widget.user.displayName}?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         content: Text(
           'You can always add them back as a friend.',
-          style: GoogleFonts.inter(fontSize: 14),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade400 : Colors.black87,
+          ),
         ),
         actions: [
           TextButton(
@@ -745,17 +790,26 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   void _showBlockDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Block ${widget.user.displayName}?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         content: Text(
           'They won\'t be able to message you or find your profile.',
-          style: GoogleFonts.inter(fontSize: 14),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade400 : Colors.black87,
+          ),
         ),
         actions: [
           TextButton(
@@ -781,17 +835,26 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   void _showReportDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Report ${widget.user.displayName}?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         content: Text(
           'We\'ll review this report and take appropriate action.',
-          style: GoogleFonts.inter(fontSize: 14),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade400 : Colors.black87,
+          ),
         ),
         actions: [
           TextButton(
@@ -902,44 +965,71 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Set Nickname',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
-        ),
-        content: TextField(
-          controller: _nicknameController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Enter nickname',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: _primaryGreen, width: 2),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Set Nickname',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(color: Colors.grey.shade600),
+          content: TextField(
+            controller: _nicknameController,
+            autofocus: true,
+            style: GoogleFonts.inter(
+              color: isDark ? Colors.white : Colors.black,
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, _nicknameController.text),
-            child: Text(
-              'Save',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: _primaryGreen,
+            decoration: InputDecoration(
+              hintText: 'Enter nickname',
+              hintStyle: GoogleFonts.inter(
+                color: Colors.grey.shade500,
+              ),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF000000) : Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _primaryGreen, width: 2),
               ),
             ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: Colors.grey.shade600),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, _nicknameController.text),
+              child: Text(
+                'Save',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: _primaryGreen,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (result != null) {
@@ -1042,36 +1132,47 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   Future<void> _showClearChatDialog() async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Clear chat history?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
-        ),
-        content: Text(
-          'This will permanently delete all messages. This action cannot be undone.',
-          style: GoogleFonts.inter(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(color: Colors.grey.shade600),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Clear chat history?',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Clear',
-              style: GoogleFonts.inter(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
+          content: Text(
+            'This will permanently delete all messages. This action cannot be undone.',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: isDark ? Colors.grey.shade400 : Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: Colors.grey.shade600),
               ),
             ),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Clear',
+                style: GoogleFonts.inter(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (result == true) {

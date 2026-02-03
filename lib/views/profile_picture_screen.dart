@@ -53,21 +53,22 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       appBar: AppBar(
         title: Text(
           'Profile Photo',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 18,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
         foregroundColor: _primaryGreen,
         elevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: 24),
           onPressed: () => Navigator.pop(context),
@@ -156,7 +157,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
           ),
         ),
         const SizedBox(height: 4),
@@ -282,7 +283,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
         ),
@@ -316,10 +317,11 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   }
 
   void _showImagePickerOptions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -340,7 +342,12 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(Icons.camera_alt, color: _primaryGreen),
-                title: Text('Take Photo', style: GoogleFonts.inter()),
+                title: Text(
+                  'Take Photo',
+                  style: GoogleFonts.inter(
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -348,7 +355,12 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library, color: _primaryGreen),
-                title: Text('Choose from Library', style: GoogleFonts.inter()),
+                title: Text(
+                  'Choose from Library',
+                  style: GoogleFonts.inter(
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -450,15 +462,27 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   }
 
   void _showErrorDialog(String message) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Error',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
-        content: Text(message, style: GoogleFonts.inter(fontSize: 14)),
+        content: Text(
+          message,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade400 : Colors.black87,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

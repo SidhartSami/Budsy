@@ -84,17 +84,17 @@ class _ChatScreenState extends State<ChatScreen> {
     final backgroundColor = Color(themeColors['backgroundColor']);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF000000) : Colors.white,
         elevation: 0,
-        systemOverlayStyle: const SystemUiOverlayStyle(
+        systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
+          statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          color: const Color(0xFF1E293B),
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1E293B),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
@@ -147,7 +147,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
-                              color: const Color(0xFF1E293B),
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -179,11 +181,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(
+            icon: Icon(
               Icons.more_vert_rounded,
-              color: Color(0xFF1E293B),
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1E293B),
               size: 22,
             ),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF1C1C1E)
+                : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -241,7 +246,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     Text(
                       'Special Friend',
-                      style: GoogleFonts.inter(fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -265,7 +275,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     Text(
                       'Set Nickname',
-                      style: GoogleFonts.inter(fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -289,7 +304,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     Text(
                       'Change Theme',
-                      style: GoogleFonts.inter(fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -313,7 +333,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     Text(
                       'Search Messages',
-                      style: GoogleFonts.inter(fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -339,7 +364,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     Text(
                       _isMuted ? 'Unmute' : 'Mute',
-                      style: GoogleFonts.inter(fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -462,10 +492,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageInput(Color primaryColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF000000) : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -481,7 +512,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
@@ -503,7 +534,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         textInputAction: TextInputAction.newline,
                         style: GoogleFonts.inter(
                           fontSize: 15,
-                          color: const Color(0xFF1E293B),
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
                         ),
                         decoration: InputDecoration(
                           hintText: 'Message...',
@@ -694,17 +725,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildDateSeparator(DateTime date) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.grey[300])),
+          Expanded(child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[300])),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: isDark ? const Color(0xFF1C1C1E) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -712,12 +744,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
             ),
           ),
-          Expanded(child: Divider(color: Colors.grey[300])),
+          Expanded(child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[300])),
         ],
       ),
     );
@@ -757,7 +789,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: isMe ? primaryColor : Colors.white,
+                    color: isMe
+                        ? primaryColor
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.white),
                     borderRadius: _getBubbleBorderRadius(isMe, isGrouped),
                     boxShadow: [
                       BoxShadow(
@@ -769,12 +805,20 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                     border: isMe
                         ? null
-                        : Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        : Border.all(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey.shade900
+                                : const Color(0xFFE2E8F0),
+                            width: 1),
                   ),
                   child: Text(
                     message.text,
                     style: GoogleFonts.inter(
-                      color: isMe ? Colors.white : const Color(0xFF1E293B),
+                      color: isMe
+                          ? Colors.white
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : const Color(0xFF1E293B)),
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
                       height: 1.4,
@@ -796,7 +840,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(
                   _formatRelativeTime(message.timestamp),
                   style: GoogleFonts.inter(
-                    color: const Color(0xFF64748B),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[500]
+                        : const Color(0xFF64748B),
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -859,28 +905,53 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
             'Set Nickname',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Set a custom nickname for ${widget.otherUser.displayName}',
-                style: GoogleFonts.inter(fontSize: 14),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isDark ? Colors.grey.shade400 : Colors.black87,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.white : Colors.black,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Enter nickname...',
+                  hintStyle: GoogleFonts.inter(
+                    color: Colors.grey.shade500,
+                  ),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF000000) : Colors.grey.shade50,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

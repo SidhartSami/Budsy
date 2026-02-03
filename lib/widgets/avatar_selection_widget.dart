@@ -49,6 +49,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
   }
 
   Widget _buildDefaultAvatarOption() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultAvatar = AvatarManager.getDefaultAvatarForGender(
       widget.gender,
     );
@@ -67,10 +68,10 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
         decoration: BoxDecoration(
           color: isSelected
               ? _primaryGreen.withOpacity(0.05)
-              : Colors.grey.shade50,
+              : (isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? _primaryGreen : Colors.grey.shade300,
+            color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -82,7 +83,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? _primaryGreen : Colors.grey.shade300,
+                  color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                   width: 2,
                 ),
               ),
@@ -103,7 +104,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? _primaryGreen : Colors.grey.shade700,
+                    color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
                   ),
                 ),
               ],
@@ -115,6 +116,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
   }
 
   Widget _buildCustomAvatarOption() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedAvatar == 'custom';
 
     return GestureDetector(
@@ -130,10 +132,10 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
         decoration: BoxDecoration(
           color: isSelected
               ? _primaryGreen.withOpacity(0.05)
-              : Colors.grey.shade50,
+              : (isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? _primaryGreen : Colors.grey.shade300,
+            color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -146,15 +148,15 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
                 shape: BoxShape.circle,
                 color: isSelected
                     ? _primaryGreen.withOpacity(0.1)
-                    : Colors.grey.shade200,
+                    : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 border: Border.all(
-                  color: isSelected ? _primaryGreen : Colors.grey.shade300,
+                  color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                   width: 2,
                 ),
               ),
               child: Icon(
                 Icons.camera_alt,
-                color: isSelected ? _primaryGreen : Colors.grey.shade600,
+                color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
                 size: 28,
               ),
             ),
@@ -171,7 +173,7 @@ class _AvatarSelectionWidgetState extends State<AvatarSelectionWidget> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? _primaryGreen : Colors.grey.shade700,
+                    color: isSelected ? _primaryGreen : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
                   ),
                 ),
               ],

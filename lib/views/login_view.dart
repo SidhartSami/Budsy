@@ -338,8 +338,9 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       if (userCredential.user!.emailVerified) {
         print('DEBUG: ✅ Email verified - navigating to home');
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const NotesView()),
+            (route) => false,
           );
         }
       } else {

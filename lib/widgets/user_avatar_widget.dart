@@ -26,6 +26,7 @@ class UserAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Widget avatarWidget;
 
     // Check if user has a custom photo
@@ -103,7 +104,7 @@ class UserAvatarWidget extends StatelessWidget {
                 color: const Color(0xFF10B981),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF000000) : Colors.white,
                   width: 2,
                 ),
               ),

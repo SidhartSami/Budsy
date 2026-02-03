@@ -65,8 +65,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.grey[50],
       appBar: AppBar(
         title: Text(
           'Edit Profile',
@@ -123,6 +125,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildProfilePictureSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         Stack(
@@ -168,7 +172,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(255, 104, 234, 243),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF000000) : Colors.white,
+                    width: 2,
+                  ),
                 ),
                 child: IconButton(
                   onPressed: _showImagePickerOptions,
@@ -191,7 +198,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
         Text(
           'Tap camera to change photo',
-          style: GoogleFonts.nunito(fontSize: 14, color: Colors.grey[600]),
+          style: GoogleFonts.nunito(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+          ),
         ),
 
         if (_selectedImage != null) ...[
@@ -292,9 +302,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: isDark ? Colors.blue.shade900.withOpacity(0.2) : Colors.blue[50],
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[200]!),
+            border: Border.all(
+              color: isDark ? Colors.blue.shade800 : Colors.blue[200]!,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,14 +316,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Icon(
                     Icons.lightbulb_outline,
                     size: 16,
-                    color: Colors.blue[600],
+                    color: isDark ? Colors.blue.shade300 : Colors.blue[600],
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Bio Tips',
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[600],
+                      color: isDark ? Colors.blue.shade300 : Colors.blue[600],
                       fontSize: 14,
                     ),
                   ),
@@ -322,7 +334,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 '• Keep it short and engaging\n• Mention your interests or expertise\n• Use emojis to make it fun!',
                 style: GoogleFonts.nunito(
                   fontSize: 12,
-                  color: Colors.blue[600],
+                  color: isDark ? Colors.blue.shade300 : Colors.blue[600],
                 ),
               ),
             ],
@@ -337,6 +349,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildProfileCompletion() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final completionPercentage = _userService.getProfileCompletionPercentage(
       widget.currentUser,
     );
@@ -344,18 +357,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey[200]!,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.account_circle,
-                color: const Color.fromARGB(255, 104, 234, 243),
+                color: Color.fromARGB(255, 104, 234, 243),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -364,6 +379,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: GoogleFonts.nunito(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               const Spacer(),
@@ -379,7 +395,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: completionPercentage / 100,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey[200],
             valueColor: const AlwaysStoppedAnimation<Color>(
               Color.fromARGB(255, 104, 234, 243),
             ),
@@ -387,7 +403,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 8),
           Text(
             'Complete your profile to connect with more friends',
-            style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey[600]),
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -404,6 +423,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -412,7 +433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           style: GoogleFonts.nunito(
             fontWeight: FontWeight.w600,
             fontSize: 16,
-            color: Colors.grey[700],
+            color: isDark ? Colors.grey.shade300 : Colors.grey[700],
           ),
         ),
         const SizedBox(height: 8),
@@ -421,15 +442,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           maxLines: maxLines,
           maxLength: maxLength,
           inputFormatters: inputFormatters,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: hintText,
+            hintStyle: TextStyle(
+              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+            ),
             prefixIcon: Icon(
               icon,
               color: const Color.fromARGB(255, 104, 234, 243),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(
+                color: isDark ? Colors.grey.shade700 : Colors.grey[300]!,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? Colors.grey.shade700 : Colors.grey[300]!,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -439,7 +472,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -519,10 +552,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildAccountActions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -540,7 +575,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             style: GoogleFonts.nunito(
               fontWeight: FontWeight.bold,
               fontSize: 18,
-              color: Colors.grey[700],
+              color: isDark ? Colors.white : Colors.grey[700],
             ),
           ),
 
@@ -579,23 +614,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required VoidCallback onTap,
     Color? color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return ListTile(
-      leading: Icon(icon, color: color ?? Colors.grey[600]),
+      leading: Icon(
+        icon,
+        color: color ?? (isDark ? Colors.grey.shade400 : Colors.grey[600]),
+      ),
       title: Text(
         title,
         style: GoogleFonts.nunito(
           fontWeight: FontWeight.w600,
-          color: color ?? Colors.grey[700],
+          color: color ?? (isDark ? Colors.white : Colors.grey[700]),
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey[500]),
+        style: GoogleFonts.nunito(
+          fontSize: 12,
+          color: isDark ? Colors.grey.shade500 : Colors.grey[500],
+        ),
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
         size: 16,
-        color: Colors.grey[400],
+        color: isDark ? Colors.grey.shade600 : Colors.grey[400],
       ),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -603,14 +646,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _showImagePickerOptions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -619,6 +669,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: GoogleFonts.nunito(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
 
@@ -661,6 +712,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required VoidCallback onTap,
     Color? color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
@@ -689,7 +742,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             label,
             style: GoogleFonts.nunito(
               fontWeight: FontWeight.w600,
-              color: color ?? Colors.grey[700],
+              color: color ?? (isDark ? Colors.white : Colors.grey[700]),
             ),
           ),
         ],

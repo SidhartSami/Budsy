@@ -233,9 +233,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -244,11 +247,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               floating: false,
               pinned: true,
               elevation: 0,
-              backgroundColor: Colors.white,
-              systemOverlayStyle: const SystemUiOverlayStyle(
+              backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+              systemOverlayStyle: SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-                statusBarBrightness: Brightness.light,
+                statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+                statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
               ),
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
@@ -257,7 +260,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 32,
-                    color: const Color(0xFF0F172A),
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                   ),
                 ),
               ),
@@ -270,7 +273,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.person_add_outlined),
-                          color: const Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                           iconSize: 26,
                           onPressed: () {
                             Navigator.push(
@@ -313,7 +316,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.group_add_outlined),
-                  color: const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                   iconSize: 26,
                   onPressed: () {
                     Navigator.push(
@@ -379,7 +382,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F172A),
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   letterSpacing: 0.3,
                                 ),
                               ),
@@ -433,7 +436,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _isSearching
@@ -684,7 +687,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF0F172A),
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -698,12 +701,16 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Widget _buildMessageCard(UserModel friend, {required bool isPinned}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(
+            color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9), 
+            width: 1
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -720,7 +727,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                     UserAvatarWidget(
                       user: friend,
                       radius: 28,
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
                     ),
                     if (friend.isOnline)
                       Positioned(
@@ -782,7 +789,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
-                                color: const Color(0xFF0F172A),
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),

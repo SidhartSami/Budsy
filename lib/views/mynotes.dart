@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/modern_note_card.dart';
 import '../widgets/modern_empty_state.dart';
+import '../services/message_service.dart';
 
 class MyNotes extends StatefulWidget {
   const MyNotes({super.key});
@@ -65,104 +66,160 @@ class _MyNotesState extends State<MyNotes> with TickerProviderStateMixin {
     );
   }
 
-  void _showNoteDialog(String title, String content) {
+  void _showNoteDialog(String title, String content, String noteId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _NoteViewScreen(
+          title: title,
+          content: content,
+          noteId: noteId,
+          onDelete: () => _deleteNote(noteId),
+          onShare: () => _showShareNoteDialog(title, content),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(String noteId) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Delete Note',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete this note?',
+          style: GoogleFonts.inter(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteNote(noteId);
+            },
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFF3B30),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showShareNoteDialog(String title, String content) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF000000),
-                        letterSpacing: -0.5,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.grey.shade800
-                            : Colors.grey.shade100,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: isDark ? Colors.white : Colors.black,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Divider
-            Divider(
-              height: 1,
-              thickness: 0.5,
-              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-            ),
-
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  content,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    height: 1.6,
-                    color: isDark
-                        ? Colors.grey.shade300
-                        : const Color(0xFF3C3C43),
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      builder: (context) => _ShareNoteBottomSheet(
+        title: title,
+        content: content,
+        isDark: isDark,
+        currentUserId: currentUser.uid,
+        onShare: _shareNoteToChat,
       ),
     );
+  }
+
+  Future<void> _shareNoteToChat(String chatId, String title, String content) async {
+    try {
+      final messageService = MessageService();
+      // Clean format without "Shared Note" prefix
+      final shareText = '━━━━━━━━━━━━━━━━\n📌 $title\n━━━━━━━━━━━━━━━━\n\n$content';
+
+      await messageService.sendMessage(
+        chatId: chatId,
+        text: shareText,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  'Note shared successfully!',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF0C3C2B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Failed to share note',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFF3B30),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _deleteNote(String noteId) async {
@@ -532,7 +589,7 @@ class _MyNotesState extends State<MyNotes> with TickerProviderStateMixin {
                   title: title,
                   content: content,
                   createdAt: createdAt,
-                  onTap: () => _showNoteDialog(title, content),
+                  onTap: () => _showNoteDialog(title, content, noteId),
                   onDelete: () => _deleteNote(noteId),
                 );
               },
@@ -785,6 +842,503 @@ class _MyNotesState extends State<MyNotes> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Share Note Bottom Sheet Widget
+class _ShareNoteBottomSheet extends StatefulWidget {
+  final String title;
+  final String content;
+  final bool isDark;
+  final String currentUserId;
+  final Future<void> Function(String chatId, String title, String content) onShare;
+
+  const _ShareNoteBottomSheet({
+    required this.title,
+    required this.content,
+    required this.isDark,
+    required this.currentUserId,
+    required this.onShare,
+  });
+
+  @override
+  State<_ShareNoteBottomSheet> createState() => _ShareNoteBottomSheetState();
+}
+
+class _ShareNoteBottomSheetState extends State<_ShareNoteBottomSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _generateChatId(String friendId) {
+    List<String> ids = [widget.currentUserId, friendId];
+    ids.sort();
+    return ids.join('_');
+  }
+
+  Future<void> _shareWithFriend(String friendId, String friendName) async {
+    final chatId = _generateChatId(friendId);
+    Navigator.pop(context);
+    await widget.onShare(chatId, widget.title, widget.content);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: widget.isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Share Note',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: widget.isDark ? Colors.white : Colors.black,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: widget.isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: widget.isDark ? Colors.white : Colors.black,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: widget.isDark
+                    ? const Color(0xFF2C2C2E)
+                    : const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+                style: GoogleFonts.inter(
+                  color: widget.isDark ? Colors.white : Colors.black,
+                  fontSize: 16,
+                  letterSpacing: -0.3,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search friends...',
+                  hintStyle: GoogleFonts.inter(
+                    color: widget.isDark
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade600,
+                    fontSize: 16,
+                    letterSpacing: -0.3,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: widget.isDark
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          child: Icon(
+                            Icons.cancel_rounded,
+                            color: widget.isDark
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade600,
+                            size: 18,
+                          ),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Divider
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            color: widget.isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
+
+          // Friends list
+          Expanded(
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(widget.currentUserId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return _buildEmptyState('Unable to load friends');
+                }
+
+                final userData = snapshot.data!.data() as Map<String, dynamic>;
+                final friendIds = List<String>.from(userData['friends'] ?? []);
+
+                if (friendIds.isEmpty) {
+                  return _buildEmptyState('No friends to share with');
+                }
+
+                return FutureBuilder<List<DocumentSnapshot>>(
+                  future: Future.wait(
+                    friendIds.map((id) => FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(id)
+                        .get()),
+                  ),
+                  builder: (context, friendsSnapshot) {
+                    if (friendsSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0C3C2B)),
+                        ),
+                      );
+                    }
+
+                    if (!friendsSnapshot.hasData) {
+                      return _buildEmptyState('Unable to load friends');
+                    }
+
+                    var friends = friendsSnapshot.data!
+                        .where((doc) => doc.exists)
+                        .map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return {
+                            'id': doc.id,
+                            'displayName': data['displayName'] ?? 'Unknown',
+                            'username': data['username'] ?? '',
+                            'photoUrl': data['photoUrl'],
+                            'predefinedAvatar': data['predefinedAvatar'],
+                          };
+                        })
+                        .where((friend) {
+                          if (_searchQuery.isEmpty) return true;
+                          final name = friend['displayName'].toString().toLowerCase();
+                          final username = friend['username'].toString().toLowerCase();
+                          return name.contains(_searchQuery) || username.contains(_searchQuery);
+                        })
+                        .toList();
+
+                    if (friends.isEmpty) {
+                      return _buildEmptyState(
+                        _searchQuery.isEmpty
+                            ? 'No friends to share with'
+                            : 'No friends found',
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: friends.length,
+                      itemBuilder: (context, index) {
+                        final friend = friends[index];
+                        return _buildFriendTile(friend);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendTile(Map<String, dynamic> friend) {
+    final displayName = friend['displayName'] as String;
+    final username = friend['username'] as String;
+    final photoUrl = friend['photoUrl'] as String?;
+    final predefinedAvatar = friend['predefinedAvatar'] as String?;
+    final friendId = friend['id'] as String;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _shareWithFriend(friendId, displayName),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0C3C2B).withOpacity(0.1),
+                ),
+                child: photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultAvatar(displayName);
+                          },
+                        ),
+                      )
+                    : predefinedAvatar != null
+                        ? ClipOval(
+                            child: Image.asset(
+                              predefinedAvatar,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildDefaultAvatar(displayName);
+                              },
+                            ),
+                          )
+                        : _buildDefaultAvatar(displayName),
+              ),
+              const SizedBox(width: 12),
+              // Name and username
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: widget.isDark ? Colors.white : Colors.black,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (username.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '@$username',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: widget.isDark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Share icon
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: widget.isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(String displayName) {
+    return Center(
+      child: Text(
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+        style: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF0C3C2B),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline_rounded,
+            size: 64,
+            color: widget.isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: widget.isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Full-screen Note View Screen
+class _NoteViewScreen extends StatelessWidget {
+  final String title;
+  final String content;
+  final String noteId;
+  final VoidCallback onDelete;
+  final VoidCallback onShare;
+
+  const _NoteViewScreen({
+    required this.title,
+    required this.content,
+    required this.noteId,
+    required this.onDelete,
+    required this.onShare,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_rounded,
+            color: isDark ? Colors.white : Colors.black,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          // Share button
+          IconButton(
+            icon: Icon(
+              Icons.share_rounded,
+              color: isDark ? Colors.white : Colors.black,
+              size: 22,
+            ),
+            onPressed: onShare,
+          ),
+          // Delete button
+          IconButton(
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Color(0xFFFF3B30),
+              size: 22,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              onDelete();
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                  letterSpacing: -0.8,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Content
+              SelectableText(
+                content,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  height: 1.6,
+                  color: isDark
+                      ? Colors.grey.shade300
+                      : const Color(0xFF3C3C43),
+                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -132,8 +132,9 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
       body: CustomScrollView(
         slivers: [
           // Modern App Bar
@@ -142,12 +143,12 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
             floating: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF0C3C2B),
-            systemOverlayStyle: const SystemUiOverlayStyle(
+            backgroundColor: isDark ? const Color(0xFF000000) : Colors.white,
+            foregroundColor: isDark ? Colors.white : const Color(0xFF0C3C2B),
+            systemOverlayStyle: SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
-              statusBarBrightness: Brightness.light,
+              statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+              statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
             ),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
@@ -160,7 +161,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 28,
-                  color: const Color(0xFF0C3C2B),
+                  color: isDark ? Colors.white : const Color(0xFF0C3C2B),
                 ),
               ),
             ),
@@ -183,11 +184,12 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
 
   Widget _buildModernSearchBar() {
     final isFocused = _searchFocusNode.hasFocus;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isFocused ? const Color(0xFF0C3C2B) : Colors.transparent,
@@ -204,7 +206,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
         style: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF0F172A),
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
         ),
         decoration: InputDecoration(
           hintText: 'Search',
@@ -277,7 +279,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
-                    color: const Color(0xFF0F172A),
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
                   ),
                 ),
                 Material(
@@ -289,7 +291,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
                       padding: const EdgeInsets.all(4),
                       child: Icon(
                         Icons.refresh_rounded,
-                        color: const Color(0xFF0C3C2B),
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0C3C2B),
                         size: 22,
                       ),
                     ),
@@ -336,7 +338,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 20,
-                color: const Color(0xFF0F172A),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
           ),
@@ -365,12 +367,13 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
   Widget _buildUserCard(UserModel user, {bool showMutualTag = false}) {
     final isRequestSent = _sentRequestUserIds.contains(user.id);
     final isAlreadyFriend = _currentFriendIds.contains(user.id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -394,13 +397,13 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
                           )
                         : null,
                     border: !showMutualTag
-                        ? Border.all(color: const Color(0xFFF1F5F9), width: 2)
+                        ? Border.all(color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9), width: 2)
                         : null,
                   ),
                   child: UserAvatarWidget(
                     user: user,
                     radius: 28,
-                    backgroundColor: const Color(0xFFF1F5F9),
+                    backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF1F5F9),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -417,7 +420,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
-                                color: const Color(0xFF0F172A),
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -493,10 +496,11 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
     bool isAlreadyFriend,
   ) {
     if (isAlreadyFriend) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -518,8 +522,9 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
     }
 
     if (isRequestSent) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       return Material(
-        color: const Color(0xFFF1F5F9),
+        color: isDark ? Colors.grey.shade900 : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
@@ -588,7 +593,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen>
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: const Color(0xFF0F172A),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF0F172A),
               ),
               textAlign: TextAlign.center,
             ),

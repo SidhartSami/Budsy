@@ -140,7 +140,7 @@ FCM tokens are stored per user in Firestore on login. When a triggering event oc
 |---|
 | [Sidhart Sami](https://github.com/SidhartSami) |
 | [Aliyan Munawwar](https://github.com/aliyancat) |
-| Hadi Armaghan |
+| [Hadi Armughan](https://github.com/HadiArmughan)) |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
